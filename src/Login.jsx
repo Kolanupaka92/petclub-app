@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "./components/ui.jsx";
 import { api, saveToken } from "./api.js";
 
-const DEMO_OTP = "123456";
-const DEMO_PHONE = "9876543210";
+const COUNTRIES = [
+  { code: "91", flag: "🇮🇳", label: "India", demo: "9876543210" },
+  { code: "1",  flag: "🇺🇸", label: "USA",   demo: "4697512039" },
+];
 
 const FEATURES = [
   { icon: "✂️", label: "Grooming" },
@@ -16,6 +18,7 @@ export default function Login({ onLogin }) {
   const [mode, setMode] = useState("phone");
   const [step, setStep] = useState("identifier"); // identifier | otp | signup
   const [phone, setPhone] = useState("");
+  const [countryCode, setCountryCode] = useState("91");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [signupName, setSignupName] = useState("");
@@ -47,7 +50,7 @@ export default function Login({ onLogin }) {
     setLoading(true);
     try {
       if (mode === "phone") {
-        await api.sendOTP(identifier);
+        await api.sendOTP(identifier, countryCode);
       }
       setStep("otp");
       setOtp(["", "", "", "", "", ""]);
@@ -70,9 +73,10 @@ export default function Login({ onLogin }) {
     setError("");
     try {
       if (mode === "phone") {
-        const res = await api.verifyOTP(identifier, code);
+        const res = await api.verifyOTP(identifier, code, countryCode);
         saveToken(res.token);
-        const session = { phone: `+91 ${identifier.slice(0, 5)} ${identifier.slice(5)}`, name: res.user?.name, id: res.user?.id };
+        const country = COUNTRIES.find(c => c.code === countryCode);
+        const session = { phone: `${country?.flag || ""} +${countryCode} ${identifier.slice(0, 5)} ${identifier.slice(5)}`, name: res.user?.name, id: res.user?.id };
         if (res.isNew) {
           setPendingSession(session);
           setStep("signup");
@@ -161,7 +165,7 @@ export default function Login({ onLogin }) {
             {step === "identifier"
               ? "New user? Just enter your number — we'll create your account."
               : step === "otp"
-                ? (mode === "phone" ? `We sent a code to +91 ${identifier}` : `We sent a code to ${identifier}`)
+                ? (mode === "phone" ? `Code sent to ${COUNTRIES.find(c=>c.code===countryCode)?.flag} +${countryCode} ${identifier.slice(0,5)}XXXXX` : `Code sent to ${identifier}`)
                 : "Tell us your name to personalize your PETclub experience."}
           </p>
 
@@ -210,18 +214,35 @@ export default function Login({ onLogin }) {
               </div>
 
               {mode === "phone" ? (
-                <label className="block mb-4">
+                <div className="mb-4">
                   <span className="block text-xs font-semibold text-gray-500 mb-1.5">Mobile number</span>
+                  {/* Country selector */}
+                  <div className="flex gap-2 mb-2">
+                    {COUNTRIES.map((c) => (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => { setCountryCode(c.code); setPhone(""); setError(""); }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 text-sm font-bold transition-all ${
+                          countryCode === c.code
+                            ? "border-brand-500 bg-orange-50 text-brand-600"
+                            : "border-gray-200 text-gray-500 hover:border-gray-300"
+                        }`}
+                      >
+                        <span>{c.flag}</span> +{c.code} {c.label}
+                      </button>
+                    ))}
+                  </div>
                   <div className="flex border border-gray-200 rounded-xl overflow-hidden focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-orange-100 transition-shadow">
                     <span className="bg-gray-50 px-3 py-3.5 text-sm font-semibold text-gray-600 border-r border-gray-200">
-                      +91
+                      {COUNTRIES.find(c => c.code === countryCode)?.flag} +{countryCode}
                     </span>
                     <input
                       type="tel"
                       inputMode="numeric"
                       autoComplete="tel"
                       maxLength={10}
-                      placeholder="98765 43210"
+                      placeholder={COUNTRIES.find(c => c.code === countryCode)?.demo}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                       onKeyDown={(e) => e.key === "Enter" && sendOtp()}
@@ -233,7 +254,7 @@ export default function Login({ onLogin }) {
                       {phone.length}/10 digits
                     </p>
                   )}
-                </label>
+                </div>
               ) : (
                 <label className="block mb-4">
                   <span className="block text-xs font-semibold text-gray-500 mb-1.5">Email address</span>
@@ -260,11 +281,11 @@ export default function Login({ onLogin }) {
               </Button>
 
               <div className="mt-4 p-3 bg-orange-50 rounded-xl border border-orange-100">
-                <p className="text-center text-xs text-orange-800">
-                  <span className="font-bold">Demo login</span>
-                  <br />
-                  Phone <span className="font-mono font-semibold">9876543210</span> · OTP{" "}
-                  <span className="font-mono font-semibold">123456</span>
+                <p className="text-center text-xs text-orange-800 font-bold mb-1">Demo login · OTP: <span className="font-mono">123456</span></p>
+                <p className="text-center text-xs text-orange-700">
+                  🇮🇳 India: <span className="font-mono font-semibold">9876543210</span>
+                  <span className="mx-2">·</span>
+                  🇺🇸 USA: <span className="font-mono font-semibold">4697512039</span>
                 </p>
               </div>
             </>

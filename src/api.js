@@ -17,8 +17,8 @@ const req = async (method, path, body, requireAuth = false) => {
 
 export const api = {
   // Auth
-  sendOTP: (phone) => req('POST', '/auth/send-otp', { phone }),
-  verifyOTP: (phone, otp) => req('POST', '/auth/verify-otp', { phone, otp }),
+  sendOTP: (phone, countryCode = '91') => req('POST', '/auth/send-otp', { phone, countryCode }),
+  verifyOTP: (phone, otp, countryCode = '91') => req('POST', '/auth/verify-otp', { phone, otp, countryCode }),
 
   // User
   getMe: () => req('GET', '/users/me', null, true),
