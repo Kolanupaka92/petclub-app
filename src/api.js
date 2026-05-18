@@ -1,22 +1,54 @@
-// src/api.js — PETclub API helper
-const BASE = 'http://localhost:5000/api';
+const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const getToken = () => localStorage.getItem('petclub_token');
+
+const req = async (method, path, body, requireAuth = false) => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (requireAuth) headers['Authorization'] = `Bearer ${getToken()}`;
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+};
 
 export const api = {
   // Auth
-  sendOTP: (phone) => fetch(`${BASE}/auth/send-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) }).then(r => r.json()),
-  verifyOTP: (phone, otp) => fetch(`${BASE}/auth/verify-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, otp }) }).then(r => r.json()),
-  // Contact form (website)
-  sendAppLink: (data) => fetch(`${BASE}/contact/send-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+  sendOTP: (phone) => req('POST', '/auth/send-otp', { phone }),
+  verifyOTP: (phone, otp) => req('POST', '/auth/verify-otp', { phone, otp }),
+
+  // User
+  getMe: () => req('GET', '/users/me', null, true),
+  updateMe: (data) => req('PUT', '/users/me', data, true),
+
   // Pets
-  getPets: () => fetch(`${BASE}/pets`, { headers: { Authorization: `Bearer ${getToken()}` } }).then(r => r.json()),
-  addPet: (data) => fetch(`${BASE}/pets`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(data) }).then(r => r.json()),
+  getPets: () => req('GET', '/pets', null, true),
+  addPet: (data) => req('POST', '/pets', data, true),
+  updatePet: (id, data) => req('PUT', `/pets/${id}`, data, true),
+
   // Records
-  getRecords: (petId, type) => fetch(`${BASE}/pets/${petId}/records/${type}`, { headers: { Authorization: `Bearer ${getToken()}` } }).then(r => r.json()),
-  addRecord: (petId, type, data) => fetch(`${BASE}/pets/${petId}/records/${type}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(data) }).then(r => r.json()),
+  getRecords: (petId, type) => req('GET', `/pets/${petId}/records/${type}`, null, true),
+  addRecord: (petId, type, data) => req('POST', `/pets/${petId}/records/${type}`, data, true),
+
   // Bookings
-  getBookings: () => fetch(`${BASE}/bookings`, { headers: { Authorization: `Bearer ${getToken()}` } }).then(r => r.json()),
-  createBooking: (data) => fetch(`${BASE}/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(data) }).then(r => r.json()),
+  getBookings: () => req('GET', '/bookings', null, true),
+  createBooking: (data) => req('POST', '/bookings', data, true),
+  updateBookingStatus: (id, status) => req('PUT', `/bookings/${id}/status`, { status }, true),
+
   // Professionals
-  getProfessionals: (city, role) => fetch(`${BASE}/professionals?city=${city||''}&sub_role=${role||''}`).then(r => r.json()),
+  getProfessionals: (city, role) =>
+    req('GET', `/professionals?city=${city || ''}&sub_role=${role || ''}`),
+
+  // Contact (website)
+  sendAppLink: (data) => req('POST', '/contact/send-link', data),
+
+  // Health
+  health: () => req('GET', '/health'),
 };
+
+export const saveToken = (token) => localStorage.setItem('petclub_token', token);
+export const clearToken = () => localStorage.removeItem('petclub_token');
+export const hasToken = () => !!getToken();

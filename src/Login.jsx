@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "./components/ui.jsx";
+import { api, saveToken } from "./api.js";
 
-const DEMO_PHONE = "9876543210";
 const DEMO_OTP = "123456";
+const DEMO_PHONE = "9876543210";
 
 const FEATURES = [
   { icon: "✂️", label: "Grooming" },
@@ -13,10 +14,13 @@ const FEATURES = [
 
 export default function Login({ onLogin }) {
   const [mode, setMode] = useState("phone");
-  const [step, setStep] = useState("identifier");
+  const [step, setStep] = useState("identifier"); // identifier | otp | signup
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [pendingSession, setPendingSession] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
@@ -30,7 +34,7 @@ export default function Login({ onLogin }) {
     setTimeout(() => setShake(false), 400);
   };
 
-  const sendOtp = () => {
+  const sendOtp = async () => {
     setError("");
     if (mode === "phone" && identifier.length !== 10) {
       showError("Enter a valid 10-digit mobile number");
@@ -41,15 +45,21 @@ export default function Login({ onLogin }) {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      if (mode === "phone") {
+        await api.sendOTP(identifier);
+      }
       setStep("otp");
       setOtp(["", "", "", "", "", ""]);
-      otpRefs.current[0]?.focus();
-    }, 800);
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    } catch (err) {
+      showError(err.message || "Failed to send OTP. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const verifyOtp = (codeOverride) => {
+  const verifyOtp = async (codeOverride) => {
     if (loading) return;
     const code = codeOverride ?? otp.join("");
     if (code.length !== 6) {
@@ -58,22 +68,28 @@ export default function Login({ onLogin }) {
     }
     setLoading(true);
     setError("");
-    setTimeout(() => {
-      setLoading(false);
-      if (mode === "phone" && identifier === DEMO_PHONE && code === DEMO_OTP) {
-        onLogin({ phone: `+91 ${identifier.slice(0, 5)} ${identifier.slice(5)}` });
-        return;
-      }
-      if (mode === "email" && code === DEMO_OTP) {
+    try {
+      if (mode === "phone") {
+        const res = await api.verifyOTP(identifier, code);
+        saveToken(res.token);
+        const session = { phone: `+91 ${identifier.slice(0, 5)} ${identifier.slice(5)}`, name: res.user?.name, id: res.user?.id };
+        if (res.isNew) {
+          setPendingSession(session);
+          setStep("signup");
+          setLoading(false);
+          return;
+        }
+        onLogin(session);
+      } else {
+        // email mode — fallback demo (no email OTP backend yet)
+        if (code !== DEMO_OTP) { showError("Invalid OTP. Try demo code 123456"); setLoading(false); return; }
         onLogin({ email: identifier });
-        return;
       }
-      if (code === DEMO_OTP) {
-        onLogin(mode === "phone" ? { phone: `+91 ${identifier}` } : { email: identifier });
-        return;
-      }
-      showError("Invalid OTP. Try demo code 123456");
-    }, 600);
+    } catch (err) {
+      showError(err.message || "Verification failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOtpChange = (i, val) => {
@@ -101,6 +117,20 @@ export default function Login({ onLogin }) {
     if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
   };
 
+  const handleSignup = async () => {
+    if (!signupName.trim()) { showError("Please enter your name"); return; }
+    setLoading(true);
+    setError("");
+    try {
+      await api.updateMe({ name: signupName.trim(), email: signupEmail.trim() || undefined });
+      onLogin({ ...pendingSession, name: signupName.trim() });
+    } catch {
+      onLogin({ ...pendingSession, name: signupName.trim() });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (step === "otp") otpRefs.current[0]?.focus();
   }, [step]);
@@ -121,17 +151,18 @@ export default function Login({ onLogin }) {
           <div className="flex gap-2 mb-5" aria-label="Sign-in progress">
             <div className={`h-1 flex-1 rounded-full transition-all ${step === "identifier" ? "bg-white" : "bg-white/40"}`} />
             <div className={`h-1 flex-1 rounded-full transition-all ${step === "otp" ? "bg-white" : "bg-white/30"}`} />
+            <div className={`h-1 flex-1 rounded-full transition-all ${step === "signup" ? "bg-white" : "bg-white/20"}`} />
           </div>
 
           <h1 className="text-2xl font-extrabold text-white mb-1">
-            {step === "identifier" ? "Welcome back!" : "Verify OTP"}
+            {step === "identifier" ? "Welcome!" : step === "otp" ? "Verify OTP" : "Complete Sign Up"}
           </h1>
           <p className="text-orange-100 text-sm leading-relaxed">
             {step === "identifier"
-              ? "Track grooming, training, food & vet care for your pets."
-              : mode === "phone"
-                ? `We sent a code to +91 ${identifier}`
-                : `We sent a code to ${identifier}`}
+              ? "New user? Just enter your number — we'll create your account."
+              : step === "otp"
+                ? (mode === "phone" ? `We sent a code to +91 ${identifier}` : `We sent a code to ${identifier}`)
+                : "Tell us your name to personalize your PETclub experience."}
           </p>
 
           {step === "identifier" && (
@@ -293,6 +324,51 @@ export default function Login({ onLogin }) {
                   Didn&apos;t get it? Resend OTP
                 </button>
               </div>
+            </>
+          )}
+
+          {step === "signup" && (
+            <>
+              <p className="text-center text-xs text-gray-500 mb-4">Almost there! Just one more step.</p>
+              <label className="block mb-4">
+                <span className="block text-xs font-semibold text-gray-500 mb-1.5">Your name <span className="text-red-400">*</span></span>
+                <input
+                  type="text"
+                  autoComplete="name"
+                  placeholder="e.g. Arjun Mehta"
+                  value={signupName}
+                  onChange={(e) => setSignupName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSignup()}
+                  className="input-field"
+                />
+              </label>
+              <label className="block mb-5">
+                <span className="block text-xs font-semibold text-gray-500 mb-1.5">Email <span className="text-gray-400">(optional)</span></span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={signupEmail}
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSignup()}
+                  className="input-field"
+                />
+              </label>
+              {error && (
+                <p className="text-red-500 text-xs font-medium mb-3 flex items-center gap-1.5" role="alert">
+                  <span aria-hidden="true">⚠</span> {error}
+                </p>
+              )}
+              <Button loading={loading} onClick={handleSignup}>
+                {loading ? "Saving…" : "Let's Go 🐾"}
+              </Button>
+              <button
+                type="button"
+                onClick={() => onLogin(pendingSession)}
+                className="w-full text-xs text-gray-400 py-2 hover:text-gray-600 mt-2"
+              >
+                Skip for now
+              </button>
             </>
           )}
         </div>

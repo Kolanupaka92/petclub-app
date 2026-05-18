@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr *)",
+      "PowerShell(gh pr list --repo Kolanupaka92/petclub-app)",
+      "PowerShell($env:PATH = $env:PATH + \";C:\\\\Program Files\\\\GitHub CLI\"; gh --version)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(find /mnt/c/Users/14697/petclub-app -type f | sort)",
+      "PowerShell(Get-ChildItem -Recurse \"C:\\\\Users\\\\14697\\\\petclub-app\" | ForEach-Object { $_.FullName })",
+      "PowerShell(cd C:\\\\Users\\\\14697\\\\petclub-app; Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"npm run dev\" -WindowStyle Normal)",
+      "PowerShell(cd C:\\\\Users\\\\14697\\\\petclub-backend; $job = Start-Job { cd C:\\\\Users\\\\14697\\\\petclub-backend; node server.js 2>&1 }; Start-Sleep 3; Receive-Job $job; Stop-Job $job; Remove-Job $job)",
+      "Bash(node server.js)",
+      "Bash(curl -s -X POST http://localhost:5000/api/auth/send-otp -H 'Content-Type: application/json' -d '{\"phone\":\"9876543210\"}')",
+      "Read(//tmp/**)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { INIT_CUSTOMER, INIT_PETS, TC, fmtDate, within } from "./data/mockData.js";
 import { getGreeting, isDueSoon, daysUntil } from "./utils/dates.js";
 import { loadPets, savePets } from "./utils/storage.js";
+import { api, hasToken } from "./api.js";
 import {
   Stars,
   Badge,
@@ -9,10 +10,18 @@ import {
   Field,
   Input,
   Select,
+  Textarea,
   Button,
   EmptyState,
   Toast,
 } from "./components/ui.jsx";
+
+const SVC_OPTS = {
+  grooming: ["Full Groom", "Basic Groom", "Bath & Brush", "Nail Trim", "De-shedding", "Herbal Bath", "Spa Treatment", "Tick & Flea Bath"],
+  training: ["Puppy Basics", "Basic Obedience", "Advanced Obedience", "Agility", "Behaviour Correction", "Leash Training", "Litter Training"],
+  food: ["Dry Food", "Wet Food", "Raw Diet", "Treats", "Supplement"],
+  vet: ["General Check-up", "Vaccination", "Deworming", "Dental Care", "Surgery", "Emergency Care", "Nutrition Consult"],
+};
 
 const TAB_META = {
   grooming: { icon: "✂️", label: "Grooming" },
@@ -37,6 +46,7 @@ export default function PetclubApp({ session, onLogout }) {
     ...(session?.email ? { email: session.email } : {}),
   });
   const [pets, setPets] = useState(() => loadPets(INIT_PETS));
+  const [apiMode, setApiMode] = useState(false);
   const [view, setView] = useState("dashboard");
   const [activePetId, setActivePetId] = useState(null);
   const [activeTab, setActiveTab] = useState("grooming");
@@ -59,9 +69,27 @@ export default function PetclubApp({ session, onLogout }) {
     setView("petDetail");
   };
 
+  // Try to load real data from API; fall back to local mock
   useEffect(() => {
-    savePets(pets);
-  }, [pets]);
+    if (!hasToken()) return;
+    api.getPets().then((res) => {
+      if (res.pets && res.pets.length > 0) {
+        // Map API pet shape → app shape
+        const mapped = res.pets.map((p) => ({
+          id: p.id, name: p.name, species: p.species || "dog",
+          breed: p.breed || "Mixed", age: p.age || "", dob: p.dob || "",
+          weight: p.weight || "", gender: p.gender || "", color: p.color || "", chip: p.chip || "",
+          records: { grooming: [], training: [], food: [], vet: [] },
+        }));
+        setPets(mapped);
+        setApiMode(true);
+      }
+    }).catch(() => {/* stay on local mock */});
+  }, []);
+
+  useEffect(() => {
+    if (!apiMode) savePets(pets);
+  }, [pets, apiMode]);
 
   useEffect(() => {
     if (view === "petDetail" && activePetId && !pets.some((p) => p.id === activePetId)) {
@@ -69,28 +97,54 @@ export default function PetclubApp({ session, onLogout }) {
     }
   }, [view, activePetId, pets]);
 
-  const addPet = () => {
+  const addPet = async () => {
     const name = form.name?.trim();
     if (!name) return;
-    setPets((prev) => [
-      ...prev,
-      {
-        id: `p${Date.now()}`,
-        name,
-        species: form.species || "dog",
-        breed: form.breed || "Mixed",
-        age: "",
-        dob: "",
-        weight: "",
-        gender: "",
-        color: "",
-        chip: "",
-        records: { grooming: [], training: [], food: [], vet: [] },
-      },
-    ]);
+    const petData = { name, species: form.species || "dog", breed: form.breed || "Mixed", age: "", dob: "", weight: "", gender: "", color: "", chip: "" };
+    try {
+      if (apiMode || hasToken()) {
+        const res = await api.addPet(petData);
+        setPets((prev) => [...prev, { ...res.pet, records: { grooming: [], training: [], food: [], vet: [] } }]);
+        setApiMode(true);
+      } else {
+        setPets((prev) => [...prev, { id: `p${Date.now()}`, ...petData, records: { grooming: [], training: [], food: [], vet: [] } }]);
+      }
+      setModal(null);
+      setForm({});
+      setToast({ message: `${name} added to your family! 🐾`, type: "success" });
+    } catch {
+      setToast({ message: "Failed to save pet. Try again.", type: "error" });
+    }
+  };
+
+  const addRecord = async () => {
+    if (!activePetId) return;
+    const tab = activeTab;
+    const date = form.date || new Date().toISOString().split("T")[0];
+    const base = { id: `r${Date.now()}`, date };
+    let rec, apiPayload;
+    if (tab === "grooming") {
+      rec = { ...base, service: form.service || "Grooming", by: form.by || "", cost: form.cost || "", notes: form.notes || "", rating: form.rating ? Number(form.rating) : undefined };
+      apiPayload = { service: rec.service, by: rec.by, cost: rec.cost, notes: rec.notes, rating: rec.rating, date };
+    } else if (tab === "training") {
+      rec = { ...base, session: form.service || "Training", by: form.by || "", notes: form.notes || "", rating: form.rating ? Number(form.rating) : undefined };
+      apiPayload = { session: rec.session, by: rec.by, notes: rec.notes, rating: rec.rating, date };
+    } else if (tab === "food") {
+      rec = { ...base, product: form.service || "Food", brand: form.by || "", qty: form.qty || "", cost: form.cost || "", notes: form.notes || "" };
+      apiPayload = { product: rec.product, brand: rec.brand, qty: rec.qty, cost: rec.cost, notes: rec.notes, date };
+    } else {
+      rec = { ...base, detail: form.service || "Vet Visit", vet: form.by || "", clinic: form.clinic || "", vtype: form.vtype || "General Check-up", nextDue: form.nextDue || undefined, cost: form.cost || "", notes: form.notes || "" };
+      apiPayload = { detail: rec.detail, vet: rec.vet, clinic: rec.clinic, vtype: rec.vtype, next_due: rec.nextDue, cost: rec.cost, notes: rec.notes, date };
+    }
+    try {
+      if (apiMode || hasToken()) {
+        await api.addRecord(activePetId, tab, apiPayload);
+      }
+    } catch { /* still save locally */ }
+    setPets((prev) => prev.map((p) => p.id === activePetId ? { ...p, records: { ...p.records, [tab]: [rec, ...p.records[tab]] } } : p));
     setModal(null);
     setForm({});
-    setToast({ message: `${name} added to your family! 🐾`, type: "success" });
+    setToast({ message: "Record added!", type: "success" });
   };
 
   const filt = (arr) => arr?.filter((r) => within(r.date, 9999)) || [];
@@ -513,6 +567,14 @@ export default function PetclubApp({ session, onLogout }) {
           })}
         </div>
 
+        <button
+          type="button"
+          onClick={() => { setForm({ date: new Date().toISOString().split("T")[0] }); setModal("addRecord"); }}
+          className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-orange-200 text-orange-500 font-bold py-3 rounded-2xl hover:bg-orange-50 transition-colors mb-3"
+        >
+          + Add {TAB_META[activeTab].label} Record
+        </button>
+
         <div className="space-y-3">
           {list.length === 0 ? (
             <EmptyState
@@ -634,6 +696,51 @@ export default function PetclubApp({ session, onLogout }) {
           </Field>
           <Button onClick={addPet} disabled={!form.name?.trim()}>
             Add Pet
+          </Button>
+        </Modal>
+      )}
+
+      {modal === "addRecord" && pet && (
+        <Modal title={`Add ${TAB_META[activeTab].label} Record`} onClose={() => { setModal(null); setForm({}); }}>
+          <Field label={activeTab === "food" ? "Product name *" : activeTab === "vet" ? "Visit type *" : "Service *"}>
+            <Select opts={SVC_OPTS[activeTab]} value={form.service || ""} onChange={setF("service")} />
+          </Field>
+          <Field label={activeTab === "food" ? "Brand" : activeTab === "vet" ? "Vet name" : "Provider name"}>
+            <Input placeholder={activeTab === "vet" ? "Dr. Kavitha R." : activeTab === "food" ? "Royal Canin" : "Arjun Mehta"} value={form.by || ""} onChange={setF("by")} />
+          </Field>
+          {activeTab === "vet" && (
+            <Field label="Clinic / Hospital">
+              <Input placeholder="PetCare Clinic, Andheri" value={form.clinic || ""} onChange={setF("clinic")} />
+            </Field>
+          )}
+          {activeTab === "food" && (
+            <Field label="Quantity">
+              <Input placeholder="3 kg / 24 sachets" value={form.qty || ""} onChange={setF("qty")} />
+            </Field>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Date *">
+              <Input type="date" value={form.date || ""} onChange={setF("date")} />
+            </Field>
+            <Field label="Cost (₹)">
+              <Input placeholder="₹999" value={form.cost || ""} onChange={setF("cost")} />
+            </Field>
+          </div>
+          {activeTab === "vet" && (
+            <Field label="Next due date">
+              <Input type="date" value={form.nextDue || ""} onChange={setF("nextDue")} />
+            </Field>
+          )}
+          {(activeTab === "grooming" || activeTab === "training") && (
+            <Field label="Rating">
+              <Select opts={["", "5", "4", "3", "2", "1"]} value={form.rating || ""} onChange={setF("rating")} />
+            </Field>
+          )}
+          <Field label="Notes">
+            <Textarea placeholder="Any additional notes…" value={form.notes || ""} onChange={setF("notes")} />
+          </Field>
+          <Button onClick={addRecord} disabled={!form.date}>
+            Save Record
           </Button>
         </Modal>
       )}
