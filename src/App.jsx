@@ -244,9 +244,11 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
   const idTypes  = getIdTypes(session.phone);
   const isIndia  = session.phone?.startsWith("+91");
 
-  const [step, setStep]   = useState(1);
+  const [step, setStep]     = useState(1);
   const [saving, setSaving] = useState(false);
   const [idPhoto, setIdPhoto] = useState(null);
+  // If sub_role is missing (null in DB), let user pick it on Step 1
+  const [pickedRole, setPickedRole] = useState(subRole !== "Groomer" || session.subRole ? subRole : null);
 
   const [form, setForm] = useState({
     name: session.name || "", email: session.email || "", dob: "", gender: "Male",
@@ -314,7 +316,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
   ];
 
   const canNext = [
-    !!(form.name.trim() && form.city.trim()),
+    !!(form.name.trim() && form.city.trim() && (pickedRole || session.subRole)),
     !!(form.services.length > 0 && form.experience && form.bio.trim()),
     !!(form.idNumber.trim()),
     true,
@@ -324,6 +326,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
     setSaving(true);
     try {
       await api.updateMyProProfile({
+        sub_role: pickedRole || subRole,    // always save sub_role so DB stays correct
         name: form.name, email: form.email, city: form.city, area: form.area,
         address: form.address, bio: form.bio, experience: form.experience,
         services: form.services, service_areas: form.service_areas, langs: form.langs,
@@ -379,7 +382,23 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
         {step === 1 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-lg font-extrabold text-gray-800 mb-1">Basic Information</h2>
-            <p className="text-sm text-gray-400 mb-5">Registering as <strong className="text-orange-500">{subRole}</strong></p>
+
+            {/* Role picker — shown if sub_role wasn't set in DB */}
+            {!session.subRole ? (
+              <div className="mb-5">
+                <label className="block text-xs font-semibold text-gray-500 mb-2">I am a… *</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[{id:"Groomer",icon:"✂️"},{id:"Trainer",icon:"🎓"},{id:"Vet",icon:"🏥"}].map(r => (
+                    <button key={r.id} type="button" onClick={() => setPickedRole(r.id)}
+                      className={`flex flex-col items-center gap-1 py-3 rounded-xl border-2 text-sm font-bold transition-all ${pickedRole === r.id ? "border-orange-400 bg-orange-50 text-orange-600" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}>
+                      <span className="text-xl">{r.icon}</span>{r.id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 mb-5">Registering as <strong className="text-orange-500">{pickedRole || subRole}</strong></p>
+            )}
             <Inp label="Full Name *" placeholder="e.g. Arjun Kumar Mehta" value={form.name} onChange={sf("name")}/>
             <Inp label="Email Address" type="email" placeholder="you@gmail.com" value={form.email} onChange={sf("email")}/>
             <div className="grid grid-cols-2 gap-3">
@@ -1270,6 +1289,27 @@ const AdminDashboard = ({ session, onLogout }) => {
                           className={`text-xs font-semibold px-3 py-1 rounded-full border transition ${u.is_active ? "border-red-200 text-red-500 hover:bg-red-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>
                           {u.is_active ? "Suspend" : "Restore"}
                         </button>
+                        {/* Role assignment for professionals with missing sub_role */}
+                        {u.role === "professional" && !proRole && (
+                          <select
+                            defaultValue=""
+                            onChange={async e => {
+                              if (!e.target.value) return;
+                              try {
+                                await api.setUserSubRole(u.id, e.target.value);
+                                setUsers(l => l.map(x => x.id === u.id
+                                  ? { ...x, professional_profiles: [{ ...(x.professional_profiles?.[0] || {}), sub_role: e.target.value }] }
+                                  : x));
+                                showToast(`✅ Set as ${e.target.value}`);
+                              } catch { showToast("❌ Failed", "error"); }
+                            }}
+                            className="text-xs border border-orange-200 text-orange-600 rounded-full px-2 py-1 bg-orange-50 cursor-pointer">
+                            <option value="">Set role…</option>
+                            <option value="Groomer">✂️ Groomer</option>
+                            <option value="Trainer">🎓 Trainer</option>
+                            <option value="Vet">🏥 Vet</option>
+                          </select>
+                        )}
                       </div>
                     </div>
                   );
