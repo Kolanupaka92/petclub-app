@@ -17,14 +17,14 @@ const req = async (method, path, body, requireAuth = false) => {
 
 export const api = {
   // Auth
-  sendOTP: (phone, countryCode = '91') => req('POST', '/auth/send-otp', { phone, countryCode }),
+  sendOTP: (phone, countryCode = '91', email) => req('POST', '/auth/send-otp', { phone, countryCode, email }),
   verifyOTP: (phone, otp, countryCode = '91') => req('POST', '/auth/verify-otp', { phone, otp, countryCode }),
 
   // User
   getMe: () => req('GET', '/users/me', null, true),
   updateMe: (data) => req('PUT', '/users/me', data, true),
-  setRole: (role, subRole, name, email, city) =>
-    req('POST', '/users/set-role', { role, subRole, name, email, city }, true),
+  setRole: (role, subRole, name, email, city, pet) =>
+    req('POST', '/users/set-role', { role, subRole, name, email, city, pet }, true),
 
   // Pets
   getPets: () => req('GET', '/pets', null, true),
@@ -45,6 +45,7 @@ export const api = {
     req('GET', `/professionals?city=${city || ''}&sub_role=${role || ''}`),
   getMyProProfile: () => req('GET', '/professionals/me', null, true),
   updateMyProProfile: (data) => req('PUT', '/professionals/me', data, true),
+  uploadIdPhoto: (data) => req('POST', '/professionals/upload-id-photo', data, true),
 
   // Admin
   getAdminStats: () => req('GET', '/admin/stats', null, true),
