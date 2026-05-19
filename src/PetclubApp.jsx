@@ -928,7 +928,7 @@ export default function PetclubApp({ session, onLogout }) {
                 <Inp placeholder="House/flat, street, locality" value={bookingForm.address} onChange={bsf("address")}/>
               </Fld>
               <Fld label="City *">
-                <Inp placeholder="e.g. Mumbai" value={bookingForm.city || userInfo.city || ""} onChange={bsf("city")}/>
+                <Inp placeholder="e.g. Hyderabad" value={bookingForm.city || userInfo.city || ""} onChange={bsf("city")}/>
               </Fld>
               {/* Notes */}
               <Fld label="Special Notes">
@@ -1001,14 +1001,14 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 mt-1">Address</p>
           <Fld label="Door / Building / Street">
-            <Inp placeholder="e.g. 12B, Sunshine Apts, MG Road" value={form.address||""} onChange={sf("address")} />
+            <Inp placeholder="e.g. 12B, Sahara Complex, LB Nagar" value={form.address||""} onChange={sf("address")} />
           </Fld>
           <Fld label="Area / Locality">
-            <Inp placeholder="e.g. Koramangala, Bandra West" value={form.area||""} onChange={sf("area")} />
+            <Inp placeholder="e.g. LB Nagar, Sainikpuri" value={form.area||""} onChange={sf("area")} />
           </Fld>
           <div className="flex gap-3">
             <Fld label="City" className="flex-1">
-              <Inp placeholder="e.g. Bengaluru" value={form.city||""} onChange={sf("city")} />
+              <Inp placeholder="e.g. Hyderabad" value={form.city||""} onChange={sf("city")} />
             </Fld>
             <Fld label="PIN / ZIP Code" className="flex-1">
               <Inp placeholder="e.g. 560034" value={form.pincode||""} onChange={sf("pincode")} maxLength={10} />

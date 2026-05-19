@@ -599,7 +599,7 @@ export default function Login({ onLogin }) {
                 <input type="email" autoComplete="email" placeholder="Email * (approval sent here)"
                   value={pro.email} onChange={e => setPro(f => ({...f, email: e.target.value}))}
                   className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-400 transition-all" />
-                <input type="text" placeholder="Operating city * (e.g. Mumbai / Dallas)"
+                <input type="text" placeholder="Operating city * (e.g. Hyderabad)"
                   value={pro.city} onChange={e => setPro(f => ({...f, city: e.target.value}))}
                   className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-400 transition-all" />
               </div>

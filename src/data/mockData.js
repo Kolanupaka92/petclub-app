@@ -35,8 +35,8 @@ export const INIT_CUSTOMER = {
   name: "Rahul Sharma",
   email: "rahul.sharma@gmail.com",
   phone: "+91 98765 43210",
-  city: "Mumbai",
-  address: "Andheri West, Mumbai – 400053",
+  city: "Hyderabad",
+  address: "Sahara, LB Nagar, Hyderabad – 500074",
   since: "Jan 2023",
   avatar: "👨",
 };

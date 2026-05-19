@@ -408,12 +408,12 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
             <Txta label="Full Address" placeholder="House/Flat No., Street, Locality" value={form.address} onChange={sf("address")} rows={2}/>
             <div className="grid grid-cols-3 gap-2">
               <div className="relative">
-                <Inp label="PIN / ZIP" placeholder={isIndia ? "400053" : "90210"} maxLength={6} value={form.pincode} onChange={sf("pincode")}/>
+                <Inp label="PIN / ZIP" placeholder={isIndia ? "500074" : "90210"} maxLength={6} value={form.pincode} onChange={sf("pincode")}/>
                 {addrLoading && <div className="absolute right-3 top-9 w-4 h-4 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin"/>}
                 {!addrLoading && form.city && form.pincode.length >= 5 && <div className="absolute right-3 top-9 text-emerald-500 text-sm">✓</div>}
               </div>
-              <Inp label="Area / Locality" placeholder="Andheri" value={form.area} onChange={sf("area")}/>
-              <Inp label="City *" placeholder="Mumbai" value={form.city} onChange={sf("city")}/>
+              <Inp label="Area / Locality" placeholder="LB Nagar" value={form.area} onChange={sf("area")}/>
+              <Inp label="City *" placeholder="Hyderabad" value={form.city} onChange={sf("city")}/>
             </div>
           </div>
         )}
