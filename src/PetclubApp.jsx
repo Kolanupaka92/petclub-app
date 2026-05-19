@@ -79,16 +79,6 @@ function Toast({ msg, type, onDone }) {
   );
 }
 
-/* ── Razorpay loader ── */
-const loadRazorpay = () => new Promise((resolve, reject) => {
-  if (window.Razorpay) { resolve(window.Razorpay); return; }
-  const s = document.createElement("script");
-  s.src = "https://checkout.razorpay.com/v1/checkout.js";
-  s.onload = () => resolve(window.Razorpay);
-  s.onerror = reject;
-  document.body.appendChild(s);
-});
-
 const ASSIGNMENT_STATUS_CONFIG = {
   searching:          { icon:"🔍", label:"Finding Professional…", cls:"bg-blue-50 text-blue-700 border-blue-200",    animate: true  },
   offered:            { icon:"⏳", label:"Professional Notified",  cls:"bg-amber-50 text-amber-700 border-amber-200",  animate: true  },
@@ -114,7 +104,6 @@ export default function PetclubApp({ session, onLogout }) {
   const [bookingStep, setBookingStep] = useState(1); // 1=service 2=details 3=confirm
   const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [payingBookingId, setPayingBookingId] = useState(null);
 
   const sf = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const bsf = k => e => setBookingForm(f => ({ ...f, [k]: typeof e === "string" ? e : e.target.value }));
@@ -246,45 +235,11 @@ export default function PetclubApp({ session, onLogout }) {
     setBookingLoading(false);
   };
 
-  const handlePayNow = async (booking) => {
-    if (payingBookingId) return;
-    setPayingBookingId(booking.id);
-    try {
-      const RazorpayClass = await loadRazorpay().catch(() => null);
-      const order = await api.createPaymentOrder(booking.id);
-      if (order.gateway === "cash") {
-        showToast("Pay cash on the service day. Our team will confirm.");
-        setPayingBookingId(null); return;
-      }
-      const options = {
-        key: order.keyId,
-        amount: order.amount,
-        currency: order.currency || "INR",
-        name: "PETclub",
-        description: booking.service_name || booking.service_type,
-        order_id: order.orderId,
-        handler: async (response) => {
-          try {
-            await api.verifyPayment({ bookingId: booking.id, ...response });
-            setMyBookings(prev => prev.map(b => b.id === booking.id ? { ...b, payment_status: "paid" } : b));
-            showToast("✅ Payment successful! Receipt sent to email.");
-          } catch { showToast("Payment error. Contact support.", "error"); }
-        },
-        prefill: { name: userInfo.name || "", contact: userInfo.phone || "", email: userInfo.email || "" },
-        theme: { color: "#f97316" },
-      };
-      const rzp = new RazorpayClass(options);
-      rzp.on("payment.failed", () => showToast("Payment failed. Try again.", "error"));
-      rzp.open();
-    } catch (e) { showToast(e.message || "Payment error", "error"); }
-    setPayingBookingId(null);
-  };
-
   const firstName = (userInfo.name || session?.name || "there").split(" ")[0];
   const totalRecs = pets.reduce((s,p) => s + p.records.grooming.length + p.records.training.length + p.records.food.length + p.records.vet.length, 0);
   const allUpcoming = pets.flatMap(p => p.records.vet.filter(v => v.nextDue && isDueSoon(v.nextDue, 60)).map(v => ({ ...v, petName: p.name, petId: p.id })));
   const filteredPets = pets.filter(p => !search.trim() || p.name.toLowerCase().includes(search.toLowerCase()) || p.breed.toLowerCase().includes(search.toLowerCase()));
-  const pendingBookings = myBookings.filter(b => b.payment_status !== "paid" && b.assignment_status === "confirmed");
+  const pendingBookings = myBookings.filter(b => b.assignment_status === "confirmed");
 
   /* ── NAV ── */
   const NAV = [
@@ -372,8 +327,6 @@ export default function PetclubApp({ session, onLogout }) {
             {myBookings.map(b => {
               const s = statusMap[b.assignment_status] || statusMap.searching;
               const svcIcon = ({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥" })[b.service_type] || "📋";
-              const isPaid = b.payment_status === "paid";
-              const canPay = b.assignment_status === "confirmed" && !isPaid && b.amount;
               return (
                 <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                   {/* Status bar */}
@@ -384,7 +337,6 @@ export default function PetclubApp({ session, onLogout }) {
                         <span className="inline-block w-1.5 h-1.5 bg-current rounded-full animate-bounce ml-1"/>
                       )}
                     </div>
-                    {isPaid && <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">✅ Paid</span>}
                   </div>
 
                   <div className="p-4">
@@ -401,17 +353,9 @@ export default function PetclubApp({ session, onLogout }) {
                     {b.scheduled_at && (
                       <div className="text-xs text-gray-500 mb-1">📅 {fmtDate(b.scheduled_at)} at {new Date(b.scheduled_at).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</div>
                     )}
-                    {b.city && <div className="text-xs text-gray-500 mb-3">📍 {[b.address, b.city].filter(Boolean).join(", ")}</div>}
-
-                    {/* Pay button */}
-                    {canPay && (
-                      <button disabled={payingBookingId === b.id} onClick={() => handlePayNow(b)}
-                        className="w-full bg-orange-500 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-orange-600 transition disabled:opacity-60">
-                        {payingBookingId === b.id ? "Opening…" : `💳 Pay ₹${b.amount}`}
-                      </button>
-                    )}
+                    {b.city && <div className="text-xs text-gray-500">📍 {[b.address, b.city].filter(Boolean).join(", ")}</div>}
                     {b.assignment_status === "no_pros_available" && (
-                      <div className="text-xs text-gray-400 bg-gray-50 rounded-lg p-2.5 text-center">
+                      <div className="text-xs text-gray-400 bg-gray-50 rounded-lg p-2.5 text-center mt-3">
                         No professionals available in your area right now. We'll keep searching and notify you via email.
                       </div>
                     )}
