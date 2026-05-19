@@ -115,7 +115,18 @@ export default function PetclubApp({ session, onLogout }) {
 
   const addPet = async () => {
     if (!form.name?.trim()) return;
-    const data = { name: form.name.trim(), species: form.species || "dog", breed: form.breed || "Mixed", age:"", dob:"", weight:"", gender:"", color:"", chip:"" };
+    const data = {
+      name: form.name.trim(),
+      species: form.species || "dog",
+      breed: form.breed || "Mixed",
+      age: form.age || "",
+      dob: form.dob || "",
+      weight: form.weight || "",
+      gender: form.gender || "",
+      color: form.color || "",
+      chip: form.chip || "",
+      insurance: form.insurance || "",
+    };
     try {
       let newPet;
       if (apiMode) {
@@ -128,6 +139,38 @@ export default function PetclubApp({ session, onLogout }) {
       setModal(null); setForm({});
       showToast(`${data.name} added! 🐾`);
     } catch { showToast("Failed to save pet", "error"); }
+  };
+
+  const updatePet = async () => {
+    if (!form.name?.trim() || !activePetId) return;
+    const data = {
+      name: form.name.trim(),
+      species: form.species || "dog",
+      breed: form.breed || "",
+      age: form.age || "",
+      dob: form.dob || "",
+      weight: form.weight || "",
+      gender: form.gender || "",
+      color: form.color || "",
+      chip: form.chip || "",
+      insurance: form.insurance || "",
+    };
+    try {
+      if (apiMode) { await api.updatePet(activePetId, data).catch(() => {}); }
+      setPets(prev => prev.map(p => p.id === activePetId ? { ...p, ...data } : p));
+      setModal(null); setForm({});
+      showToast("Pet profile updated! 🐾");
+    } catch { showToast("Failed to update", "error"); }
+  };
+
+  const updateProfile = async () => {
+    if (!form.name?.trim()) return;
+    try {
+      await api.updateMe({ name: form.name.trim(), email: form.email || "", city: form.city || "" }).catch(() => {});
+      setUserInfo(prev => ({ ...prev, name: form.name.trim(), email: form.email || prev.email, city: form.city || prev.city }));
+      setModal(null); setForm({});
+      showToast("Profile updated!");
+    } catch { showToast("Failed to update", "error"); }
   };
 
   const addRecord = async () => {
@@ -363,11 +406,30 @@ export default function PetclubApp({ session, onLogout }) {
         <button onClick={() => goTo("pets")} className="inline-flex items-center gap-1.5 text-sm text-orange-500 font-bold mb-4 hover:text-orange-600">
           ← Back
         </button>
-        <div className={`rounded-2xl p-5 mb-4 text-center ${pet.species==="dog"?"bg-gradient-to-br from-orange-50 to-amber-100":"bg-gradient-to-br from-purple-50 to-pink-100"}`}>
-          <div className="text-6xl mb-2">{speciesEmoji(pet.species)}</div>
-          <h1 className="text-2xl font-extrabold text-gray-900">{pet.name}</h1>
-          <p className="text-gray-500 text-sm">{pet.breed}{pet.gender?` · ${pet.gender}`:""}{pet.weight?` · ${pet.weight}`:""}</p>
-          {pet.chip && <p className="text-xs text-gray-400 mt-1">🔖 Chip: {pet.chip}</p>}
+        <div className={`rounded-2xl p-5 mb-4 ${pet.species==="dog"?"bg-gradient-to-br from-orange-50 to-amber-100":"bg-gradient-to-br from-purple-50 to-pink-100"}`}>
+          <div className="flex items-start gap-4">
+            <div className="text-6xl">{speciesEmoji(pet.species)}</div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-extrabold text-gray-900">{pet.name}</h1>
+              <p className="text-gray-500 text-sm mt-0.5">{pet.breed || "Mixed"}{pet.gender ? ` · ${pet.gender}` : ""}</p>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {pet.age && <span className="bg-white/70 text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-full">🎂 {pet.age}</span>}
+                {pet.weight && <span className="bg-white/70 text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-full">⚖️ {pet.weight}</span>}
+                {pet.color && <span className="bg-white/70 text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-full">🎨 {pet.color}</span>}
+                {pet.dob && <span className="bg-white/70 text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-full">📅 {pet.dob}</span>}
+              </div>
+              {pet.chip && <p className="text-xs text-gray-500 mt-1.5">🔖 Chip: <span className="font-mono">{pet.chip}</span></p>}
+              {pet.insurance && <p className="text-xs text-gray-500 mt-0.5">🛡️ {pet.insurance}</p>}
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setForm({ name: pet.name, species: pet.species, breed: pet.breed, age: pet.age, dob: pet.dob, weight: pet.weight, gender: pet.gender, color: pet.color, chip: pet.chip, insurance: pet.insurance });
+              setModal("editPet");
+            }}
+            className="mt-3 w-full bg-white/60 hover:bg-white/80 text-gray-700 font-bold py-2 rounded-xl text-xs transition-all border border-white/40">
+            ✏️ Edit Pet Details
+          </button>
         </div>
 
         {/* Tabs */}
@@ -411,44 +473,101 @@ export default function PetclubApp({ session, onLogout }) {
   };
 
   /* ── PROFILE ── */
-  const Profile = () => (
-    <div className="p-4 animate-fade-in">
+  const Profile = () => {
+    const initials = (userInfo.name || "P").split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
+    return (
+    <div className="p-4 animate-fade-in pb-28">
       <h1 className="text-xl font-extrabold text-gray-900 mb-5">My Profile</h1>
-      <div className="bg-brand-gradient rounded-3xl p-5 mb-4 flex items-center gap-4">
-        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-4xl shadow-inner">🐕</div>
-        <div>
-          <h2 className="text-xl font-bold text-white">{userInfo.name || "Pet Parent"}</h2>
-          <p className="text-orange-100 text-xs mt-0.5">PETclub Member</p>
-          <Bdg text="🐾 Customer" cls="bg-white/20 text-white mt-1" />
-        </div>
-      </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-4 space-y-0">
-        {[
-          ["📱", "Phone", userInfo.phone || session?.phone || "—"],
-          ["📧", "Email", userInfo.email || "Add email"],
-          ["📍", "City",  userInfo.city || "Add city"],
-        ].map(([icon, label, val]) => (
-          <div key={label} className="flex items-center gap-3 py-3.5 border-b border-gray-50 last:border-0">
-            <span className="text-xl w-8 shrink-0">{icon}</span>
-            <div className="flex-1"><p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">{label}</p><p className="text-sm font-semibold text-gray-800">{val}</p></div>
+      {/* Hero card */}
+      <div className="bg-brand-gradient rounded-3xl p-5 mb-4">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-inner border border-white/20">
+            {initials}
           </div>
-        ))}
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-white">{userInfo.name || "Pet Parent"}</h2>
+            <p className="text-orange-100 text-xs mt-0.5">PETclub Member</p>
+            <span className="inline-block bg-white/20 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full mt-1">🐾 Pet Owner</span>
+          </div>
+        </div>
+        <button
+          onClick={() => { setForm({ name: userInfo.name || "", email: userInfo.email || "", city: userInfo.city || "" }); setModal("editProfile"); }}
+          className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-2.5 rounded-2xl text-sm transition-all border border-white/20">
+          ✏️ Edit Profile
+        </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-4">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Quick Stats</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-orange-50 rounded-xl p-3 text-center"><div className="text-xl font-extrabold text-orange-500">{pets.length}</div><div className="text-[10px] text-gray-400">Pets</div></div>
-          <div className="bg-blue-50 rounded-xl p-3 text-center"><div className="text-xl font-extrabold text-blue-600">{totalRecs}</div><div className="text-[10px] text-gray-400">Records</div></div>
+      {/* Personal Info */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-card mb-4">
+        <div className="px-5 pt-4 pb-2 border-b border-gray-50">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Personal Information</p>
+        </div>
+        <div className="px-5">
+          {[
+            ["📱", "Phone", userInfo.phone || session?.phone || "—"],
+            ["📧", "Email", userInfo.email || "Not added"],
+            ["📍", "City",  userInfo.city  || "Not added"],
+          ].map(([icon, label, val]) => (
+            <div key={label} className="flex items-center gap-3 py-3.5 border-b border-gray-50 last:border-0">
+              <span className="text-xl w-8 shrink-0">{icon}</span>
+              <div className="flex-1">
+                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">{label}</p>
+                <p className={`text-sm font-semibold ${val === "Not added" ? "text-gray-300 italic" : "text-gray-800"}`}>{val}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Quick Stats */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-4">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Activity</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-orange-50 rounded-xl p-3 text-center">
+            <div className="text-xl font-extrabold text-orange-500">{pets.length}</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Pets</div>
+          </div>
+          <div className="bg-blue-50 rounded-xl p-3 text-center">
+            <div className="text-xl font-extrabold text-blue-600">{totalRecs}</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Records</div>
+          </div>
+          <div className="bg-amber-50 rounded-xl p-3 text-center">
+            <div className="text-xl font-extrabold text-amber-600">{allUpcoming.length}</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Due Soon</div>
+          </div>
+        </div>
+      </div>
+
+      {/* My Pets quick list */}
+      {pets.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">My Pets</p>
+            <button onClick={() => goTo("pets")} className="text-xs text-orange-500 font-bold">View all →</button>
+          </div>
+          <div className="space-y-2">
+            {pets.slice(0,3).map(p => (
+              <button key={p.id} onClick={() => openPet(p.id)}
+                className="w-full flex items-center gap-3 text-left hover:bg-gray-50 rounded-xl p-2 transition-colors">
+                <span className="text-2xl">{speciesEmoji(p.species)}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-800">{p.name}</p>
+                  <p className="text-xs text-gray-400">{p.breed}{p.gender ? ` · ${p.gender}` : ""}{p.age ? ` · ${p.age}` : ""}</p>
+                </div>
+                <span className="text-orange-400 text-sm">→</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <button onClick={() => setModal("logout")} className="w-full border border-red-200 text-red-500 font-bold py-3 rounded-2xl text-sm hover:bg-red-50 transition-colors">
         🚪 Sign Out
       </button>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="app-shell">
@@ -464,12 +583,55 @@ export default function PetclubApp({ session, onLogout }) {
 
       {/* ADD PET */}
       {modal === "addPet" && (
-        <Modal title="Add New Pet 🐾" onClose={() => setModal(null)}>
-          <Fld label="Pet Name *"><Inp autoFocus placeholder="e.g. Bruno" value={form.name||""} onChange={sf("name")} onKeyDown={e=>e.key==="Enter"&&addPet()} /></Fld>
-          <Fld label="Species"><Sel opts={["dog","cat","bird","rabbit","other"]} value={form.species||"dog"} onChange={sf("species")} /></Fld>
-          <Fld label="Breed"><Inp placeholder="e.g. Labrador" value={form.breed||""} onChange={sf("breed")} /></Fld>
-          <Fld label="Age"><Inp placeholder="e.g. 3 years" value={form.age||""} onChange={sf("age")} /></Fld>
-          <button onClick={addPet} disabled={!form.name?.trim()} className="btn-primary mt-1">Add Pet</button>
+        <Modal title="Add New Pet 🐾" onClose={() => { setModal(null); setForm({}); }}>
+          <Fld label="Pet Name *"><Inp autoFocus placeholder="e.g. Bruno" value={form.name||""} onChange={sf("name")} /></Fld>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Species">
+              <Sel opts={["dog","cat","bird","rabbit","other"]} value={form.species||"dog"} onChange={sf("species")} />
+            </Fld>
+            <Fld label="Gender">
+              <Sel opts={["","Male","Female"]} value={form.gender||""} onChange={sf("gender")} />
+            </Fld>
+          </div>
+          <Fld label="Breed"><Inp placeholder="e.g. Labrador Retriever" value={form.breed||""} onChange={sf("breed")} /></Fld>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Date of Birth"><Inp type="date" value={form.dob||""} onChange={sf("dob")} /></Fld>
+            <Fld label="Age"><Inp placeholder="e.g. 3 years" value={form.age||""} onChange={sf("age")} /></Fld>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Weight"><Inp placeholder="e.g. 12 kg" value={form.weight||""} onChange={sf("weight")} /></Fld>
+            <Fld label="Coat Color"><Inp placeholder="e.g. Golden" value={form.color||""} onChange={sf("color")} /></Fld>
+          </div>
+          <Fld label="Microchip ID"><Inp placeholder="15-digit chip number" value={form.chip||""} onChange={sf("chip")} /></Fld>
+          <Fld label="Insurance Provider"><Inp placeholder="e.g. PetSure (optional)" value={form.insurance||""} onChange={sf("insurance")} /></Fld>
+          <button onClick={addPet} disabled={!form.name?.trim()} className="btn-primary mt-2">Add Pet 🐾</button>
+        </Modal>
+      )}
+
+      {/* EDIT PET */}
+      {modal === "editPet" && pet && (
+        <Modal title={`Edit ${pet.name} 🐾`} onClose={() => { setModal(null); setForm({}); }}>
+          <Fld label="Pet Name *"><Inp autoFocus value={form.name||""} onChange={sf("name")} /></Fld>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Species">
+              <Sel opts={["dog","cat","bird","rabbit","other"]} value={form.species||"dog"} onChange={sf("species")} />
+            </Fld>
+            <Fld label="Gender">
+              <Sel opts={["","Male","Female"]} value={form.gender||""} onChange={sf("gender")} />
+            </Fld>
+          </div>
+          <Fld label="Breed"><Inp value={form.breed||""} onChange={sf("breed")} /></Fld>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Date of Birth"><Inp type="date" value={form.dob||""} onChange={sf("dob")} /></Fld>
+            <Fld label="Age"><Inp placeholder="e.g. 3 years" value={form.age||""} onChange={sf("age")} /></Fld>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Weight"><Inp placeholder="e.g. 12 kg" value={form.weight||""} onChange={sf("weight")} /></Fld>
+            <Fld label="Coat Color"><Inp placeholder="e.g. Golden" value={form.color||""} onChange={sf("color")} /></Fld>
+          </div>
+          <Fld label="Microchip ID"><Inp placeholder="15-digit chip number" value={form.chip||""} onChange={sf("chip")} /></Fld>
+          <Fld label="Insurance Provider"><Inp value={form.insurance||""} onChange={sf("insurance")} /></Fld>
+          <button onClick={updatePet} disabled={!form.name?.trim()} className="btn-primary mt-2">Save Changes</button>
         </Modal>
       )}
 
@@ -527,6 +689,23 @@ export default function PetclubApp({ session, onLogout }) {
             ))}
             <p className="text-center text-xs text-gray-400 mt-2">Live booking coming soon! Sign up to be notified.</p>
           </div>
+        </Modal>
+      )}
+
+      {/* EDIT PROFILE */}
+      {modal === "editProfile" && (
+        <Modal title="Edit Profile ✏️" onClose={() => { setModal(null); setForm({}); }}>
+          <Fld label="Full Name *"><Inp autoFocus placeholder="Your full name" value={form.name||""} onChange={sf("name")} /></Fld>
+          <Fld label="Email">
+            <Inp type="email" placeholder="your@email.com" value={form.email||""} onChange={sf("email")} />
+          </Fld>
+          <Fld label="City / Location">
+            <Inp placeholder="e.g. Mumbai, Bangalore" value={form.city||""} onChange={sf("city")} />
+          </Fld>
+          <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-3 text-xs text-orange-700">
+            📱 Phone number cannot be changed. It&apos;s your unique identifier.
+          </div>
+          <button onClick={updateProfile} disabled={!form.name?.trim()} className="btn-primary mt-1">Save Profile</button>
         </Modal>
       )}
 
