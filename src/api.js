@@ -10,8 +10,16 @@ const req = async (method, path, body, requireAuth = false) => {
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Request failed');
+  // Safely parse JSON — handles empty bodies & rate-limit HTML responses
+  let data = {};
+  try {
+    const text = await res.text();
+    if (text) data = JSON.parse(text);
+  } catch {
+    if (!res.ok) throw new Error(`Server error (${res.status}). Please try again.`);
+    return {};
+  }
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
 };
 
