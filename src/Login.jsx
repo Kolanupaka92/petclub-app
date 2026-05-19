@@ -117,7 +117,7 @@ export default function Login({ onLogin }) {
   };
 
   const stepNum = { phone:1, otp:2, role:3, profile:4 }[step];
-  const stepLabel = { phone:"Sign In", otp:"Verify OTP", role:"Choose Role", profile:"Complete Profile" }[step];
+  const STEP_LABELS = { phone:"Welcome to PETclub", otp:"Check Your Phone", role:"Choose Your Role", profile:"Complete Profile" };
 
   return (
     <div className="min-h-screen min-h-[100dvh] flex bg-white">
@@ -145,59 +145,89 @@ export default function Login({ onLogin }) {
       </div>
 
       {/* RIGHT — Form panel */}
-      <div className="flex-1 flex flex-col justify-center items-center px-5 sm:px-10 py-12 min-h-screen overflow-y-auto">
+      <div className="flex-1 flex flex-col justify-center items-center px-5 sm:px-10 py-10 min-h-screen overflow-y-auto">
         <div className={`w-full max-w-md ${shake ? "animate-shake" : ""}`}>
+
           {/* Logo (mobile only) */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white text-base font-black">🐾</div>
-            <span className="font-extrabold text-gray-900 text-xl">PET<span className="text-orange-500">club</span></span>
+          <div className="flex items-center justify-between mb-8 lg:hidden">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white text-base font-black">🐾</div>
+              <span className="font-extrabold text-gray-900 text-xl">PET<span className="text-orange-500">club</span></span>
+            </div>
+            {step === "phone" && (
+              <span className="text-xs bg-orange-50 text-orange-600 font-semibold px-3 py-1.5 rounded-full border border-orange-200">
+                Free to join 🎉
+              </span>
+            )}
           </div>
 
           {/* Progress */}
-          <div className="flex items-center gap-2 mb-8">
+          <div className="flex items-center gap-2 mb-7">
             {[1,2,3,4].map(n => (
-              <div key={n} className={`h-1 flex-1 rounded-full transition-all duration-500 ${n <= stepNum ? "bg-orange-500" : "bg-gray-200"}`} />
+              <div key={n} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${n <= stepNum ? "bg-orange-500" : "bg-gray-200"}`} />
             ))}
           </div>
 
-          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">{stepLabel}</h1>
-          <p className="text-gray-500 text-sm mb-8">
-            {step === "phone" && "Enter your number to sign in or create an account."}
-            {step === "otp" && `Code sent to ${country?.flag} +${cc} ${phone.slice(0,3)}·····`}
-            {step === "role" && "How will you be using PETclub? Choose your role."}
-            {step === "profile" && "Just a few details to personalize your experience."}
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">{STEP_LABELS[step]}</h1>
+          <p className="text-gray-500 text-sm mb-7">
+            {step === "phone" && "Sign in to your account or create a new one — same screen!"}
+            {step === "otp" && `OTP sent to ${country?.flag} +${cc} ${phone.slice(0,3)}·····`}
+            {step === "role" && "How will you be using PETclub? Pick your role below."}
+            {step === "profile" && "Almost there — tell us a bit about yourself."}
           </p>
 
           {/* ── PHONE ── */}
           {step === "phone" && (
             <div className="space-y-4">
-              <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl">
-                {COUNTRIES.map(c => (
-                  <button key={c.code} type="button"
-                    onClick={() => { setCC(c.code); setPhone(""); setErr(""); }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${cc === c.code ? "bg-white shadow-sm text-gray-900" : "text-gray-400 hover:text-gray-600"}`}>
-                    <span className="text-base">{c.flag}</span> +{c.code} {c.label}
-                  </button>
-                ))}
+              {/* Sign In / Sign Up tabs */}
+              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-2">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-base">📱</div>
+                  <div>
+                    <div className="text-sm font-bold text-gray-800">Phone number login</div>
+                    <div className="text-xs text-gray-500">New here? Your account is created automatically</div>
+                  </div>
+                </div>
+                {/* Country selector */}
+                <div className="flex gap-2 p-1 bg-white rounded-xl border border-gray-200 mb-3">
+                  {COUNTRIES.map(c => (
+                    <button key={c.code} type="button"
+                      onClick={() => { setCC(c.code); setPhone(""); setErr(""); }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${cc === c.code ? "bg-orange-500 text-white shadow-sm" : "text-gray-400 hover:text-gray-600"}`}>
+                      <span>{c.flag}</span> +{c.code} {c.label}
+                    </button>
+                  ))}
+                </div>
+                {/* Phone input */}
+                <div className="flex border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-orange-400 transition-colors bg-white">
+                  <span className="flex items-center px-3 text-gray-500 font-semibold text-sm bg-gray-50 border-r border-gray-200 whitespace-nowrap">
+                    {country?.flag} +{cc}
+                  </span>
+                  <input type="tel" inputMode="numeric" autoComplete="tel"
+                    placeholder={country?.placeholder} maxLength={15}
+                    value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g,"").slice(0,15)); setErr(""); }}
+                    onKeyDown={e => e.key === "Enter" && sendOtp()}
+                    className="flex-1 px-4 py-3.5 text-sm focus:outline-none bg-white font-medium placeholder-gray-400" />
+                </div>
               </div>
-              <div className="flex border-2 border-gray-200 rounded-2xl overflow-hidden focus-within:border-orange-400 transition-colors">
-                <span className="flex items-center px-4 text-gray-500 font-semibold text-sm bg-gray-50 border-r-2 border-gray-200 whitespace-nowrap">
-                  {country?.flag} +{cc}
-                </span>
-                <input type="tel" inputMode="numeric" autoComplete="tel"
-                  placeholder={country?.placeholder} maxLength={15}
-                  value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g,"").slice(0,15)); setErr(""); }}
-                  onKeyDown={e => e.key === "Enter" && sendOtp()}
-                  className="flex-1 px-4 py-4 text-sm focus:outline-none bg-white font-medium placeholder-gray-400" />
-              </div>
+
               {err && <p className="text-red-500 text-xs font-semibold flex items-center gap-1.5"><span>⚠</span>{err}</p>}
+
               <button onClick={sendOtp} disabled={loading}
                 className="btn-primary flex items-center justify-center gap-2 text-base">
-                {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"/>Sending…</> : "Send OTP →"}
+                {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"/>Sending OTP…</> : <>Get OTP →</>}
               </button>
-              <p className="text-center text-xs text-gray-400 mt-2">
-                New user? We&apos;ll create your account automatically.
-              </p>
+
+              {/* New user callout */}
+              <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                <span className="text-xl shrink-0">🆕</span>
+                <div>
+                  <div className="text-sm font-bold text-blue-800">First time here?</div>
+                  <div className="text-xs text-blue-700 mt-0.5 leading-relaxed">
+                    Enter your phone number and verify the OTP — we'll walk you through creating your account in 2 quick steps. No password needed!
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
