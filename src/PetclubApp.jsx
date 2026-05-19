@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { api } from "./api.js";
 import { loadPets, savePets } from "./utils/storage.js";
 import { TC, fmtDate } from "./data/mockData.js";
+
+// Lazy-load heavy map component (Mapbox GL is ~500 KB)
+const TrackingMap = lazy(() => import("./components/TrackingMap.jsx"));
 
 /* ── helpers ── */
 const today = () => new Date().toISOString().split("T")[0];
@@ -109,6 +112,7 @@ export default function PetclubApp({ session, onLogout }) {
   const [ratingReview, setRatingReview] = useState("");
   const [ratingLoading, setRatingLoading] = useState(false);
   const [ratedBookings, setRatedBookings] = useState(new Set());
+  const [trackingBooking, setTrackingBooking] = useState(null); // booking object → open TrackingMap
 
   const sf = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const bsf = k => e => setBookingForm(f => ({ ...f, [k]: typeof e === "string" ? e : e.target.value }));
@@ -309,19 +313,21 @@ export default function PetclubApp({ session, onLogout }) {
 
   /* ── HEADER ── */
   const Header = () => (
-    <header className="sticky top-0 z-30 glass-white border-b border-gray-100 px-4 py-3">
-      <div className="flex items-center justify-between gap-3">
+    <header className="sticky top-0 z-30 glass-white border-b border-gray-100 px-4 py-3 relative">
+      {/* Top accent line */}
+      <div className="absolute top-0 inset-x-0 h-[3px] bg-brand-gradient" />
+      <div className="flex items-center justify-between gap-3 pt-0.5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-brand-gradient flex items-center justify-center text-white text-lg font-black shadow-orange shrink-0">🐾</div>
           <div>
-            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">PETclub</p>
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">PETclub</p>
             <p className="text-sm font-extrabold text-gray-900 leading-tight">{firstName}</p>
           </div>
         </div>
         <button onClick={() => setModal("reminders")}
-          className="relative w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center text-lg hover:bg-orange-50 transition-colors">
+          className="relative w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center text-lg hover:bg-orange-50 active:scale-95 transition-all">
           🔔
-          {allUpcoming.length > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />}
+          {allUpcoming.length > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white flex items-center justify-center text-[8px] font-black text-white">{allUpcoming.length > 9 ? "9+" : allUpcoming.length}</span>}
         </button>
       </div>
     </header>
@@ -330,18 +336,19 @@ export default function PetclubApp({ session, onLogout }) {
   /* ── BOTTOM NAV ── */
   const BottomNav = () => (
     <nav className="fixed bottom-0 inset-x-0 z-40 max-w-lg mx-auto nav-safe">
-      <div className="bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-nav mx-3 mb-3 rounded-2xl flex">
+      <div className="bg-white/96 backdrop-blur-xl border-t border-gray-100 mx-3 mb-3 rounded-2xl flex shadow-[0_-4px_30px_rgba(0,0,0,0.08)]">
         {NAV.map(n => {
           const active = view === n.id || (view === "petDetail" && n.id === "pets");
           return (
             <button key={n.id} onClick={() => goTo(n.id)}
-              className={`flex-1 flex flex-col items-center py-3 text-[11px] font-bold transition-all relative ${active ? "text-orange-500" : "text-gray-400"}`}>
-              {active && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-orange-500 rounded-full" />}
-              <span className="relative">
-                <span className={`text-xl transition-transform ${active ? "scale-110" : ""}`}>{n.icon}</span>
-                {n.badge ? <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{n.badge}</span> : null}
-              </span>
-              {n.label}
+              className="flex-1 flex flex-col items-center py-2 transition-all">
+              <div className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all ${active ? "bg-orange-50" : ""}`}>
+                <span className="relative">
+                  <span className={`text-xl block transition-all ${active ? "scale-110" : "opacity-50"}`}>{n.icon}</span>
+                  {n.badge ? <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">{n.badge}</span> : null}
+                </span>
+                <span className={`text-[11px] font-bold transition-colors ${active ? "text-orange-500" : "text-gray-400"}`}>{n.label}</span>
+              </div>
             </button>
           );
         })}
@@ -370,11 +377,14 @@ export default function PetclubApp({ session, onLogout }) {
     return (
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-extrabold text-gray-900">My Bookings</h2>
+          <div>
+            <h2 className="text-xl font-extrabold text-gray-900">My Bookings</h2>
+            {myBookings.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{myBookings.length} total booking{myBookings.length!==1?"s":""}</p>}
+          </div>
           <div className="flex gap-2">
-            <button onClick={refreshBookings} className="text-xs font-semibold text-gray-400 border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50">🔄</button>
+            <button onClick={refreshBookings} className="text-xs font-semibold text-gray-400 border border-gray-200 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all">🔄</button>
             <button onClick={() => { setBookingStep(1); setModal("bookService"); }}
-              className="text-xs font-semibold bg-orange-500 text-white px-3 py-1.5 rounded-full hover:bg-orange-600">+ Book</button>
+              className="text-xs font-bold bg-orange-500 text-white px-4 py-2 rounded-xl hover:bg-orange-600 active:scale-95 transition-all shadow-orange">+ Book</button>
           </div>
         </div>
 
@@ -393,8 +403,10 @@ export default function PetclubApp({ session, onLogout }) {
             {myBookings.map(b => {
               const s = statusMap[b.assignment_status] || statusMap.searching;
               const svcIcon = ({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥" })[b.service_type] || "📋";
+              const svcAccent = ({ Groomer:"border-l-violet-500", Trainer:"border-l-blue-500", Vet:"border-l-emerald-500" })[b.service_type] || "border-l-orange-400";
+              const svcBg = ({ Groomer:"bg-violet-50", Trainer:"bg-blue-50", Vet:"bg-emerald-50" })[b.service_type] || "bg-orange-50";
               return (
-                <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div key={b.id} className={`bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden border-l-4 ${svcAccent}`}>
                   {/* Status bar */}
                   <div className={`px-4 py-2 flex items-center justify-between border-b ${s.cls}`}>
                     <div className="flex items-center gap-2 text-xs font-bold">
@@ -403,31 +415,39 @@ export default function PetclubApp({ session, onLogout }) {
                         <span className="inline-block w-1.5 h-1.5 bg-current rounded-full animate-bounce ml-1"/>
                       )}
                     </div>
+                    {b.amount && <div className="font-extrabold text-sm text-gray-700">₹{b.amount}</div>}
                   </div>
 
                   <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{svcIcon}</span>
-                          <span className="font-bold text-gray-800">{b.service_name || b.service_type}</span>
-                        </div>
+                    <div className="flex items-start gap-3 mb-2.5">
+                      <div className={`w-10 h-10 ${svcBg} rounded-xl flex items-center justify-center text-xl shrink-0`}>{svcIcon}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-gray-800 leading-tight">{b.service_name || b.service_type}</div>
                         {b.pets && <div className="text-xs text-gray-400 mt-0.5">🐾 {b.pets.name}</div>}
                       </div>
-                      {b.amount && <div className="font-extrabold text-gray-700">₹{b.amount}</div>}
                     </div>
                     {b.scheduled_at && (
-                      <div className="text-xs text-gray-500 mb-1">📅 {fmtDate(b.scheduled_at)} at {new Date(b.scheduled_at).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</div>
+                      <div className="text-xs text-gray-500 mb-1 flex items-center gap-1.5"><span>📅</span><span>{fmtDate(b.scheduled_at)} at {new Date(b.scheduled_at).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</span></div>
                     )}
-                    {b.city && <div className="text-xs text-gray-500">📍 {[b.address, b.city].filter(Boolean).join(", ")}</div>}
-                    {/* Pro name when confirmed */}
+                    {b.city && <div className="text-xs text-gray-500 flex items-center gap-1.5"><span>📍</span><span>{[b.address, b.city].filter(Boolean).join(", ")}</span></div>}
+                    {/* Pro name + Track button when confirmed */}
                     {b.assignment_status === "confirmed" && b.professional_profiles?.users?.name && (
-                      <div className="flex items-center gap-2 mt-2 bg-emerald-50 rounded-xl px-3 py-2">
-                        <span className="text-base">👤</span>
-                        <div>
-                          <div className="text-xs text-emerald-700 font-bold">{b.professional_profiles.users.name}</div>
-                          <div className="text-[10px] text-emerald-500">{b.service_type} · Confirmed</div>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center gap-2 bg-emerald-50 rounded-xl px-3 py-2">
+                          <span className="text-base">👤</span>
+                          <div className="flex-1">
+                            <div className="text-xs text-emerald-700 font-bold">{b.professional_profiles.users.name}</div>
+                            <div className="text-[10px] text-emerald-500">{b.service_type} · Confirmed</div>
+                          </div>
                         </div>
+                        {/* 🗺️ Live track button */}
+                        <button
+                          onClick={() => setTrackingBooking(b)}
+                          className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 active:scale-[0.97] text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-md">
+                          <span className="text-sm">🗺️</span>
+                          Track Live
+                          <span className="inline-block w-1.5 h-1.5 bg-green-400 rounded-full animate-bounce"/>
+                        </button>
                       </div>
                     )}
                     {b.assignment_status === "no_pros_available" && (
@@ -458,105 +478,152 @@ export default function PetclubApp({ session, onLogout }) {
 
   /* ── HOME DASHBOARD ── */
   const Home = () => (
-    <div className="p-4 space-y-5 animate-fade-in">
-      {/* Hero greeting */}
-      <div className="bg-brand-gradient rounded-3xl p-5 text-white relative overflow-hidden">
-        <div className="absolute -right-6 -top-6 text-8xl opacity-20 select-none">🐕</div>
-        <div className="absolute -left-4 -bottom-4 text-7xl opacity-15 select-none">🐈</div>
+    <div className="animate-fade-in">
+      {/* Hero — full-bleed gradient */}
+      <div className="relative bg-brand-gradient overflow-hidden px-5 pt-6 pb-12">
+        {/* Decorative circles */}
+        <div className="absolute -right-10 -top-10 w-52 h-52 bg-white/10 rounded-full pointer-events-none" />
+        <div className="absolute right-6 top-20 w-24 h-24 bg-white/10 rounded-full pointer-events-none" />
+        <div className="absolute -left-8 bottom-0 w-40 h-40 bg-black/5 rounded-full pointer-events-none" />
         <div className="relative z-10">
-          <p className="text-orange-100 text-xs font-semibold uppercase tracking-wide mb-1">{getGreeting()}</p>
-          <h1 className="text-2xl font-extrabold mb-1">{firstName}! 👋</h1>
-          <p className="text-orange-100 text-sm">{pets.length > 0 ? `${pets.length} pet${pets.length!==1?"s":""} · ${totalRecs} care record${totalRecs!==1?"s":""}` : "Add your first pet to get started"}</p>
-        </div>
-      </div>
-
-      {/* Quick stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <button onClick={() => goTo("pets")}
-          className="bg-white rounded-2xl border border-gray-100 p-4 text-left shadow-card hover:shadow-card-hover hover:border-orange-100 transition-all active:scale-[0.98]">
-          <div className="text-2xl mb-2">🐾</div>
-          <div className="text-2xl font-extrabold text-orange-500">{pets.length}</div>
-          <div className="text-xs text-gray-400 font-medium">My Pets</div>
-        </button>
-        <button onClick={() => pets[0] && openPet(pets[0].id)}
-          className="bg-white rounded-2xl border border-gray-100 p-4 text-left shadow-card hover:shadow-card-hover hover:border-blue-100 transition-all active:scale-[0.98]">
-          <div className="text-2xl mb-2">📋</div>
-          <div className="text-2xl font-extrabold text-blue-600">{totalRecs}</div>
-          <div className="text-xs text-gray-400 font-medium">Care Records</div>
-        </button>
-      </div>
-
-      {/* Services */}
-      <div>
-        <h2 className="font-extrabold text-gray-900 mb-3">Quick Book</h2>
-        <div className="grid grid-cols-4 gap-2">
-          {SERVICES.map(s => (
-            <button key={s.id} onClick={() => setModal("bookService")}
-              className={`${s.bg} rounded-2xl p-3 text-center transition-all active:scale-[0.95] hover:opacity-90`}>
-              <div className="text-2xl mb-1">{s.icon}</div>
-              <div className={`text-xs font-bold ${s.tc}`}>{s.label}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* My Pets carousel */}
-      {pets.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-extrabold text-gray-900">My Pets</h2>
-            <button onClick={() => goTo("pets")} className="text-xs text-orange-500 font-bold">See all →</button>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-            {loadingPets && [1,2,3].map(i => (
-              <div key={i} className="shrink-0 w-24 h-24 bg-gray-200 rounded-2xl animate-pulse"/>
-            ))}
-            {pets.map(p => (
-              <button key={p.id} onClick={() => openPet(p.id)}
-                className="shrink-0 bg-white rounded-2xl border border-gray-100 shadow-card hover:shadow-card-hover hover:border-orange-100 p-3 text-center w-24 transition-all active:scale-[0.95]">
-                <div className="text-4xl mb-1.5">{speciesEmoji(p.species)}</div>
-                <div className="text-xs font-bold text-gray-800 truncate">{p.name}</div>
-                <div className="text-[10px] text-gray-400 mt-0.5">{p.breed.length>8?p.breed.slice(0,8)+"…":p.breed}</div>
+          <p className="text-orange-100/80 text-[11px] font-semibold uppercase tracking-widest mb-1">{getGreeting()}</p>
+          <h1 className="text-3xl font-black text-white leading-tight mb-5">{firstName}! 👋</h1>
+          {/* Stats row */}
+          <div className="flex gap-2.5">
+            {[
+              { v: pets.length,        l: "Pets",     onClick: () => goTo("pets") },
+              { v: totalRecs,          l: "Records",  onClick: () => pets[0] ? openPet(pets[0].id) : null },
+              { v: myBookings.length,  l: "Bookings", onClick: () => goTo("bookings") },
+            ].map(s => (
+              <button key={s.l} onClick={s.onClick}
+                className="flex-1 bg-white/20 active:bg-white/30 backdrop-blur-sm rounded-2xl py-3 px-1 text-center border border-white/15 transition-all">
+                <div className="text-2xl font-black text-white leading-none">{s.v}</div>
+                <div className="text-[10px] text-orange-100/90 font-semibold mt-1">{s.l}</div>
               </button>
             ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 -mt-5 space-y-4">
+        {/* Book a Service — raised card overlapping hero */}
+        <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.10)] border border-gray-100 p-4">
+          <h2 className="font-extrabold text-gray-900 mb-3 text-[13px] uppercase tracking-wide">Book a Service</h2>
+          <div className="grid grid-cols-2 gap-2.5">
+            {SERVICES.map(s => {
+              const svcRole = s.id === "grooming" ? "Groomer" : s.id === "training" ? "Trainer" : s.id === "vet" ? "Vet" : null;
+              return (
+                <button key={s.id}
+                  onClick={() => {
+                    if (svcRole) {
+                      setBookingForm(f => ({ ...f, service_type: svcRole, service_name: "" }));
+                      setBookingStep(2);
+                    } else {
+                      setBookingStep(1);
+                    }
+                    setModal("bookService");
+                  }}
+                  className={`${s.bg} rounded-2xl p-4 text-left transition-all active:scale-[0.96] hover:opacity-90 relative overflow-hidden group`}>
+                  <div className="text-2xl mb-2 leading-none">{s.icon}</div>
+                  <div className={`font-extrabold text-sm ${s.tc}`}>{s.label}</div>
+                  <div className="text-[11px] text-gray-500 mt-0.5 leading-snug">{s.desc}</div>
+                  <span className={`absolute bottom-3 right-3.5 text-base ${s.tc} opacity-30 group-hover:opacity-70 transition-opacity`}>→</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent bookings */}
+        {myBookings.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2.5">
+              <h2 className="font-extrabold text-gray-900">Recent Bookings</h2>
+              <button onClick={() => goTo("bookings")} className="text-xs text-orange-500 font-bold">See all →</button>
+            </div>
+            <div className="space-y-2">
+              {myBookings.slice(0, 2).map(b => {
+                const svcIcon = ({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥" })[b.service_type] || "📋";
+                const svcColor = ({ Groomer:"bg-violet-100", Trainer:"bg-blue-100", Vet:"bg-emerald-100" })[b.service_type] || "bg-orange-100";
+                const st = b.assignment_status;
+                const stCls = st==="confirmed" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : st==="searching" ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200";
+                const stLabel = st==="confirmed" ? "Confirmed" : st==="searching" ? "Finding Pro…" : st==="offered" ? "Pro Notified" : "Pending";
+                return (
+                  <button key={b.id} onClick={() => goTo("bookings")}
+                    className="w-full bg-white rounded-2xl border border-gray-100 shadow-card p-3.5 flex items-center gap-3 text-left hover:border-orange-100 transition-all active:scale-[0.98]">
+                    <div className={`w-11 h-11 ${svcColor} rounded-xl flex items-center justify-center text-xl shrink-0`}>{svcIcon}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-gray-800 text-sm truncate">{b.service_name || b.service_type}</div>
+                      {b.scheduled_at && <div className="text-xs text-gray-400 mt-0.5">{fmtDate(b.scheduled_at)}</div>}
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap shrink-0 ${stCls}`}>{stLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* My Pets carousel */}
+        {pets.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-extrabold text-gray-900">My Pets</h2>
+              <button onClick={() => goTo("pets")} className="text-xs text-orange-500 font-bold">See all →</button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+              {loadingPets && [1,2,3].map(i => (
+                <div key={i} className="shrink-0 w-24 h-24 rounded-2xl skeleton-shimmer" />
+              ))}
+              {pets.map(p => (
+                <button key={p.id} onClick={() => openPet(p.id)}
+                  className="shrink-0 bg-white rounded-2xl border border-gray-100 shadow-card hover:shadow-card-hover hover:border-orange-100 p-3 text-center w-24 transition-all active:scale-[0.95]">
+                  <div className="text-4xl mb-1.5">{speciesEmoji(p.species)}</div>
+                  <div className="text-xs font-bold text-gray-800 truncate">{p.name}</div>
+                  <div className="text-[10px] text-gray-400 mt-0.5 truncate">{p.breed.length > 8 ? p.breed.slice(0,8)+"…" : p.breed}</div>
+                </button>
+              ))}
+              <button onClick={() => { setForm({species:"dog"}); setModal("addPet"); }}
+                className="shrink-0 w-24 border-2 border-dashed border-orange-200 text-orange-400 rounded-2xl p-3 text-center hover:bg-orange-50 transition-colors flex flex-col items-center justify-center">
+                <span className="text-2xl mb-1">+</span>
+                <span className="text-[10px] font-bold">Add Pet</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* No pets CTA */}
+        {pets.length === 0 && !loadingPets && (
+          <div className="bg-white rounded-3xl border-2 border-dashed border-orange-200 p-8 text-center">
+            <div className="text-5xl mb-3">🐾</div>
+            <h3 className="font-extrabold text-gray-900 mb-1">Add your first pet</h3>
+            <p className="text-gray-400 text-sm mb-5">Track grooming, vet visits & more.</p>
             <button onClick={() => { setForm({species:"dog"}); setModal("addPet"); }}
-              className="shrink-0 w-24 border-2 border-dashed border-orange-200 text-orange-400 rounded-2xl p-3 text-center hover:bg-orange-50 transition-colors flex flex-col items-center justify-center">
-              <span className="text-2xl mb-1">+</span>
-              <span className="text-[10px] font-bold">Add Pet</span>
+              className="btn-primary px-8 py-2.5 rounded-2xl text-sm w-auto inline-flex">
+              + Add Pet
             </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* No pets CTA */}
-      {pets.length === 0 && !loadingPets && (
-        <div className="bg-white rounded-3xl border-2 border-dashed border-orange-200 p-8 text-center">
-          <div className="text-5xl mb-3">🐾</div>
-          <h3 className="font-extrabold text-gray-900 mb-1">Add your first pet</h3>
-          <p className="text-gray-400 text-sm mb-5">Track grooming, vet visits & more.</p>
-          <button onClick={() => { setForm({species:"dog"}); setModal("addPet"); }}
-            className="btn-primary px-8 py-2.5 rounded-2xl text-sm w-auto inline-flex">
-            + Add Pet
-          </button>
-        </div>
-      )}
-
-      {/* Upcoming reminders */}
-      {allUpcoming.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">💉</span>
-            <h2 className="font-extrabold text-gray-900">Upcoming ({allUpcoming.length})</h2>
+        {/* Upcoming reminders */}
+        {allUpcoming.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">💉</span>
+              <h2 className="font-extrabold text-gray-900">Upcoming ({allUpcoming.length})</h2>
+            </div>
+            {allUpcoming.slice(0, 3).map((v, i) => (
+              <button key={i} onClick={() => openPet(v.petId)}
+                className="w-full flex items-center justify-between py-2.5 border-b border-amber-100 last:border-0 text-sm text-left">
+                <span className="font-semibold text-gray-800">{v.petName} · {v.detail}</span>
+                <Bdg text={daysUntil(v.nextDue)===0 ? "Today" : `${daysUntil(v.nextDue)}d`} cls="bg-amber-200 text-amber-800" />
+              </button>
+            ))}
           </div>
-          {allUpcoming.slice(0,3).map((v, i) => (
-            <button key={i} onClick={() => openPet(v.petId)}
-              className="w-full flex items-center justify-between py-2 border-b border-amber-100 last:border-0 text-sm text-left">
-              <span className="font-semibold text-gray-800">{v.petName} · {v.detail}</span>
-              <Bdg text={daysUntil(v.nextDue)===0?"Today":`${daysUntil(v.nextDue)}d`} cls="bg-amber-200 text-amber-800" />
-            </button>
-          ))}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
@@ -595,14 +662,21 @@ export default function PetclubApp({ session, onLogout }) {
             return (
               <button key={p.id} onClick={() => openPet(p.id)}
                 className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-card hover:shadow-card-hover hover:border-orange-100 transition-all active:scale-[0.98] overflow-hidden">
-                <div className={`flex items-center gap-4 p-4 ${p.species==="dog"?"bg-gradient-to-r from-orange-50 to-amber-50":"bg-gradient-to-r from-purple-50 to-pink-50"}`}>
-                  <div className="text-5xl">{speciesEmoji(p.species)}</div>
-                  <div className="flex-1 min-w-0">
-                    <h2 className="font-extrabold text-gray-900 text-lg">{p.name}</h2>
-                    <p className="text-sm text-gray-500">{p.breed}{p.gender?` · ${p.gender}`:""}{p.age?` · ${p.age}`:""}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{cnt} care record{cnt!==1?"s":""}</p>
+                <div className="flex items-center gap-4 p-4">
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shrink-0 ${p.species==="dog" ? "bg-gradient-to-br from-orange-50 to-amber-100" : "bg-gradient-to-br from-purple-50 to-pink-100"}`}>
+                    {speciesEmoji(p.species)}
                   </div>
-                  <span className="text-orange-400 font-bold text-lg">→</span>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-extrabold text-gray-900 text-base">{p.name}</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">{p.breed}{p.gender ? ` · ${p.gender}` : ""}{p.age ? ` · ${p.age}` : ""}</p>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      {cnt > 0
+                        ? <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{cnt} record{cnt!==1?"s":""}</span>
+                        : <span className="text-[10px] font-semibold text-gray-300 italic">No records yet</span>}
+                      {p.weight && <span className="text-[10px] font-bold bg-blue-50 text-blue-400 px-2 py-0.5 rounded-full">⚖️ {p.weight}</span>}
+                    </div>
+                  </div>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${p.species==="dog" ? "bg-orange-50 text-orange-400" : "bg-purple-50 text-purple-400"}`}>→</div>
                 </div>
               </button>
             );
@@ -651,11 +725,12 @@ export default function PetclubApp({ session, onLogout }) {
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 mb-3">
           {Object.entries(TAB_META).map(([t, m]) => {
             const cnt = pet.records[t]?.length || 0;
+            const tabColors = { grooming:"bg-blue-500 shadow-blue-200", training:"bg-purple-500 shadow-purple-200", food:"bg-green-500 shadow-green-200", vet:"bg-rose-500 shadow-rose-200" };
             return (
               <button key={t} onClick={() => setActiveTab(t)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${activeTab===t ? "bg-orange-500 text-white shadow-orange" : "bg-white border border-gray-200 text-gray-600 hover:border-orange-200"}`}>
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 shadow-sm ${activeTab===t ? `${tabColors[t]} text-white` : "bg-white border border-gray-200 text-gray-600 hover:border-orange-200"}`}>
                 {m.icon} {m.label}
-                {cnt > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeTab===t?"bg-white/25":"bg-gray-100 text-gray-500"}`}>{cnt}</span>}
+                {cnt > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${activeTab===t ? "bg-white/25 text-white" : "bg-gray-100 text-gray-500"}`}>{cnt}</span>}
               </button>
             );
           })}
@@ -695,22 +770,26 @@ export default function PetclubApp({ session, onLogout }) {
       <h1 className="text-xl font-extrabold text-gray-900 mb-5">My Profile</h1>
 
       {/* Hero card */}
-      <div className="bg-brand-gradient rounded-3xl p-5 mb-4">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-inner border border-white/20">
-            {initials}
+      <div className="bg-brand-gradient rounded-3xl p-5 mb-4 relative overflow-hidden">
+        <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full pointer-events-none"/>
+        <div className="absolute -left-4 bottom-0 w-28 h-28 bg-black/5 rounded-full pointer-events-none"/>
+        <div className="relative z-10">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-16 h-16 bg-white/25 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-inner border border-white/25 backdrop-blur-sm">
+              {initials}
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-black text-white">{userInfo.name || "Pet Parent"}</h2>
+              <p className="text-orange-100/80 text-xs mt-0.5">{userInfo.phone || session?.phone || "PETclub Member"}</p>
+              <span className="inline-block bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full mt-1.5 border border-white/20">🐾 Pet Owner</span>
+            </div>
           </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-white">{userInfo.name || "Pet Parent"}</h2>
-            <p className="text-orange-100 text-xs mt-0.5">PETclub Member</p>
-            <span className="inline-block bg-white/20 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full mt-1">🐾 Pet Owner</span>
-          </div>
+          <button
+            onClick={() => { setForm({ name: userInfo.name || "", email: userInfo.email || "", address: userInfo.address || "", area: userInfo.area || "", city: userInfo.city || "", pincode: userInfo.pincode || "", country: userInfo.country || "India" }); setModal("editProfile"); }}
+            className="w-full bg-white/20 hover:bg-white/30 active:scale-[0.98] text-white font-bold py-2.5 rounded-2xl text-sm transition-all border border-white/20">
+            ✏️ Edit Profile
+          </button>
         </div>
-        <button
-          onClick={() => { setForm({ name: userInfo.name || "", email: userInfo.email || "", address: userInfo.address || "", area: userInfo.area || "", city: userInfo.city || "", pincode: userInfo.pincode || "", country: userInfo.country || "India" }); setModal("editProfile"); }}
-          className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-2.5 rounded-2xl text-sm transition-all border border-white/20">
-          ✏️ Edit Profile
-        </button>
       </div>
 
       {/* Personal Info */}
@@ -754,21 +833,21 @@ export default function PetclubApp({ session, onLogout }) {
       </div>
 
       {/* Quick Stats */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-4">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Activity</p>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-orange-50 rounded-xl p-3 text-center">
-            <div className="text-xl font-extrabold text-orange-500">{pets.length}</div>
-            <div className="text-[10px] text-gray-400 mt-0.5">Pets</div>
-          </div>
-          <div className="bg-blue-50 rounded-xl p-3 text-center">
-            <div className="text-xl font-extrabold text-blue-600">{totalRecs}</div>
-            <div className="text-[10px] text-gray-400 mt-0.5">Records</div>
-          </div>
-          <div className="bg-amber-50 rounded-xl p-3 text-center">
-            <div className="text-xl font-extrabold text-amber-600">{allUpcoming.length}</div>
-            <div className="text-[10px] text-gray-400 mt-0.5">Due Soon</div>
-          </div>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-4 mb-4">
+        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Activity Summary</p>
+        <div className="grid grid-cols-3 gap-2.5">
+          {[
+            { v: pets.length,        l: "Pets",     icon: "🐾", bg: "bg-orange-50", tc: "text-orange-500", onClick: () => goTo("pets") },
+            { v: totalRecs,          l: "Records",  icon: "📋", bg: "bg-blue-50",   tc: "text-blue-600",   onClick: () => pets[0] ? openPet(pets[0].id) : null },
+            { v: myBookings.length,  l: "Bookings", icon: "📅", bg: "bg-violet-50", tc: "text-violet-600", onClick: () => goTo("bookings") },
+          ].map(s => (
+            <button key={s.l} onClick={s.onClick}
+              className={`${s.bg} rounded-2xl p-3 text-center active:scale-95 transition-all`}>
+              <div className="text-base mb-0.5">{s.icon}</div>
+              <div className={`text-xl font-black ${s.tc}`}>{s.v}</div>
+              <div className="text-[10px] text-gray-400 font-semibold mt-0.5">{s.l}</div>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -795,9 +874,10 @@ export default function PetclubApp({ session, onLogout }) {
         </div>
       )}
 
-      <button onClick={() => setModal("logout")} className="w-full border border-red-200 text-red-500 font-bold py-3 rounded-2xl text-sm hover:bg-red-50 transition-colors">
+      <button onClick={() => setModal("logout")} className="w-full border border-red-200 text-red-500 font-bold py-3.5 rounded-2xl text-sm hover:bg-red-50 active:scale-[0.98] transition-all">
         🚪 Sign Out
       </button>
+      <p className="text-center text-[10px] text-gray-300 font-semibold mt-3 pb-4">PETclub v1.0 · Made with 🐾 for pets</p>
     </div>
     );
   };
@@ -814,6 +894,21 @@ export default function PetclubApp({ session, onLogout }) {
       </main>
       <BottomNav />
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
+
+      {/* 🗺️ LIVE TRACKING MAP — full-screen overlay for confirmed bookings */}
+      {trackingBooking && (
+        <Suspense fallback={
+          <div style={{ position:"fixed", inset:0, zIndex:1000, background:"#1a1825",
+            display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
+            <div style={{ width:40, height:40, borderRadius:"50%", border:"3px solid #7c3aed",
+              borderTopColor:"transparent", animation:"spin 0.8s linear infinite" }}/>
+            <div style={{ color:"#fff", fontSize:14, fontWeight:600 }}>Loading map…</div>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          </div>
+        }>
+          <TrackingMap booking={trackingBooking} onClose={() => setTrackingBooking(null)} />
+        </Suspense>
+      )}
 
       {/* ADD PET */}
       {modal === "addPet" && (

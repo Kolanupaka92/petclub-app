@@ -622,7 +622,32 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [idForm,    setIdForm]    = useState({ idType: "", idNumber: "", idPhoto: null });
   const [saving,    setSaving]    = useState(false);
   const [toast,     setToast]     = useState("");
-  const [responding, setResponding] = useState({});
+  const [responding,   setResponding]   = useState({});
+  const [sharingLocId, setSharingLocId] = useState(null);  // bookingId being shared
+  const gpsIntervalRef = useRef(null);
+
+  // Start GPS sharing for a booking
+  const startLocationSharing = (bookingId) => {
+    if (!navigator.geolocation) return alert("Geolocation not supported on this device.");
+    setSharingLocId(bookingId);
+    const send = () => {
+      navigator.geolocation.getCurrentPosition(
+        p => api.updateLocation(bookingId, p.coords.latitude, p.coords.longitude).catch(() => {}),
+        () => {}
+      );
+    };
+    send(); // immediate first send
+    gpsIntervalRef.current = setInterval(send, 5000); // every 5s
+  };
+
+  const stopLocationSharing = () => {
+    clearInterval(gpsIntervalRef.current);
+    gpsIntervalRef.current = null;
+    setSharingLocId(null);
+  };
+
+  // Clean up on unmount
+  useEffect(() => () => clearInterval(gpsIntervalRef.current), []);
 
   const subRole  = session.subRole || "Groomer";
   const cfg      = ROLE_CONFIG[subRole] || ROLE_CONFIG.Groomer;
@@ -952,18 +977,39 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
             </div>
             {bookings.length === 0 ? <EmptyState icon="📅" title="No bookings yet" desc="They'll appear here after your profile is verified."/> : (
               <div className="space-y-3">
-                {bookings.map(b => (
-                  <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="font-bold text-sm text-gray-800">{b.service_name || b.service_type || "Service"}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">{b.scheduled_at ? `${fmtDate(b.scheduled_at)} at ${fmtTime(b.scheduled_at)}` : "Date TBD"}</div>
+                {bookings.map(b => {
+                  const isActive = ["confirmed","on_the_way","in_progress"].includes(b.assignment_status);
+                  const isSharing = sharingLocId === b.id;
+                  return (
+                    <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <div className="font-bold text-sm text-gray-800">{b.service_name || b.service_type || "Service"}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{b.scheduled_at ? `${fmtDate(b.scheduled_at)} at ${fmtTime(b.scheduled_at)}` : "Date TBD"}</div>
+                        </div>
+                        <Bdg text={b.status} cls={sColor(b.status)}/>
                       </div>
-                      <Bdg text={b.status} cls={sColor(b.status)}/>
+                      {b.amount && <div className="text-sm font-bold text-gray-700 mb-2">{b.amount}</div>}
+                      {/* 📍 Share Location — only on active/confirmed bookings */}
+                      {isActive && (
+                        isSharing ? (
+                          <button
+                            onClick={stopLocationSharing}
+                            className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-600 font-bold text-xs py-2.5 rounded-xl transition-all hover:bg-red-100 active:scale-[0.97]">
+                            <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
+                            Stop Sharing Location
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => startLocationSharing(b.id)}
+                            className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.97] text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm">
+                            📍 Share My Location with Customer
+                          </button>
+                        )
+                      )}
                     </div>
-                    {b.amount && <div className="text-sm font-bold text-gray-700">{b.amount}</div>}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1274,18 +1320,70 @@ const AdminDashboard = ({ session, onLogout }) => {
                 <div className="flex items-center gap-2"><PawLogo sz={24}/><span className="font-bold text-orange-400">PETclub</span></div>
                 <button onClick={onLogout} className="text-gray-400 text-xs border border-gray-600 px-3 py-1.5 rounded-full">Sign out</button>
               </div>
-              <h1 className="text-white text-2xl font-extrabold mb-1">Admin Dashboard</h1>
-              <p className="text-gray-400 text-sm">PETclub Platform · All Regions</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-white text-2xl font-extrabold mb-1">Admin Dashboard</h1>
+                  <p className="text-gray-400 text-sm">PETclub · HQ: Sahara, LB Nagar, Hyderabad</p>
+                </div>
+                <div className="hidden md:block text-right">
+                  <div className="text-xs text-gray-500">{new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
+                  <div className="text-xs text-emerald-400 mt-1 font-semibold">● Platform Live</div>
+                </div>
+              </div>
             </div>
             <div className="px-5 -mt-8">
-              <div className="grid grid-cols-2 gap-3 mb-5">
+              {/* ── KPI Cards ── */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 <StatCard icon="👥" label="Total Users"    value={stats?.users ?? users.length}  gradient="bg-gradient-to-br from-blue-500 to-blue-700"     onClick={() => setView("users")}/>
-                <StatCard icon="✅" label="Verified Pros"  value={stats?.verified_pros ?? 0}    gradient="bg-gradient-to-br from-emerald-500 to-teal-600"/>
+                <StatCard icon="✅" label="Verified Pros"  value={stats?.verified_pros ?? 0}     gradient="bg-gradient-to-br from-emerald-500 to-teal-600"/>
                 <StatCard icon="⏳" label="Pending Review" value={pending.length} sub={pending.length > 0 ? "Needs action" : "All clear!"} gradient="bg-gradient-to-br from-amber-500 to-orange-500" onClick={() => pending.length && setView("verify")}/>
-                <StatCard icon="📅" label="Total Bookings" value={bookings.length}               gradient="bg-gradient-to-br from-violet-500 to-purple-600"   onClick={() => setView("bookings")}/>
+                <StatCard icon="📅" label="Total Bookings" value={bookings.length}                gradient="bg-gradient-to-br from-violet-500 to-purple-600"  onClick={() => setView("bookings")}/>
               </div>
+              {/* Revenue card — full width */}
+              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-4 mb-5 flex items-center justify-between">
+                <div>
+                  <div className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">Total Revenue</div>
+                  <div className="text-white text-3xl font-extrabold">
+                    ₹{(stats?.revenue ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.amount||0),0)).toLocaleString("en-IN")}
+                  </div>
+                  <div className="text-gray-400 text-xs mt-1">{bookings.filter(b=>b.status==="completed").length} completed bookings</div>
+                </div>
+                <div className="text-5xl opacity-30">💰</div>
+              </div>
+
+              {/* ── Role distribution ── */}
+              {(() => {
+                const customers  = users.filter(u => u.role === "customer").length;
+                const groomers   = users.filter(u => u.professional_profiles?.[0]?.sub_role === "Groomer").length;
+                const trainers   = users.filter(u => u.professional_profiles?.[0]?.sub_role === "Trainer").length;
+                const vets       = users.filter(u => u.professional_profiles?.[0]?.sub_role === "Vet").length;
+                const total      = users.length || 1;
+                return (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4">
+                    <h2 className="font-bold text-gray-800 mb-3">User Mix</h2>
+                    <div className="space-y-2">
+                      {[
+                        { label:"🐕 Pet Owners", count:customers,  color:"bg-blue-400",   pct:Math.round(customers/total*100) },
+                        { label:"✂️ Groomers",   count:groomers,   color:"bg-violet-400", pct:Math.round(groomers/total*100) },
+                        { label:"🎓 Trainers",   count:trainers,   color:"bg-indigo-400", pct:Math.round(trainers/total*100) },
+                        { label:"🏥 Vets",        count:vets,       color:"bg-emerald-400",pct:Math.round(vets/total*100) },
+                      ].map(row => (
+                        <div key={row.label} className="flex items-center gap-3">
+                          <span className="text-xs font-medium text-gray-600 w-28 shrink-0">{row.label}</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div className={`h-2 rounded-full ${row.color} transition-all duration-500`} style={{ width: `${row.pct}%` }}/>
+                          </div>
+                          <span className="text-xs font-bold text-gray-700 w-8 text-right">{row.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── Pending alert ── */}
               {pending.length > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 mb-5 shadow-sm">
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 mb-4 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-xl shrink-0">⚠️</div>
                     <div>
@@ -1296,27 +1394,38 @@ const AdminDashboard = ({ session, onLogout }) => {
                   <button onClick={() => setView("verify")} className="bg-amber-500 text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-amber-600 shrink-0 transition">Review →</button>
                 </div>
               )}
+
+              {/* ── Recent Bookings ── */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-4">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
                   <h2 className="font-bold text-gray-800">Recent Bookings</h2>
-                  <button onClick={() => setView("bookings")} className="text-xs text-orange-500 font-semibold">View all</button>
+                  <button onClick={() => setView("bookings")} className="text-xs text-orange-500 font-semibold">View all →</button>
                 </div>
                 {bookings.length === 0 ? <div className="px-5 py-8 text-center text-sm text-gray-400">No bookings yet.</div>
-                : bookings.slice(0,6).map((b,i) => (
-                  <div key={i} className="flex items-center gap-3 px-5 py-3 border-b border-gray-50 last:border-0">
-                    <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center text-base shrink-0">🐕</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-gray-800 truncate">{b.service_name || b.service_type || "Service"}</div>
-                      <div className="text-xs text-gray-400">{b.scheduled_at ? fmtDate(b.scheduled_at) : "—"}</div>
+                : bookings.slice(0,6).map((b,i) => {
+                  const assignBadge = {
+                    confirmed:"✅", searching:"🔍", offered:"📤", no_pros_available:"⚠️"
+                  }[b.assignment_status] || "";
+                  return (
+                    <div key={i} className="flex items-center gap-3 px-5 py-3 border-b border-gray-50 last:border-0">
+                      <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center text-base shrink-0">
+                        {({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥" })[b.service_type] || "🐕"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-gray-800 truncate">{b.service_name || b.service_type || "Service"}</div>
+                        <div className="text-xs text-gray-400">{b.scheduled_at ? fmtDate(b.scheduled_at) : "—"} {assignBadge && `· ${assignBadge} ${b.assignment_status}`}</div>
+                      </div>
+                      <Bdg text={b.status} cls={sColor(b.status)}/>
                     </div>
-                    <Bdg text={b.status} cls={sColor(b.status)}/>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+
+              {/* ── Recent Users ── */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-4">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
                   <h2 className="font-bold text-gray-800">Recent Users</h2>
-                  <button onClick={() => setView("users")} className="text-xs text-orange-500 font-semibold">View all</button>
+                  <button onClick={() => setView("users")} className="text-xs text-orange-500 font-semibold">View all →</button>
                 </div>
                 {users.slice(0,5).map(u => {
                   const proRole = u.professional_profiles?.[0]?.sub_role;
@@ -1325,12 +1434,32 @@ const AdminDashboard = ({ session, onLogout }) => {
                       <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center text-base shrink-0">{rIcon(proRole || u.role)}</div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold text-gray-800 truncate">{u.name || "—"}</div>
-                        <div className="text-xs text-gray-400 capitalize">{proRole || u.role}</div>
+                        <div className="text-xs text-gray-400 capitalize">{proRole || u.role} · {u.phone}</div>
                       </div>
                       <Bdg text={u.is_active ? "active" : "suspended"} cls={sColor(u.is_active ? "active" : "suspended")}/>
                     </div>
                   );
                 })}
+              </div>
+
+              {/* ── Platform Info ── */}
+              <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4 mb-4">
+                <h2 className="font-bold text-gray-700 text-sm mb-3">⚙️ Platform Status</h2>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {[
+                    { label:"Backend", val:"Railway ✅", color:"text-emerald-600" },
+                    { label:"Frontend", val:"Vercel ✅", color:"text-emerald-600" },
+                    { label:"Database", val:"Supabase ✅", color:"text-emerald-600" },
+                    { label:"Payments", val:"⏳ Pending LLC", color:"text-amber-600" },
+                    { label:"iOS App", val:"📱 Coming soon", color:"text-blue-600" },
+                    { label:"Android", val:"📱 Coming soon", color:"text-blue-600" },
+                  ].map(s => (
+                    <div key={s.label} className="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-gray-100">
+                      <span className="text-gray-500">{s.label}</span>
+                      <span className={`font-semibold ${s.color}`}>{s.val}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -1474,11 +1603,12 @@ const AdminDashboard = ({ session, onLogout }) => {
               <h1 className="text-2xl font-extrabold text-gray-800">Bookings</h1>
               <span className="text-sm text-gray-400">{bookings.length} total</span>
             </div>
-            <div className="grid grid-cols-3 gap-2 mb-5">
+            <div className="grid grid-cols-4 gap-2 mb-5">
               {[
-                { l:"Upcoming",  v:bookings.filter(b=>b.status==="upcoming").length,  c:"bg-blue-50 text-blue-700" },
-                { l:"Completed", v:bookings.filter(b=>b.status==="completed").length, c:"bg-emerald-50 text-emerald-700" },
-                { l:"Total",     v:bookings.length,                                   c:"bg-orange-50 text-orange-700" },
+                { l:"Upcoming",  v:bookings.filter(b=>b.status==="upcoming").length,                   c:"bg-blue-50 text-blue-700" },
+                { l:"Completed", v:bookings.filter(b=>b.status==="completed").length,                  c:"bg-emerald-50 text-emerald-700" },
+                { l:"Searching", v:bookings.filter(b=>b.assignment_status==="searching").length,       c:"bg-orange-50 text-orange-700" },
+                { l:"Confirmed", v:bookings.filter(b=>b.assignment_status==="confirmed").length,       c:"bg-violet-50 text-violet-700" },
               ].map(s => (
                 <div key={s.l} className={`rounded-xl p-3 text-center ${s.c}`}>
                   <div className="text-lg font-extrabold">{s.v}</div>
@@ -1488,18 +1618,27 @@ const AdminDashboard = ({ session, onLogout }) => {
             </div>
             {bookings.length === 0 ? <EmptyState icon="📅" title="No bookings yet" desc="Bookings appear here once users start booking."/> : (
               <div className="space-y-3">
-                {bookings.map((b,i) => (
+                {bookings.map((b,i) => {
+                  const assignBadge = {
+                    confirmed:"✅ Confirmed", searching:"🔍 Searching", offered:"📤 Offered",
+                    no_pros_available:"⚠️ No Pros", cancelled:"❌ Cancelled"
+                  }[b.assignment_status] || b.assignment_status;
+                  return (
                   <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <div className="font-bold text-sm text-gray-800">{b.service_name || b.service_type || "Service"}</div>
                         <div className="text-xs text-gray-400 mt-0.5">{b.scheduled_at ? `${fmtDate(b.scheduled_at)} · ${fmtTime(b.scheduled_at)}` : "—"}</div>
+                        {b.assignment_status && (
+                          <div className="text-xs text-gray-500 mt-0.5">{assignBadge}</div>
+                        )}
                       </div>
                       <Bdg text={b.status} cls={sColor(b.status)}/>
                     </div>
                     {b.amount && <div className="text-xs font-bold text-gray-700">{b.amount}</div>}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

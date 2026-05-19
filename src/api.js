@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'https://petclub-backend-production.up.railway.app/api';
+const BASE = import.meta.env.VITE_API_URL || 'https://api.mypetclub.app/api';
 
 const getToken = () => localStorage.getItem('petclub_token');
 
@@ -31,8 +31,8 @@ export const api = {
   // User
   getMe: () => req('GET', '/users/me', null, true),
   updateMe: (data) => req('PUT', '/users/me', data, true),
-  setRole: (role, subRole, name, email, city, pet) =>
-    req('POST', '/users/set-role', { role, subRole, name, email, city, pet }, true),
+  setRole: (role, subRole, name, email, city, address, pet) =>
+    req('POST', '/users/set-role', { role, subRole, name, email, city, address, pet }, true),
 
   // Pets
   getPets: () => req('GET', '/pets', null, true),
@@ -59,9 +59,25 @@ export const api = {
   uploadIdPhoto: (data) => req('POST', '/professionals/upload-id-photo', data, true),
   setAvailability: (is_available) => req('PUT', '/professionals/availability', { is_available }, true),
 
+  // Live Tracking
+  updateLocation: (id, lat, lng) => req('POST', `/bookings/${id}/location`, { lat, lng }, true),
+  getTracking:    (id)           => req('GET',  `/bookings/${id}/tracking`, null, true),
+
   // Ratings
   rateBooking: (id, rating, review) => req('POST', `/bookings/${id}/rate`, { rating, review }, true),
   getMyRating: (id) => req('GET', `/bookings/${id}/my-rating`, null, true),
+
+  // ID Documents
+  uploadUserIdPhoto: (data) => req('POST', '/users/upload-id-photo', data, true),
+
+  // Push Notifications (FCM)
+  saveFcmToken: (token) => req('POST', '/users/fcm-token', { token }, true),
+
+  // Payments (Razorpay — active after LLC registration)
+  getPaymentConfig: () => req('GET', '/payments/config', null, true),
+  createPaymentOrder: (amount, bookingId, notes) => req('POST', '/payments/create-order', { amount, bookingId, notes }, true),
+  verifyPayment: (razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId) =>
+    req('POST', '/payments/verify', { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId }, true),
 
   // Admin
   getAdminStats: () => req('GET', '/admin/stats', null, true),

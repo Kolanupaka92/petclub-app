@@ -1,4 +1,4 @@
-import { StrictMode, useState, useCallback } from "react";
+import { StrictMode, useState, useCallback, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import Login from "./Login.jsx";
@@ -6,6 +6,7 @@ import PetclubApp from "./PetclubApp.jsx";
 import ProApp from "./App.jsx";
 import { loadSession, saveSession, clearSession } from "./utils/storage.js";
 import { clearToken, api } from "./api.js";
+import { initPushNotifications } from "./firebase.js";
 
 // Pending approval screen for professionals
 function PendingApproval({ session, onLogout, onApproved }) {
@@ -95,9 +96,20 @@ function PendingApproval({ session, onLogout, onApproved }) {
 function Root() {
   const [session, setSession] = useState(loadSession);
 
+  // Initialize push notifications whenever user is logged in
+  useEffect(() => {
+    if (session) {
+      // Slight delay so the rest of the app loads first
+      const t = setTimeout(() => initPushNotifications().catch(() => {}), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [!!session]);
+
   const handleLogin = (s) => {
     saveSession(s);
     setSession(s);
+    // Kick off FCM setup after login (non-blocking)
+    setTimeout(() => initPushNotifications().catch(() => {}), 3000);
   };
 
   const handleLogout = () => {

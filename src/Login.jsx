@@ -42,8 +42,48 @@ const ROLES = [
   },
 ];
 
-const SPECIES   = ["Dog","Cat","Bird","Rabbit","Fish","Hamster","Other"];
-const DOC_TYPES = ["Aadhar Card","Passport","Driving License","Professional Certificate"];
+const SPECIES = ["Dog","Cat","Bird","Rabbit","Fish","Hamster","Other"];
+
+/* ── Dynamic ID types based on country code ── */
+const getIdTypes = (cc) => cc === "91" ? [
+  { value:"aadhar",   label:"Aadhar Card",      hint:"12-digit number (e.g. 1234 5678 9012)", required: true,
+    validate: v => /^\d{12}$/.test(v.replace(/\s/g,"")) ? null : "Aadhar must be exactly 12 digits" },
+  { value:"pan",      label:"PAN Card",          hint:"e.g. ABCDE1234F",
+    validate: v => /^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(v.trim()) ? null : "Invalid PAN format (e.g. ABCDE1234F)" },
+  { value:"passport", label:"Passport",          hint:"Passport number" },
+  { value:"dl",       label:"Driving License",   hint:"DL number" },
+] : [
+  { value:"dl",       label:"Driver's License",  hint:"State DL number", required: true },
+  { value:"passport", label:"Passport",          hint:"Passport number" },
+  { value:"state_id", label:"State ID",          hint:"State-issued ID number" },
+];
+
+/* ── Professional certification types ── */
+const getCertTypes = (role) => ({
+  Groomer: [
+    "Pet Grooming Certificate",
+    "International Professional Groomers (IPG)",
+    "National Dog Groomers Association (NDGA)",
+    "City & Guilds Animal Care",
+    "Other Grooming Certification",
+  ],
+  Trainer: [
+    "CPDT-KA (Certified Professional Dog Trainer)",
+    "International Association of Animal Behavior Consultants",
+    "AKC Canine Good Citizen Evaluator",
+    "Victoria Stilwell Academy",
+    "Other Training Certification",
+  ],
+  Vet: [
+    "BVSc & AH Degree",
+    "MVSc / PhD (Veterinary Science)",
+    "Veterinary Council of India Registration",
+    "NAVLE License (USA)",
+    "State Veterinary Practice License",
+    "Other Veterinary License",
+  ],
+})[role] || ["Professional Certificate", "Other"];
+
 const HERO = "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=900&auto=format&fit=crop&q=85";
 
 /* ── OTP single digit box ── */
@@ -103,14 +143,105 @@ const CountryPicker = ({ value, onChange }) => {
   );
 };
 
+/* ── Mapbox Address Autocomplete (replaces Google Places — free 50k req/month) ── */
+const AddressInput = ({ value, onChange, placeholder, cc, className }) => {
+  const [inputVal, setInputVal]     = useState(value || "");
+  const [suggestions, setSuggestions] = useState([]);
+  const timerRef = useRef(null);
+  const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+
+  // Sync if parent resets value
+  useEffect(() => { setInputVal(value || ""); }, [value]);
+
+  const search = (q) => {
+    if (!q || q.length < 3 || !TOKEN) { setSuggestions([]); return; }
+    const country = cc === "91" ? "IN" : "US";
+    fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json` +
+      `?country=${country}&types=address,place&access_token=${TOKEN}&limit=5`
+    )
+      .then(r => r.json())
+      .then(d => setSuggestions(d.features || []))
+      .catch(() => setSuggestions([]));
+  };
+
+  const handleChange = (e) => {
+    const v = e.target.value;
+    setInputVal(v);
+    onChange(v);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => search(v), 350);
+  };
+
+  const select = (feature) => {
+    const addr = feature.place_name;
+    setInputVal(addr);
+    onChange(addr);
+    setSuggestions([]);
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={inputVal}
+        onChange={handleChange}
+        onBlur={() => setTimeout(() => setSuggestions([]), 180)}
+        placeholder={placeholder || (TOKEN ? "Start typing your address…" : "Enter your full address")}
+        autoComplete="off"
+        className={className || "w-full h-12 border-2 border-gray-200 rounded-xl px-4 pr-10 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all"}
+      />
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base pointer-events-none">📍</span>
+      {suggestions.length > 0 && (
+        <div style={{
+          position:"absolute", top:"calc(100% + 4px)", left:0, right:0, zIndex:9999,
+          background:"#fff", borderRadius:14, boxShadow:"0 8px 32px rgba(0,0,0,0.15)",
+          border:"1px solid #e2e8f0", overflow:"hidden",
+        }}>
+          {suggestions.map(f => (
+            <button key={f.id} type="button" onMouseDown={() => select(f)}
+              style={{ display:"block", width:"100%", padding:"10px 14px", textAlign:"left",
+                background:"none", border:"none", borderBottom:"1px solid #f1f5f9",
+                cursor:"pointer", transition:"background 0.1s" }}
+              onMouseEnter={e => e.currentTarget.style.background="#fff7ed"}
+              onMouseLeave={e => e.currentTarget.style.background="none"}>
+              <div style={{ fontWeight:600, fontSize:13, color:"#1e293b" }}>{f.text}</div>
+              <div style={{ fontSize:11, color:"#94a3b8", marginTop:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                {f.place_name}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ── Document photo upload box ── */
+const DocUploadBox = ({ preview, onFile, onClear, accept = "image/*", label, hint }) => (
+  preview ? (
+    <div className="relative rounded-xl overflow-hidden border-2 border-slate-300">
+      <img src={preview} alt="Doc" className="w-full h-28 object-cover"/>
+      <button type="button" onClick={onClear}
+        className="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full text-lg font-bold flex items-center justify-center hover:bg-red-600">×</button>
+    </div>
+  ) : (
+    <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl p-4 cursor-pointer hover:bg-slate-100/50 transition bg-white/50">
+      <span className="text-2xl mb-1">📷</span>
+      <span className="text-sm font-semibold text-slate-600">{label || "Upload photo"}</span>
+      <span className="text-xs text-gray-400 mt-0.5">{hint || "JPG / PNG · Max 5 MB"}</span>
+      <input type="file" accept={accept} className="hidden" onChange={onFile}/>
+    </label>
+  )
+);
+
 /* ══════════════════════════════════════════
    MAIN LOGIN COMPONENT
 ══════════════════════════════════════════ */
 export default function Login({ onLogin }) {
-  // flow: "start" → (signin: "phone"→"otp") | (signup: "pick-role"→"phone"→"otp"→"profile")
   const [step, setStep]     = useState("start");
-  const [mode, setMode]     = useState(null);      // "signin" | "signup"
-  const [cc, setCC]         = useState("1");
+  const [mode, setMode]     = useState(null);
+  const [cc, setCC]         = useState("91");   // default India
   const [phone, setPhone]   = useState("");
   const [email, setEmail]   = useState("");
   const [otp, setOtp]       = useState(["","","","","",""]);
@@ -121,17 +252,32 @@ export default function Login({ onLogin }) {
   const [timer, setTimer]   = useState(0);
   const otpRefs = useRef([]);
 
-  // Customer profile fields
-  const [cust, setCust] = useState({ name:"", email:"", petName:"", petSpecies:"Dog", petBreed:"", petAge:"", petGender:"Male" });
-  // Professional profile fields
-  const [pro, setPro]   = useState({ name:"", email:"", city:"", docType:"Aadhar Card", docNumber:"", docPhoto:null, docPhotoName:"" });
-  const [docPreview, setDocPreview] = useState(null);
+  /* ── Customer profile ── */
+  const [cust, setCust] = useState({
+    name:"", email:"", address:"",
+    petName:"", petSpecies:"Dog", petBreed:"", petAge:"", petGender:"Male",
+  });
+  const [custId, setCustId] = useState({ type:"aadhar", number:"", photo:null, photoName:"", preview:null });
+
+  /* ── Professional profile ── */
+  const [pro, setPro]   = useState({ name:"", email:"", city:"", address:"" });
+  const [proId, setProId] = useState({ type:"aadhar", number:"", photo:null, photoName:"", preview:null });
+  const [proCert, setProCert] = useState({ type:"", photo:null, photoName:"", preview:null });
 
   const country  = COUNTRIES.find(c => c.code === cc) || COUNTRIES[0];
   const selRole  = ROLES.find(r => r.id === role);
   const isIndia  = cc === "91";
+  const idTypes  = getIdTypes(cc);
+  const certTypes = role && role !== "customer" ? getCertTypes(role) : [];
 
-  /* OTP resend timer */
+  /* ── Auto-set default ID type when country changes ── */
+  useEffect(() => {
+    const def = isIndia ? "aadhar" : "dl";
+    setCustId(p => ({ ...p, type: def, number: "", photo: null, preview: null }));
+    setProId(p => ({ ...p, type: def, number: "", photo: null, preview: null }));
+  }, [cc]);
+
+  /* ── OTP resend timer ── */
   useEffect(() => {
     if (timer <= 0) return;
     const t = setInterval(() => setTimer(n => (n <= 1 ? (clearInterval(t), 0) : n - 1)), 1000);
@@ -140,13 +286,12 @@ export default function Login({ onLogin }) {
 
   const showErr = msg => { setErr(msg); setShake(true); setTimeout(() => setShake(false), 450); };
 
-  /* ── step progress dots: only shown during phone/otp/profile ── */
   const signupSteps = ["pick-role", "phone", "otp", "profile"];
   const signinSteps = ["phone", "otp"];
   const flowSteps   = mode === "signup" ? signupSteps : signinSteps;
   const stepIdx     = flowSteps.indexOf(step);
 
-  /* ── send OTP ── */
+  /* ── Send OTP ── */
   const sendOtp = async () => {
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 6) return showErr("Enter a valid phone number");
@@ -160,7 +305,7 @@ export default function Login({ onLogin }) {
     finally { setLoading(false); }
   };
 
-  /* ── verify OTP ── */
+  /* ── Verify OTP ── */
   const verifyOtp = async (code) => {
     if (loading) return;
     const c = code ?? otp.join("");
@@ -197,29 +342,57 @@ export default function Login({ onLogin }) {
     if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i-1]?.focus();
   };
 
-  /* ── doc photo ── */
-  const handleDoc = e => {
+  /* ── Photo handlers ── */
+  const makePhotoHandler = (setter) => (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
     if (f.size > 5*1024*1024) return showErr("Photo must be under 5 MB");
     const r = new FileReader();
-    r.onload = ev => { setPro(p => ({...p, docPhoto: ev.target.result, docPhotoName: f.name})); setDocPreview(ev.target.result); };
+    r.onload = ev => setter(p => ({ ...p, photo: ev.target.result, photoName: f.name, preview: ev.target.result }));
     r.readAsDataURL(f);
   };
+  const handleCustIdPhoto  = makePhotoHandler(setCustId);
+  const handleProIdPhoto   = makePhotoHandler(setProId);
+  const handleCertPhoto    = makePhotoHandler(setProCert);
 
-  /* ── submit profile ── */
+  /* ── Validate ID number ── */
+  const validateIdNumber = (idType, number, cc) => {
+    const type = getIdTypes(cc).find(t => t.value === idType);
+    if (type?.validate) return type.validate(number);
+    return null;
+  };
+
+  /* ── Submit profile ── */
   const submit = async () => {
     setErr("");
     const isCust = role === "customer";
+
     if (isCust) {
       if (!cust.name.trim())    return showErr("Enter your name");
+      if (!cust.address.trim()) return showErr("Enter your address — we need it for service delivery");
       if (!cust.petName.trim()) return showErr("Enter your pet's name");
+      // ID verification
+      if (!custId.type)         return showErr("Select an ID type for verification");
+      if (!custId.number.trim()) return showErr(`Enter your ${getIdTypes(cc).find(t=>t.value===custId.type)?.label || "ID"} number`);
+      const idErr = validateIdNumber(custId.type, custId.number, cc);
+      if (idErr) return showErr(idErr);
+      if (!custId.photo)        return showErr("Upload a photo of your ID document");
     } else {
       if (!pro.name.trim())     return showErr("Enter your full name");
       if (!pro.email.trim())    return showErr("Email is required for approval notification");
       if (!pro.city.trim())     return showErr("Enter your city");
-      if (!pro.docNumber.trim()) return showErr("Enter your document number");
+      if (!pro.address.trim())  return showErr("Enter your full address");
+      // Government ID
+      if (!proId.type)          return showErr("Select a government ID type");
+      if (!proId.number.trim()) return showErr(`Enter your ${getIdTypes(cc).find(t=>t.value===proId.type)?.label || "ID"} number`);
+      const idErr = validateIdNumber(proId.type, proId.number, cc);
+      if (idErr) return showErr(idErr);
+      if (!proId.photo)         return showErr("Upload a photo of your government ID");
+      // Professional certification
+      if (!proCert.type)        return showErr("Select your professional certification type");
+      if (!proCert.photo)       return showErr("Upload your professional certification document");
     }
+
     setLoading(true);
     try {
       const res = await api.setRole(
@@ -228,17 +401,29 @@ export default function Login({ onLogin }) {
         isCust ? cust.name.trim() : pro.name.trim(),
         isCust ? (cust.email.trim()||undefined) : pro.email.trim(),
         isCust ? undefined : pro.city.trim(),
+        isCust ? cust.address.trim() : pro.address.trim(),
         isCust ? { name: cust.petName.trim(), species: cust.petSpecies, breed: cust.petBreed||undefined, age: cust.petAge||undefined, gender: cust.petGender } : undefined
       );
       saveToken(res.token);
-      if (!isCust) {
-        await api.uploadIdPhoto({ docType: pro.docType, docNumber: pro.docNumber.trim(), docPhoto: pro.docPhoto||undefined })
-          .catch(e => console.warn("ID doc upload (non-critical):", e.message));
+
+      if (isCust) {
+        // Upload customer government ID (non-blocking)
+        api.uploadUserIdPhoto({ docType: custId.type, docNumber: custId.number.trim(), docPhoto: custId.photo })
+          .catch(e => console.warn("Customer ID upload:", e.message));
+      } else {
+        // Upload professional government ID + certification
+        api.uploadIdPhoto({ docType: proId.type, docNumber: proId.number.trim(), docPhoto: proId.photo,
+          certType: proCert.type, certPhoto: proCert.photo })
+          .catch(e => console.warn("Pro ID upload:", e.message));
       }
+
       onLogin({ ...res.user });
     } catch (e) { showErr(e.message || "Something went wrong. Try again."); }
     finally { setLoading(false); }
   };
+
+  /* ── Shared input class ── */
+  const inp = "w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all";
 
   /* ─────────────────────────────────────
      RENDER
@@ -262,7 +447,7 @@ export default function Login({ onLogin }) {
               ))}
             </div>
             <h2 className="text-white text-4xl font-extrabold leading-tight">Premium pet care,<br />at your doorstep 🐾</h2>
-            <p className="text-white/60 text-sm mt-3">Trusted by 50,000+ pet parents across India & USA</p>
+            <p className="text-white/60 text-sm mt-3">Trusted by pet parents across India & USA</p>
           </div>
         </div>
       </div>
@@ -277,7 +462,7 @@ export default function Login({ onLogin }) {
             <span className="font-extrabold text-gray-900 text-xl tracking-tight">PET<span className="text-orange-500">club</span></span>
           </div>
 
-          {/* Step progress dots (not on start screen) */}
+          {/* Step progress dots */}
           {step !== "start" && stepIdx >= 0 && (
             <div className="flex gap-1.5 mb-7">
               {flowSteps.map((s, i) => (
@@ -290,7 +475,7 @@ export default function Login({ onLogin }) {
           )}
 
           {/* ══════════════════════════════
-               STEP: START (Sign In / Sign Up)
+               STEP: START
           ══════════════════════════════ */}
           {step === "start" && (
             <div className="space-y-6">
@@ -299,7 +484,6 @@ export default function Login({ onLogin }) {
                 <p className="text-gray-500 text-sm mt-1">India's #1 pet care platform — no password needed.</p>
               </div>
 
-              {/* Sign In card */}
               <button onClick={() => { setMode("signin"); setStep("phone"); setErr(""); }}
                 className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-gray-100 bg-gray-50 hover:border-orange-300 hover:bg-orange-50 transition-all group text-left">
                 <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-sm group-hover:scale-105 transition-transform">🔑</div>
@@ -312,14 +496,12 @@ export default function Login({ onLogin }) {
                 </svg>
               </button>
 
-              {/* Divider */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-gray-200" />
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">or</span>
                 <div className="flex-1 h-px bg-gray-200" />
               </div>
 
-              {/* Create Account heading */}
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Create Account — Choose your role</p>
                 <div className="space-y-2.5">
@@ -327,7 +509,6 @@ export default function Login({ onLogin }) {
                     <button key={r.id} type="button"
                       onClick={() => { setMode("signup"); setRole(r.id); setStep("phone"); setErr(""); }}
                       className="w-full flex items-center gap-3.5 p-4 rounded-2xl border-2 border-gray-100 bg-white hover:shadow-md transition-all group text-left"
-                      style={{"--hover-border": r.border}}
                       onMouseEnter={e => e.currentTarget.style.borderColor = r.border}
                       onMouseLeave={e => e.currentTarget.style.borderColor = "#f1f5f9"}>
                       <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm transition-transform group-hover:scale-105"
@@ -339,9 +520,7 @@ export default function Login({ onLogin }) {
                           <span className="font-bold text-gray-900 text-sm">{r.label}</span>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                             r.instant ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-amber-50 border-amber-200 text-amber-700"
-                          }`}>
-                            {r.instant ? "✅ Instant" : "⏳ 24–48h review"}
-                          </span>
+                          }`}>{r.instant ? "✅ Instant" : "⏳ 24–48h review"}</span>
                         </div>
                         <p className="text-xs text-gray-400 mt-0.5 truncate">{r.tagline}</p>
                       </div>
@@ -360,7 +539,6 @@ export default function Login({ onLogin }) {
           ══════════════════════════════ */}
           {step === "phone" && (
             <div className="space-y-5">
-              {/* Header */}
               {mode === "signup" && selRole ? (
                 <div>
                   <div className="flex items-center gap-3 mb-3">
@@ -388,7 +566,6 @@ export default function Login({ onLogin }) {
                 </div>
               )}
 
-              {/* Phone */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Mobile Number</label>
                 <div className="flex border-2 border-gray-200 rounded-2xl focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-50 transition-all bg-white h-14"
@@ -402,7 +579,6 @@ export default function Login({ onLogin }) {
                 </div>
               </div>
 
-              {/* India OTP notice */}
               {isIndia && (
                 <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
                   <span className="text-base shrink-0">📧</span>
@@ -412,7 +588,6 @@ export default function Login({ onLogin }) {
                 </div>
               )}
 
-              {/* Email */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                   Email{" "}
@@ -426,17 +601,12 @@ export default function Login({ onLogin }) {
                   value={email} onChange={e => { setEmail(e.target.value); setErr(""); }}
                   onKeyDown={e => e.key === "Enter" && sendOtp()}
                   className={`w-full h-12 border-2 rounded-2xl px-4 text-sm font-medium focus:outline-none focus:ring-4 bg-white placeholder-gray-300 transition-all ${
-                    isIndia
-                      ? "border-blue-300 focus:border-blue-500 focus:ring-blue-50"
-                      : "border-gray-200 focus:border-orange-400 focus:ring-orange-50"
+                    isIndia ? "border-blue-300 focus:border-blue-500 focus:ring-blue-50"
+                            : "border-gray-200 focus:border-orange-400 focus:ring-orange-50"
                   }`} />
               </div>
 
-              {err && (
-                <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-                  <span>⚠️</span>{err}
-                </div>
-              )}
+              {err && <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
 
               <button onClick={sendOtp} disabled={loading}
                 className="w-full h-14 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] disabled:opacity-60 text-white font-bold text-base rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2">
@@ -474,11 +644,7 @@ export default function Login({ onLogin }) {
                 ))}
               </div>
 
-              {err && (
-                <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-                  <span>⚠️</span>{err}
-                </div>
-              )}
+              {err && <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
 
               <button onClick={() => verifyOtp()} disabled={loading}
                 className="w-full h-14 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] disabled:opacity-60 text-white font-bold text-base rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2">
@@ -507,18 +673,29 @@ export default function Login({ onLogin }) {
                 <p className="text-gray-500 text-sm mt-1">Quick setup — you can always edit later.</p>
               </div>
 
+              {/* Basic info */}
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Your Name <span className="text-red-400">*</span></label>
                   <input type="text" autoComplete="name" placeholder="e.g. Arjun Mehta"
                     value={cust.name} onChange={e => setCust(f => ({...f, name: e.target.value}))}
-                    className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
+                    className={inp} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Email <span className="text-gray-400 normal-case font-normal">(booking confirmations)</span></label>
                   <input type="email" autoComplete="email" placeholder="you@example.com"
                     value={cust.email} onChange={e => setCust(f => ({...f, email: e.target.value}))}
-                    className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
+                    className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Service Address <span className="text-red-400">*</span></label>
+                  <AddressInput
+                    value={cust.address}
+                    onChange={v => setCust(f => ({...f, address: v}))}
+                    placeholder={isIndia ? "e.g. 12 MG Road, Koramangala, Bengaluru" : "e.g. 123 Main St, San Francisco, CA"}
+                    cc={cc}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">📍 Where should professionals come to serve your pet?</p>
                 </div>
               </div>
 
@@ -546,7 +723,69 @@ export default function Login({ onLogin }) {
                     onChange={e => setCust(f => ({...f, petAge: e.target.value}))}
                     className="h-11 border-2 border-orange-200 rounded-xl px-3 text-sm focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400" />
                 </div>
-                <p className="text-xs text-orange-500">You can add more pets anytime from your dashboard.</p>
+              </div>
+
+              {/* ── Identity Verification ── */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🪪</span>
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Identity Verification</p>
+                  <span className="text-[10px] font-bold bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full">Required</span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  {isIndia
+                    ? "Required by Indian regulations. Your data is encrypted and only visible to PETclub admins."
+                    : "Required for account security. Your ID is encrypted and visible only to PETclub admins."}
+                </p>
+
+                {/* ID type selector */}
+                <div className="grid grid-cols-2 gap-2">
+                  {idTypes.map(t => (
+                    <button key={t.value} type="button"
+                      onClick={() => setCustId(p => ({ ...p, type: t.value, number: "", photo: null, preview: null }))}
+                      className={`p-2.5 rounded-xl border-2 text-left transition-all ${
+                        custId.type === t.value
+                          ? "border-orange-400 bg-orange-50"
+                          : "border-slate-200 bg-white hover:border-slate-300"
+                      }`}>
+                      <div className="text-xs font-bold text-gray-800 flex items-center gap-1">
+                        {t.label}
+                        {t.required && <span className="text-red-400">*</span>}
+                      </div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">{t.hint}</div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* ID number input */}
+                {custId.type && (
+                  <input
+                    type={custId.type === "aadhar" ? "tel" : "text"}
+                    inputMode={custId.type === "aadhar" ? "numeric" : "text"}
+                    placeholder={idTypes.find(t => t.value === custId.type)?.hint || "ID number"}
+                    value={custId.number}
+                    maxLength={custId.type === "aadhar" ? 12 : 20}
+                    onChange={e => setCustId(p => ({ ...p, number: e.target.value.replace(custId.type === "aadhar" ? /\D/g : /\s/g, "").slice(0, custId.type === "aadhar" ? 12 : 20) }))}
+                    className="w-full h-11 border-2 border-slate-200 rounded-xl px-4 text-sm font-mono tracking-widest focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400"
+                  />
+                )}
+
+                {/* Aadhar digit counter */}
+                {custId.type === "aadhar" && custId.number && (
+                  <p className={`text-xs font-semibold ${custId.number.length === 12 ? "text-emerald-600" : "text-amber-600"}`}>
+                    {custId.number.length}/12 digits {custId.number.length === 12 ? "✓" : ""}
+                  </p>
+                )}
+
+                {/* ID photo upload */}
+                <DocUploadBox
+                  preview={custId.preview}
+                  onFile={handleCustIdPhoto}
+                  onClear={() => setCustId(p => ({ ...p, photo: null, photoName: "", preview: null }))}
+                  label="Upload ID photo"
+                  hint="Front side · JPG / PNG · Max 5 MB"
+                />
+                <p className="text-xs text-slate-400">🔒 Encrypted & visible only to PETclub admins. Never shared publicly.</p>
               </div>
 
               {err && <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
@@ -570,7 +809,7 @@ export default function Login({ onLogin }) {
                   {selRole.icon}
                 </div>
                 <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">{selRole.label} Profile</h1>
-                <p className="text-gray-500 text-sm mt-1">Government ID required. Review takes 24–48 hours.</p>
+                <p className="text-gray-500 text-sm mt-1">Government ID + professional certification required. Review takes 24–48 hours.</p>
               </div>
 
               {/* What you get */}
@@ -595,41 +834,121 @@ export default function Login({ onLogin }) {
               <div className="space-y-3">
                 <input type="text" autoComplete="name" placeholder="Full name *"
                   value={pro.name} onChange={e => setPro(f => ({...f, name: e.target.value}))}
-                  className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-400 transition-all" />
+                  className={inp} />
                 <input type="email" autoComplete="email" placeholder="Email * (approval sent here)"
                   value={pro.email} onChange={e => setPro(f => ({...f, email: e.target.value}))}
-                  className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-400 transition-all" />
+                  className={inp} />
                 <input type="text" placeholder="Operating city * (e.g. Hyderabad)"
                   value={pro.city} onChange={e => setPro(f => ({...f, city: e.target.value}))}
-                  className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-400 transition-all" />
+                  className={inp} />
+                <div>
+                  <AddressInput
+                    value={pro.address}
+                    onChange={v => setPro(f => ({...f, address: v}))}
+                    placeholder={isIndia ? "Full address (house/flat, area, city)" : "Full street address"}
+                    cc={cc}
+                    className={inp + " pr-10"}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">📍 Your base location shown to customers when searching</p>
+                </div>
               </div>
 
-              {/* Gov ID */}
+              {/* ── Government ID ── */}
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-                <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">🪪 Government ID</p>
-                <select value={pro.docType} onChange={e => setPro(f => ({...f, docType: e.target.value}))}
-                  className="w-full h-11 border-2 border-slate-200 rounded-xl px-3 text-sm font-semibold focus:outline-none focus:border-slate-400 bg-white">
-                  {DOC_TYPES.map(d => <option key={d}>{d}</option>)}
-                </select>
-                <input type="text" placeholder="Document number *"
-                  value={pro.docNumber} onChange={e => setPro(f => ({...f, docNumber: e.target.value}))}
-                  className="w-full h-11 border-2 border-slate-200 rounded-xl px-4 text-sm font-mono tracking-widest focus:outline-none focus:border-slate-400 bg-white placeholder-gray-400" />
-                {docPreview ? (
-                  <div className="relative rounded-xl overflow-hidden border-2 border-slate-300">
-                    <img src={docPreview} alt="ID" className="w-full h-28 object-cover"/>
-                    <button type="button" onClick={() => { setDocPreview(null); setPro(f => ({...f, docPhoto:null, docPhotoName:""})); }}
-                      className="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full text-lg font-bold flex items-center justify-center hover:bg-red-600">×</button>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl p-4 cursor-pointer hover:bg-slate-100/50 transition bg-white/50">
-                    <span className="text-2xl mb-1">📷</span>
-                    <span className="text-sm font-semibold text-slate-600">Upload ID photo</span>
-                    <span className="text-xs text-gray-400 mt-0.5">JPG / PNG · Max 5 MB</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleDoc}/>
-                  </label>
+                <div className="flex items-center gap-2">
+                  <span>🪪</span>
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Government ID</p>
+                  <span className="text-[10px] font-bold bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full">Required</span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  {isIndia ? "Aadhar Card is mandatory for India. Encrypted & admin-only." : "Driver's License or Passport required. Encrypted & admin-only."}
+                </p>
+
+                {/* ID type tabs */}
+                <div className="grid grid-cols-2 gap-2">
+                  {idTypes.map(t => (
+                    <button key={t.value} type="button"
+                      onClick={() => setProId(p => ({ ...p, type: t.value, number: "", photo: null, preview: null }))}
+                      className={`p-2.5 rounded-xl border-2 text-left transition-all ${
+                        proId.type === t.value
+                          ? "border-orange-400 bg-orange-50"
+                          : "border-slate-200 bg-white hover:border-slate-300"
+                      }`}>
+                      <div className="text-xs font-bold text-gray-800 flex items-center gap-1">
+                        {t.label}
+                        {t.required && <span className="text-red-400">*</span>}
+                      </div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">{t.hint}</div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* ID number */}
+                {proId.type && (
+                  <input
+                    type={proId.type === "aadhar" ? "tel" : "text"}
+                    inputMode={proId.type === "aadhar" ? "numeric" : "text"}
+                    placeholder={idTypes.find(t => t.value === proId.type)?.hint || "ID number"}
+                    value={proId.number}
+                    maxLength={proId.type === "aadhar" ? 12 : 20}
+                    onChange={e => setProId(p => ({ ...p, number: e.target.value.replace(proId.type === "aadhar" ? /\D/g : /\s/g, "").slice(0, proId.type === "aadhar" ? 12 : 20) }))}
+                    className="w-full h-11 border-2 border-slate-200 rounded-xl px-4 text-sm font-mono tracking-widest focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400"
+                  />
                 )}
-                <p className="text-xs text-slate-400">🔒 Visible only to PETclub admins. Never shared publicly.</p>
+
+                {proId.type === "aadhar" && proId.number && (
+                  <p className={`text-xs font-semibold ${proId.number.length === 12 ? "text-emerald-600" : "text-amber-600"}`}>
+                    {proId.number.length}/12 digits {proId.number.length === 12 ? "✓" : ""}
+                  </p>
+                )}
+
+                <DocUploadBox
+                  preview={proId.preview}
+                  onFile={handleProIdPhoto}
+                  onClear={() => setProId(p => ({ ...p, photo: null, photoName: "", preview: null }))}
+                  label="Upload government ID photo"
+                  hint="Front side · JPG / PNG · Max 5 MB"
+                />
               </div>
+
+              {/* ── Professional Certification ── */}
+              <div className="rounded-2xl p-4 space-y-3" style={{background: selRole.bg, border: `2px solid ${selRole.border}`}}>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{selRole.icon}</span>
+                  <p className="text-xs font-bold uppercase tracking-wider" style={{color: selRole.textColor}}>
+                    Professional Certification
+                  </p>
+                  <span className="text-[10px] font-bold bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full">Required</span>
+                </div>
+                <p className="text-xs" style={{color: selRole.textColor, opacity: 0.8}}>
+                  Upload your {selRole.label.toLowerCase()} certification or license. This builds trust with customers.
+                </p>
+
+                {/* Cert type */}
+                <select
+                  value={proCert.type}
+                  onChange={e => setProCert(p => ({ ...p, type: e.target.value }))}
+                  className="w-full h-11 border-2 rounded-xl px-3 text-sm font-semibold focus:outline-none focus:border-orange-400 bg-white"
+                  style={{borderColor: selRole.border}}>
+                  <option value="">Select certification type *</option>
+                  {certTypes.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+
+                {/* Cert photo */}
+                <DocUploadBox
+                  preview={proCert.preview}
+                  onFile={handleCertPhoto}
+                  onClear={() => setProCert(p => ({ ...p, photo: null, photoName: "", preview: null }))}
+                  label="Upload certification document"
+                  hint="Certificate / Degree / License · JPG / PNG / PDF"
+                  accept="image/*,.pdf"
+                />
+                <p className="text-xs" style={{color: selRole.textColor, opacity: 0.7}}>🔒 Verified by our team. Displayed as a badge on your profile once approved.</p>
+              </div>
+
+              <p className="text-xs text-slate-400 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                🔒 All documents are encrypted and visible only to PETclub admins for verification. Never shared publicly.
+              </p>
 
               {err && <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
 
@@ -643,7 +962,10 @@ export default function Login({ onLogin }) {
           )}
 
           <p className="text-center text-[11px] text-gray-400 mt-6">
-            By continuing you agree to our <span className="underline cursor-pointer">Terms</span> &amp; <span className="underline cursor-pointer">Privacy Policy</span>
+            By continuing you agree to our{" "}
+            <a href="https://mypetclub.app/terms.html" target="_blank" rel="noopener noreferrer" className="underline">Terms</a>
+            {" "}&amp;{" "}
+            <a href="https://mypetclub.app/privacy.html" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>
           </p>
         </div>
       </div>
