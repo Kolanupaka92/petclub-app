@@ -591,10 +591,29 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
 /* ══════════════════════════════════════════════
    PROFESSIONAL DASHBOARD
 ══════════════════════════════════════════════ */
+/* ── Countdown Timer (Uber-style request expiry) ── */
+const CountdownTimer = ({ deadline }) => {
+  const getSecsLeft = () => Math.max(0, Math.floor((new Date(deadline) - Date.now()) / 1000));
+  const [secs, setSecs] = useState(getSecsLeft);
+  useEffect(() => {
+    const t = setInterval(() => setSecs(getSecsLeft()), 1000);
+    return () => clearInterval(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deadline]);
+  if (secs <= 0) return <span className="text-xs font-bold bg-red-100 text-red-600 px-2.5 py-1 rounded-full">⏰ Expired</span>;
+  const m = Math.floor(secs / 60), s = secs % 60, urgent = secs < 60;
+  return (
+    <span className={`font-mono font-bold text-sm px-2.5 py-1 rounded-full ${urgent ? "bg-red-100 text-red-600 animate-pulse" : "bg-orange-100 text-orange-600"}`}>
+      ⏱ {m}:{s.toString().padStart(2,"0")}
+    </span>
+  );
+};
+
 const ProfessionalDashboard = ({ session, onLogout }) => {
   const [view,      setView]      = useState("home");
   const [profile,   setProfile]   = useState(null);
   const [bookings,  setBookings]  = useState([]);
+  const [requests,  setRequests]  = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [available, setAvailable] = useState(true);
   const [editModal, setEditModal] = useState(false);
@@ -603,27 +622,51 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [idForm,    setIdForm]    = useState({ idType: "", idNumber: "", idPhoto: null });
   const [saving,    setSaving]    = useState(false);
   const [toast,     setToast]     = useState("");
+  const [responding, setResponding] = useState({});
 
   const subRole  = session.subRole || "Groomer";
   const cfg      = ROLE_CONFIG[subRole] || ROLE_CONFIG.Groomer;
   const idTypes  = getIdTypes(session.phone);
   const isIndia  = session.phone?.startsWith("+91");
 
+  const refreshRequests = () => api.getIncomingBookings().then(r => setRequests(r.bookings || [])).catch(() => {});
+
   useEffect(() => {
     Promise.all([
       api.getMyProProfile().catch(() => null),
       api.getBookings().catch(() => ({ bookings: [] })),
-    ]).then(([profRes, bkRes]) => {
-      if (profRes?.profile) setProfile(profRes.profile);
+      api.getIncomingBookings().catch(() => ({ bookings: [] })),
+    ]).then(([profRes, bkRes, reqRes]) => {
+      if (profRes?.profile) { setProfile(profRes.profile); setAvailable(profRes.profile?.is_available ?? true); }
       setBookings(bkRes?.bookings || []);
+      setRequests(reqRes?.bookings || []);
     }).finally(() => setLoading(false));
+
+    // Auto-refresh requests every 30 seconds (like Ola/Uber)
+    const interval = setInterval(refreshRequests, 30000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const showToast = msg => { setToast(msg); setTimeout(() => setToast(""), 3000); };
+  const showToast = msg => { setToast(msg); setTimeout(() => setToast(""), 3500); };
+
+  const handleRespond = async (bookingId, action) => {
+    setResponding(r => ({ ...r, [bookingId]: action }));
+    try {
+      const res = await api.respondBooking(bookingId, action);
+      showToast(action === "accept" ? "✅ Booking accepted! Customer notified." : "❌ Request passed to next professional.");
+      setRequests(prev => prev.filter(r => r.id !== bookingId));
+      if (action === "accept") {
+        api.getBookings().then(r => setBookings(r.bookings || [])).catch(() => {});
+      }
+    } catch (e) { showToast("❌ " + (e.message || "Failed")); }
+    setResponding(r => { const n = {...r}; delete n[bookingId]; return n; });
+  };
 
   const todayBk     = bookings.filter(b => { try { return new Date(b.scheduled_at).toDateString() === new Date().toDateString(); } catch { return false; } });
   const upcomingBk  = bookings.filter(b => b.status === "upcoming");
   const completedBk = bookings.filter(b => b.status === "completed");
+  const activeRequests = requests.filter(r => new Date(r.response_deadline) > new Date());
 
   const isVerified  = profile?.verification_status === "approved";
   const grad        = rColor(subRole);
@@ -650,9 +693,10 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   };
 
   const NAV = [
-    { id:"home",    icon:"🏠", label:"Home" },
-    { id:"bookings",icon:"📅", label:"Bookings" },
-    { id:"profile", icon:"👤", label:"Profile" },
+    { id:"home",     icon:"🏠", label:"Home" },
+    { id:"requests", icon:"🔔", label:"Requests",  badge: activeRequests.length || null },
+    { id:"bookings", icon:"📅", label:"Bookings" },
+    { id:"profile",  icon:"👤", label:"Profile" },
   ];
 
   if (loading) return <Spinner full/>;
@@ -684,7 +728,9 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
           {NAV.map(n => (
             <button key={n.id} onClick={() => setView(n.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${view === n.id ? "bg-orange-500 text-white shadow-sm" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}>
-              <span className="text-base">{n.icon}</span>{n.label}
+              <span className="text-base">{n.icon}</span>
+              <span className="flex-1 text-left">{n.label}</span>
+              {n.badge ? <span className="bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{n.badge}</span> : null}
             </button>
           ))}
         </nav>
@@ -786,11 +832,110 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
           </div>
         )}
 
+        {/* ── REQUESTS (Incoming offers — Uber/Ola style) ── */}
+        {view === "requests" && (
+          <div className="max-w-2xl mx-auto px-5 py-6">
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-2xl font-extrabold text-gray-800">Incoming Requests</h1>
+              <button onClick={refreshRequests} className="text-xs font-semibold text-orange-500 border border-orange-200 px-3 py-1.5 rounded-full hover:bg-orange-50 transition">🔄 Refresh</button>
+            </div>
+            <p className="text-xs text-gray-400 mb-5">Accept or Reject within <strong>5 minutes</strong> — unanswered requests auto-pass to the next professional.</p>
+
+            {activeRequests.length === 0 ? (
+              <EmptyState icon="🔔" title="No incoming requests" desc="New booking requests will appear here. Refreshes every 30 sec automatically."/>
+            ) : (
+              <div className="space-y-4">
+                {activeRequests.map(bk => {
+                  const svcIcon = ({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥" })[bk.service_type] || "📋";
+                  const pet = bk.pets;
+                  const customer = bk.users;
+                  const custFirstName = (customer?.name || "Customer").split(" ")[0];
+                  const isAccepting = responding[bk.id] === "accept";
+                  const isRejecting = responding[bk.id] === "reject";
+                  const isBusy = !!(responding[bk.id]);
+                  return (
+                    <div key={bk.id} className="bg-white rounded-2xl border-2 border-orange-200 shadow-md overflow-hidden">
+                      {/* Urgent banner */}
+                      <div className="bg-orange-500 px-4 py-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white text-lg">{svcIcon}</span>
+                          <span className="text-white font-bold text-sm">New Request!</span>
+                        </div>
+                        <CountdownTimer deadline={bk.response_deadline}/>
+                      </div>
+
+                      <div className="p-4">
+                        {/* Service + Pet row */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <div className="font-extrabold text-gray-800 text-base">{bk.service_name || bk.service_type || "Service"}</div>
+                            {pet && (
+                              <div className="text-sm text-gray-500 mt-0.5">🐾 {pet.name} {pet.breed ? `· ${pet.breed}` : ""} {pet.species ? `(${pet.species})` : ""}</div>
+                            )}
+                          </div>
+                          {bk.amount && (
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-right">
+                              <div className="text-xs text-emerald-600 font-medium">Earning</div>
+                              <div className="font-extrabold text-emerald-700 text-base">₹{bk.amount}</div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Details */}
+                        <div className="space-y-1.5 mb-4">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <span>👤</span>
+                            <span>{custFirstName} (Customer)</span>
+                          </div>
+                          {bk.scheduled_at && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <span>📅</span>
+                              <span>{fmtDate(bk.scheduled_at)} at {fmtTime(bk.scheduled_at)}</span>
+                            </div>
+                          )}
+                          {(bk.city || bk.address) && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <span>📍</span>
+                              <span>{[bk.address, bk.city].filter(Boolean).join(", ")}</span>
+                            </div>
+                          )}
+                          {bk.notes && (
+                            <div className="flex items-start gap-2 text-sm text-gray-500 italic">
+                              <span>📝</span>
+                              <span>"{bk.notes}"</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Accept / Reject buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            disabled={isBusy}
+                            onClick={() => handleRespond(bk.id, "reject")}
+                            className="flex-1 border-2 border-red-200 text-red-500 font-bold py-3 rounded-xl text-sm hover:bg-red-50 transition disabled:opacity-50">
+                            {isRejecting ? "Passing…" : "❌ Reject"}
+                          </button>
+                          <button
+                            disabled={isBusy}
+                            onClick={() => handleRespond(bk.id, "accept")}
+                            className="flex-1 bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm hover:bg-emerald-600 transition disabled:opacity-50 shadow-md">
+                            {isAccepting ? "Accepting…" : "✅ Accept"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── BOOKINGS ── */}
         {view === "bookings" && (
           <div className="max-w-2xl mx-auto px-5 py-6">
             <div className="flex items-center justify-between mb-5">
-              <h1 className="text-2xl font-extrabold text-gray-800">Bookings</h1>
+              <h1 className="text-2xl font-extrabold text-gray-800">My Bookings</h1>
               <span className="text-sm text-gray-400">{bookings.length} total</span>
             </div>
             <div className="grid grid-cols-3 gap-2 mb-5">
@@ -959,7 +1104,11 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
           <button key={n.id} onClick={() => setView(n.id)}
             className={`flex-1 flex flex-col items-center py-3 text-xs font-semibold transition-colors relative ${view === n.id ? "text-orange-500" : "text-gray-400"}`}>
             {view === n.id && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-orange-500 rounded-full"/>}
-            <span className="text-xl mb-0.5">{n.icon}</span>{n.label}
+            <span className="relative">
+              <span className="text-xl">{n.icon}</span>
+              {n.badge ? <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{n.badge}</span> : null}
+            </span>
+            <span className="mt-0.5">{n.label}</span>
           </button>
         ))}
       </nav>

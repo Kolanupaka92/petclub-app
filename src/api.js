@@ -47,6 +47,13 @@ export const api = {
   getBookings: () => req('GET', '/bookings', null, true),
   createBooking: (data) => req('POST', '/bookings', data, true),
   updateBookingStatus: (id, status) => req('PUT', `/bookings/${id}/status`, { status }, true),
+  respondBooking: (id, action) => req('POST', `/bookings/${id}/respond`, { action }, true),
+  getIncomingBookings: () => req('GET', '/bookings/incoming', null, true),
+  adminAssignBooking: (id, professionalId) => req('PUT', `/bookings/${id}/assign`, { professionalId }, true),
+
+  // Payments
+  createPaymentOrder: (bookingId) => req('POST', '/payments/create-order', { bookingId }, true),
+  verifyPayment: (data) => req('POST', '/payments/verify', data, true),
 
   // Professionals
   getProfessionals: (city, role) =>
