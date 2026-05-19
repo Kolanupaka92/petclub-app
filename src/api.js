@@ -57,6 +57,11 @@ export const api = {
   getMyProProfile: () => req('GET', '/professionals/me', null, true),
   updateMyProProfile: (data) => req('PUT', '/professionals/me', data, true),
   uploadIdPhoto: (data) => req('POST', '/professionals/upload-id-photo', data, true),
+  setAvailability: (is_available) => req('PUT', '/professionals/availability', { is_available }, true),
+
+  // Ratings
+  rateBooking: (id, rating, review) => req('POST', `/bookings/${id}/rate`, { rating, review }, true),
+  getMyRating: (id) => req('GET', `/bookings/${id}/my-rating`, null, true),
 
   // Admin
   getAdminStats: () => req('GET', '/admin/stats', null, true),

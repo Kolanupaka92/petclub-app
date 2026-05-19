@@ -35,6 +35,13 @@ const SERVICES = [
 
 /* ── Shared UI ── */
 const Spinner = ({ sm }) => <div className={`border-2 border-orange-400 border-t-transparent rounded-full animate-spin ${sm ? "w-4 h-4" : "w-8 h-8"}`} />;
+const Skeleton = ({ h = "h-4", w = "w-full", cls = "" }) => <div className={`${h} ${w} bg-gray-200 rounded-xl animate-pulse ${cls}`} />;
+const SkeletonCard = () => (
+  <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
+    <div className="flex items-center gap-3"><Skeleton h="h-10" w="w-10" cls="rounded-xl shrink-0"/><div className="flex-1 space-y-2"><Skeleton h="h-4" w="w-3/4"/><Skeleton h="h-3" w="w-1/2"/></div></div>
+    <Skeleton h="h-3" w="w-full"/><Skeleton h="h-3" w="w-2/3"/>
+  </div>
+);
 const Bdg = ({ text, cls }) => <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>{text}</span>;
 
 function Modal({ title, onClose, children }) {
@@ -97,6 +104,11 @@ export default function PetclubApp({ session, onLogout }) {
   const [bookingStep, setBookingStep] = useState(1); // 1=service 2=details 3=confirm
   const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [ratingModal, setRatingModal] = useState(null); // { bookingId, serviceName }
+  const [ratingVal, setRatingVal] = useState(0);
+  const [ratingReview, setRatingReview] = useState("");
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [ratedBookings, setRatedBookings] = useState(new Set());
 
   const sf = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const bsf = k => e => setBookingForm(f => ({ ...f, [k]: typeof e === "string" ? e : e.target.value }));
@@ -127,6 +139,15 @@ export default function PetclubApp({ session, onLogout }) {
     }).catch(() => {}).finally(() => setLoadingPets(false));
     api.getBookings().then(r => setMyBookings(r.bookings || [])).catch(() => {});
   }, []);
+
+  // Smart polling: 5s when any booking is actively searching/offered, otherwise 30s
+  useEffect(() => {
+    const hasActive = myBookings.some(b => b.assignment_status === "searching" || b.assignment_status === "offered");
+    const interval = setInterval(() => {
+      api.getBookings().then(r => setMyBookings(r.bookings || [])).catch(() => {});
+    }, hasActive ? 5000 : 30000);
+    return () => clearInterval(interval);
+  }, [myBookings]);
 
   useEffect(() => { if (!apiMode) savePets(pets); }, [pets, apiMode]);
 
@@ -209,6 +230,18 @@ export default function PetclubApp({ session, onLogout }) {
       setModal(null); setForm({});
       showToast("Profile updated!");
     } catch { showToast("Failed to update", "error"); }
+  };
+
+  const submitRating = async () => {
+    if (!ratingVal || !ratingModal) return;
+    setRatingLoading(true);
+    try {
+      await api.rateBooking(ratingModal.bookingId, ratingVal, ratingReview);
+      setRatedBookings(prev => new Set([...prev, ratingModal.bookingId]));
+      setRatingModal(null); setRatingVal(0); setRatingReview("");
+      showToast("⭐ Thanks for your review!");
+    } catch (e) { showToast(e.message || "Failed to submit rating", "error"); }
+    setRatingLoading(false);
   };
 
   const addRecord = async () => {
@@ -324,6 +357,14 @@ export default function PetclubApp({ session, onLogout }) {
       confirmed:         { icon:"✅", label:"Confirmed",      cls:"bg-emerald-50 text-emerald-700 border-emerald-200" },
       no_pros_available: { icon:"😔", label:"No Pro Found",   cls:"bg-gray-100 text-gray-500 border-gray-200" },
     };
+    const StarRow = ({ val, onSelect }) => (
+      <div className="flex gap-2 justify-center my-3">
+        {[1,2,3,4,5].map(n => (
+          <button key={n} onClick={() => onSelect(n)}
+            className={`text-3xl transition-transform hover:scale-110 ${n <= val ? "text-yellow-400" : "text-gray-200"}`}>★</button>
+        ))}
+      </div>
+    );
     const refreshBookings = () => api.getBookings().then(r => setMyBookings(r.bookings || [])).catch(() => {});
 
     return (
@@ -379,10 +420,31 @@ export default function PetclubApp({ session, onLogout }) {
                       <div className="text-xs text-gray-500 mb-1">📅 {fmtDate(b.scheduled_at)} at {new Date(b.scheduled_at).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</div>
                     )}
                     {b.city && <div className="text-xs text-gray-500">📍 {[b.address, b.city].filter(Boolean).join(", ")}</div>}
+                    {/* Pro name when confirmed */}
+                    {b.assignment_status === "confirmed" && b.professional_profiles?.users?.name && (
+                      <div className="flex items-center gap-2 mt-2 bg-emerald-50 rounded-xl px-3 py-2">
+                        <span className="text-base">👤</span>
+                        <div>
+                          <div className="text-xs text-emerald-700 font-bold">{b.professional_profiles.users.name}</div>
+                          <div className="text-[10px] text-emerald-500">{b.service_type} · Confirmed</div>
+                        </div>
+                      </div>
+                    )}
                     {b.assignment_status === "no_pros_available" && (
                       <div className="text-xs text-gray-400 bg-gray-50 rounded-lg p-2.5 text-center mt-3">
                         No professionals available in your area right now. We'll keep searching and notify you via email.
                       </div>
+                    )}
+                    {/* Rate session button for completed bookings */}
+                    {b.status === "completed" && !ratedBookings.has(b.id) && (
+                      <button
+                        onClick={() => { setRatingModal({ bookingId: b.id, serviceName: b.service_name || b.service_type }); setRatingVal(0); setRatingReview(""); }}
+                        className="mt-3 w-full text-center text-xs font-bold text-yellow-600 border border-yellow-200 bg-yellow-50 rounded-xl py-2 hover:bg-yellow-100 transition">
+                        ⭐ Rate this session
+                      </button>
+                    )}
+                    {ratedBookings.has(b.id) && (
+                      <div className="mt-3 text-center text-xs text-gray-400 font-medium">✅ Thanks for your review!</div>
                     )}
                   </div>
                 </div>
@@ -446,6 +508,9 @@ export default function PetclubApp({ session, onLogout }) {
             <button onClick={() => goTo("pets")} className="text-xs text-orange-500 font-bold">See all →</button>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+            {loadingPets && [1,2,3].map(i => (
+              <div key={i} className="shrink-0 w-24 h-24 bg-gray-200 rounded-2xl animate-pulse"/>
+            ))}
             {pets.map(p => (
               <button key={p.id} onClick={() => openPet(p.id)}
                 className="shrink-0 bg-white rounded-2xl border border-gray-100 shadow-card hover:shadow-card-hover hover:border-orange-100 p-3 text-center w-24 transition-all active:scale-[0.95]">
@@ -1026,6 +1091,33 @@ export default function PetclubApp({ session, onLogout }) {
             </select>
           </Fld>
           <button onClick={updateProfile} disabled={!form.name?.trim()} className="btn-primary mt-1">Save Profile</button>
+        </Modal>
+      )}
+
+      {/* RATE SESSION */}
+      {ratingModal && (
+        <Modal title="Rate Your Session ⭐" onClose={() => setRatingModal(null)}>
+          <p className="text-sm text-gray-500 text-center mb-1">How was your <strong>{ratingModal.serviceName}</strong>?</p>
+          <div className="flex gap-2 justify-center my-4">
+            {[1,2,3,4,5].map(n => (
+              <button key={n} onClick={() => setRatingVal(n)}
+                className={`text-4xl transition-transform hover:scale-110 ${n <= ratingVal ? "text-yellow-400" : "text-gray-200"}`}>★</button>
+            ))}
+          </div>
+          {ratingVal > 0 && (
+            <p className="text-center text-sm font-bold text-gray-600 mb-3">
+              {["","😞 Poor","😐 Fair","🙂 Good","😊 Great","🤩 Excellent!"][ratingVal]}
+            </p>
+          )}
+          <Fld label="Leave a review (optional)">
+            <textarea value={ratingReview} onChange={e => setRatingReview(e.target.value)}
+              placeholder="Tell others about your experience…"
+              rows={3} className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"/>
+          </Fld>
+          <button onClick={submitRating} disabled={!ratingVal || ratingLoading}
+            className="btn-primary mt-1 disabled:opacity-50">
+            {ratingLoading ? "Submitting…" : "Submit Review"}
+          </button>
         </Modal>
       )}
 

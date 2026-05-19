@@ -795,8 +795,8 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                     </div>
                   </div>
                   <div className="flex gap-1.5">
-                    <button onClick={() => setAvailable(true)} className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${available ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400"}`}>🟢</button>
-                    <button onClick={() => setAvailable(false)} className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${!available ? "bg-red-400 text-white" : "bg-gray-100 text-gray-400"}`}>⏸</button>
+                    <button onClick={async () => { setAvailable(true); await api.setAvailability(true).catch(() => {}); showToast("🟢 You're now Online"); }} className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${available ? "bg-emerald-500 text-white shadow-sm" : "bg-gray-100 text-gray-400"}`}>🟢 Online</button>
+                    <button onClick={async () => { setAvailable(false); await api.setAvailability(false).catch(() => {}); showToast("⏸ You're now Offline"); }} className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${!available ? "bg-red-400 text-white shadow-sm" : "bg-gray-100 text-gray-400"}`}>⏸ Offline</button>
                   </div>
                 </div>
               )}
