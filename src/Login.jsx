@@ -43,22 +43,25 @@ const CountryPicker = ({ value, onChange }) => {
   return (
     <div ref={ref} className="relative shrink-0">
       <button type="button" onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 h-full px-3.5 bg-gray-50 border-r border-gray-200 rounded-l-2xl hover:bg-gray-100 transition-colors min-w-[88px]">
-        <span className="text-lg leading-none">{current.flag}</span>
-        <span className="text-sm font-bold text-gray-700">+{current.code}</span>
-        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        className="flex items-center gap-1.5 h-full px-3 bg-gray-50 border-r border-gray-200 rounded-l-2xl hover:bg-orange-50 transition-colors min-w-[90px]">
+        <span className="text-base leading-none">{current.flag}</span>
+        <span className="text-sm font-bold text-gray-800">+{current.code}</span>
+        <svg className={`w-3 h-3 text-gray-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[180px] animate-fade-in-scale">
+        <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:9999,minWidth:200,background:"#fff",border:"1px solid #e2e8f0",borderRadius:16,boxShadow:"0 10px 40px rgba(0,0,0,0.15)",overflow:"hidden"}}>
           {COUNTRIES.map(c => (
             <button key={c.code} type="button"
               onClick={() => { onChange(c.code); setOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-orange-50 ${c.code === value ? "bg-orange-50 font-bold text-orange-600" : "text-gray-700"}`}>
-              <span className="text-xl">{c.flag}</span>
-              <span className="font-semibold">{c.name}</span>
-              <span className="ml-auto text-gray-400 font-mono">+{c.code}</span>
+              style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 16px",background: c.code === value ? "#fff7ed" : "transparent",border:"none",cursor:"pointer",textAlign:"left"}}
+              onMouseEnter={e => { if (c.code !== value) e.currentTarget.style.background="#fff7ed"; }}
+              onMouseLeave={e => { if (c.code !== value) e.currentTarget.style.background="transparent"; }}>
+              <span style={{fontSize:22}}>{c.flag}</span>
+              <span style={{fontWeight:600,color:"#1e293b",fontSize:14}}>{c.name}</span>
+              <span style={{marginLeft:"auto",fontFamily:"monospace",color:"#94a3b8",fontSize:13}}>+{c.code}</span>
+              {c.code === value && <span style={{color:"#f97316",fontWeight:700,fontSize:14}}>✓</span>}
             </button>
           ))}
         </div>
@@ -101,10 +104,13 @@ export default function Login({ onLogin }) {
 
   const showErr = msg => { setErr(msg); setShake(true); setTimeout(() => setShake(false), 450); };
 
+  const isIndia = cc === "91";
+
   /* ── send OTP ── */
   const sendOtp = async () => {
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 6) return showErr("Enter a valid phone number");
+    if (isIndia && !email.trim()) return showErr("Email is required for India (+91) — OTP will be sent to your email");
     setLoading(true); setErr("");
     try {
       await api.sendOTP(digits, cc, email || undefined);
@@ -264,15 +270,33 @@ export default function Login({ onLogin }) {
                 </div>
               </div>
 
+              {/* India SMS notice */}
+              {isIndia && (
+                <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
+                  <span className="text-base shrink-0">📧</span>
+                  <p className="text-xs text-blue-800 font-medium leading-relaxed">
+                    <strong>India users:</strong> SMS OTP isn't available yet. Your OTP will be sent to your email — please enter it below.
+                  </p>
+                </div>
+              )}
+
               {/* Email */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  Email <span className="text-gray-400 normal-case font-normal">(receives OTP if SMS is delayed)</span>
+                  Email{" "}
+                  {isIndia
+                    ? <span className="text-red-500 normal-case font-semibold">* (OTP sent here for India)</span>
+                    : <span className="text-gray-400 normal-case font-normal">(optional — backup OTP if SMS is delayed)</span>
+                  }
                 </label>
-                <input type="email" autoComplete="email" placeholder="you@example.com"
+                <input type="email" autoComplete="email" placeholder={isIndia ? "your@email.com (required)" : "you@example.com"}
                   value={email} onChange={e => { setEmail(e.target.value); setErr(""); }}
                   onKeyDown={e => e.key === "Enter" && sendOtp()}
-                  className="w-full h-12 border-2 border-gray-200 rounded-2xl px-4 text-sm font-medium focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
+                  className={`w-full h-12 border-2 rounded-2xl px-4 text-sm font-medium focus:outline-none focus:ring-4 bg-white placeholder-gray-300 transition-all ${
+                    isIndia
+                      ? "border-blue-300 focus:border-blue-500 focus:ring-blue-50"
+                      : "border-gray-200 focus:border-orange-400 focus:ring-orange-50"
+                  }`} />
               </div>
 
               {err && (
@@ -298,8 +322,12 @@ export default function Login({ onLogin }) {
               <div>
                 <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Enter OTP</h1>
                 <p className="text-gray-500 text-sm mt-1">
-                  Sent to {country.flag} +{cc} ···{phone.slice(-4)}
-                  {email && <><br/><span className="text-orange-500 font-medium">Also sent to {email}</span></>}
+                  {isIndia ? (
+                    <>OTP sent to <span className="text-blue-600 font-semibold">{email}</span><br/><span className="text-xs text-gray-400">Check your inbox (or spam folder)</span></>
+                  ) : (
+                    <>Sent to {country.flag} +{cc} ···{phone.slice(-4)}
+                    {email && <><br/><span className="text-orange-500 font-medium text-xs">Also sent to {email}</span></>}</>
+                  )}
                 </p>
               </div>
 
