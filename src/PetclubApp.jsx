@@ -79,13 +79,6 @@ function Toast({ msg, type, onDone }) {
   );
 }
 
-const ASSIGNMENT_STATUS_CONFIG = {
-  searching:          { icon:"🔍", label:"Finding Professional…", cls:"bg-blue-50 text-blue-700 border-blue-200",    animate: true  },
-  offered:            { icon:"⏳", label:"Professional Notified",  cls:"bg-amber-50 text-amber-700 border-amber-200",  animate: true  },
-  confirmed:          { icon:"✅", label:"Confirmed",              cls:"bg-emerald-50 text-emerald-700 border-emerald-200", animate: false },
-  no_pros_available:  { icon:"😔", label:"No Pros Available",      cls:"bg-gray-50 text-gray-500 border-gray-200",     animate: false },
-  manual:             { icon:"👤", label:"Assigned",               cls:"bg-violet-50 text-violet-700 border-violet-200", animate: false },
-};
 
 /* ══════════ MAIN APP ══════════ */
 export default function PetclubApp({ session, onLogout }) {
@@ -239,12 +232,13 @@ export default function PetclubApp({ session, onLogout }) {
   const totalRecs = pets.reduce((s,p) => s + p.records.grooming.length + p.records.training.length + p.records.food.length + p.records.vet.length, 0);
   const allUpcoming = pets.flatMap(p => p.records.vet.filter(v => v.nextDue && isDueSoon(v.nextDue, 60)).map(v => ({ ...v, petName: p.name, petId: p.id })));
   const filteredPets = pets.filter(p => !search.trim() || p.name.toLowerCase().includes(search.toLowerCase()) || p.breed.toLowerCase().includes(search.toLowerCase()));
-  const pendingBookings = myBookings.filter(b => b.assignment_status === "confirmed");
+  // Show badge on bookings tab when any booking is still being matched
+  const activeMatchingCount = myBookings.filter(b => b.assignment_status === "searching" || b.assignment_status === "offered").length;
 
   /* ── NAV ── */
   const NAV = [
     { id:"home",     icon:"🏠", label:"Home" },
-    { id:"bookings", icon:"📅", label:"Bookings", badge: pendingBookings.length || null },
+    { id:"bookings", icon:"📅", label:"Bookings", badge: activeMatchingCount || null },
     { id:"pets",     icon:"🐾", label:"My Pets" },
     { id:"profile",  icon:"👤", label:"Profile" },
   ];
