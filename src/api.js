@@ -61,6 +61,8 @@ export const api = {
   getPendingVerifications: () => req('GET', '/admin/pending-verifications', null, true),
   verifyProfessional: (id, action, reason) => req('PUT', `/admin/verify/${id}`, { action, reason }, true),
   suspendUser: (id) => req('PUT', `/admin/users/${id}/suspend`, {}, true),
+  // Admin testing tools
+  getOtp: (phone, cc = '91') => req('GET', `/admin/otp?phone=${encodeURIComponent(phone)}&cc=${cc}`, null, true),
 
   // Health
   health: () => req('GET', '/health'),

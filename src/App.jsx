@@ -31,9 +31,33 @@ const getIdTypes = phone => {
 };
 
 const SVC_OPTS = {
-  Groomer: ["Bath & Brush","Full Groom","Nail Trim","Haircut","De-shedding","Herbal Bath","Spa Treatment","Tick & Flea Bath","Ear Cleaning","Teeth Brushing"],
-  Trainer: ["Puppy Basics","Basic Obedience","Advanced Obedience","Agility Training","Behaviour Correction","Leash Training","Trick Training","Board & Train","Group Classes"],
-  Vet:     ["General Check-up","Vaccination","Deworming","Dental Care","Minor Surgery","Emergency Care","Nutrition Consult","Spay / Neuter","X-ray / Diagnostics","Puppy / Kitten Package"],
+  Groomer: [
+    "Bath & Brush", "Full Groom", "Nail Trim & Filing", "Haircut / Styling",
+    "De-shedding Treatment", "Herbal / Medicated Bath", "Spa & Aromatherapy",
+    "Tick & Flea Treatment", "Ear Cleaning", "Teeth Brushing",
+    "Paw Massage & Balm", "Puppy First Groom",
+  ],
+  Trainer: [
+    "Puppy Basics (8–16 weeks)", "Basic Obedience", "Advanced Obedience",
+    "Agility Training", "Behaviour Correction", "Leash & Walk Training",
+    "Bite Inhibition", "Socialisation Classes", "Off-Leash Training",
+    "Trick & Fun Training", "Separation Anxiety", "Guard / Protection Training",
+  ],
+  Vet: [
+    // Wellness
+    "General Check-up", "Annual Wellness Exam", "Puppy / Kitten Package", "Senior Pet Wellness",
+    // Vaccines
+    "Rabies Vaccination", "Distemper + Parvo (DHLPP)", "Bordetella (Kennel Cough)",
+    "Leptospirosis Vaccine", "Influenza Vaccine",
+    "Feline FVRCP Vaccine", "Feline Leukaemia (FeLV)",
+    // Preventive
+    "Deworming / Parasite Control", "Flea & Tick Prevention", "Heartworm Test & Prevention",
+    // Procedures
+    "Dental Cleaning", "Spay / Neuter", "Microchipping",
+    "X-Ray & Diagnostics", "Blood Tests / Pathology", "Minor Surgery", "Emergency Care",
+    // Consult
+    "Nutrition & Diet Consult", "Dermatology / Skin", "Orthopaedics",
+  ],
 };
 
 const ROLE_CONFIG = {
@@ -235,9 +259,52 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
     idType: idTypes[0]?.value || "passport", idNumber: "",
   });
 
+  const [addrLoading, setAddrLoading] = useState(false);
+
   const sf  = k => e  => setForm(f => ({ ...f, [k]: e.target.value }));
   const stg = k => ()  => setForm(f => ({ ...f, [k]: !f[k] }));
   const toggleSvc = s  => setForm(f => ({ ...f, services: f.services.includes(s) ? f.services.filter(x => x !== s) : [...f.services, s] }));
+
+  // Auto-fill city/area from pincode or ZIP code
+  useEffect(() => {
+    const pin = form.pincode.trim();
+    if (pin.length === 6 && /^\d{6}$/.test(pin)) {
+      // India — 6-digit pincode
+      setAddrLoading(true);
+      fetch(`https://api.postalpincode.in/${pin}`)
+        .then(r => r.json())
+        .then(data => {
+          const po = data?.[0]?.PostOffice?.[0];
+          if (po) {
+            setForm(f => ({
+              ...f,
+              area: po.Name || f.area,
+              city: po.District || po.Division || f.city,
+            }));
+          }
+        })
+        .catch(() => {})
+        .finally(() => setAddrLoading(false));
+    } else if (pin.length === 5 && /^\d{5}$/.test(pin)) {
+      // US — 5-digit ZIP
+      setAddrLoading(true);
+      fetch(`https://api.zippopotam.us/us/${pin}`)
+        .then(r => r.json())
+        .then(data => {
+          const place = data?.places?.[0];
+          if (place) {
+            setForm(f => ({
+              ...f,
+              city:  place['place name'] || f.city,
+              area:  (place['state abbreviation'] ? `${place['state abbreviation']}` : '') || f.area,
+            }));
+          }
+        })
+        .catch(() => {})
+        .finally(() => setAddrLoading(false));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.pincode]);
 
   const STEPS = [
     { n:"Basic Info",      icon:"👤" },
@@ -321,9 +388,13 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
             </div>
             <Txta label="Full Address" placeholder="House/Flat No., Street, Locality" value={form.address} onChange={sf("address")} rows={2}/>
             <div className="grid grid-cols-3 gap-2">
+              <div className="relative">
+                <Inp label="PIN / ZIP" placeholder={isIndia ? "400053" : "90210"} maxLength={6} value={form.pincode} onChange={sf("pincode")}/>
+                {addrLoading && <div className="absolute right-3 top-9 w-4 h-4 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin"/>}
+                {!addrLoading && form.city && form.pincode.length >= 5 && <div className="absolute right-3 top-9 text-emerald-500 text-sm">✓</div>}
+              </div>
               <Inp label="Area / Locality" placeholder="Andheri" value={form.area} onChange={sf("area")}/>
               <Inp label="City *" placeholder="Mumbai" value={form.city} onChange={sf("city")}/>
-              <Inp label="PIN / ZIP" placeholder="400053" maxLength={10} value={form.pincode} onChange={sf("pincode")}/>
             </div>
           </div>
         )}
@@ -1269,10 +1340,13 @@ const AdminDashboard = ({ session, onLogout }) => {
 export default function ProApp({ session, onLogout }) {
   const [profileChecked,  setProfileChecked]  = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [enrichedSession, setEnrichedSession] = useState(session);
 
   useEffect(() => {
     if (session.role === "admin") { setProfileChecked(true); return; }
     api.getMyProProfile().then(res => {
+      const subRole = res.profile?.sub_role;
+      if (subRole) setEnrichedSession(s => ({ ...s, subRole }));
       const incomplete = !res.profile?.bio && !res.profile?.experience;
       setNeedsOnboarding(incomplete);
       setProfileChecked(true);
@@ -1281,6 +1355,6 @@ export default function ProApp({ session, onLogout }) {
 
   if (!profileChecked) return <Spinner full/>;
   if (session.role === "admin")  return <AdminDashboard   session={session} onLogout={onLogout}/>;
-  if (needsOnboarding)           return <ProfessionalOnboarding session={session} onComplete={() => setNeedsOnboarding(false)}/>;
-  return <ProfessionalDashboard session={session} onLogout={onLogout}/>;
+  if (needsOnboarding)           return <ProfessionalOnboarding session={enrichedSession} onComplete={() => setNeedsOnboarding(false)}/>;
+  return <ProfessionalDashboard session={enrichedSession} onLogout={onLogout}/>;
 }
