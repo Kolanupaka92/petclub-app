@@ -260,13 +260,13 @@ export default function Login({ onLogin }) {
               {/* Phone input */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Mobile Number</label>
-                <div className="flex border-2 border-gray-200 rounded-2xl overflow-hidden focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-50 transition-all bg-white h-14">
+                <div className="flex border-2 border-gray-200 rounded-2xl focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-50 transition-all bg-white h-14" style={{overflow:"visible", position:"relative"}}>
                   <CountryPicker value={cc} onChange={v => { setCC(v); setPhone(""); setErr(""); }} />
                   <input type="tel" inputMode="numeric" autoComplete="tel"
                     placeholder={country.placeholder} maxLength={15}
                     value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g,"").slice(0,15)); setErr(""); }}
                     onKeyDown={e => e.key === "Enter" && sendOtp()}
-                    className="flex-1 px-4 text-base font-semibold focus:outline-none bg-transparent placeholder-gray-300" />
+                    className="flex-1 px-4 text-base font-semibold focus:outline-none bg-transparent placeholder-gray-300 rounded-r-2xl" />
                 </div>
               </div>
 
