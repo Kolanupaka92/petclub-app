@@ -104,7 +104,21 @@ export default function PetclubApp({ session, onLogout }) {
 
   // Load from API
   useEffect(() => {
-    api.getMe().then(r => { if (r.user?.name) setUserInfo({ name: r.user.name, phone: r.user.phone, email: r.user.email, city: r.user.customer_profiles?.[0]?.city }); }).catch(() => {});
+    api.getMe().then(r => {
+      if (r.user?.name) {
+        const cp = r.user.customer_profiles?.[0] || {};
+        setUserInfo({
+          name: r.user.name,
+          phone: r.user.phone,
+          email: r.user.email,
+          address: cp.address || "",
+          area: cp.area || "",
+          city: cp.city || "",
+          pincode: cp.pincode || "",
+          country: cp.country || "India",
+        });
+      }
+    }).catch(() => {});
     api.getPets().then(r => {
       if (r.pets?.length) {
         setPets(r.pets.map(p => ({ id: p.id, name: p.name, species: p.species || "dog", breed: p.breed || "Mixed", age: p.age || "", dob: p.dob || "", weight: p.weight || "", gender: p.gender || "", color: p.color || "", chip: p.chip || "", records: { grooming:[], training:[], food:[], vet:[] } })));
@@ -173,8 +187,25 @@ export default function PetclubApp({ session, onLogout }) {
   const updateProfile = async () => {
     if (!form.name?.trim()) return;
     try {
-      await api.updateMe({ name: form.name.trim(), email: form.email || "", city: form.city || "" }).catch(() => {});
-      setUserInfo(prev => ({ ...prev, name: form.name.trim(), email: form.email || prev.email, city: form.city || prev.city }));
+      await api.updateMe({
+        name: form.name.trim(),
+        email: form.email || "",
+        address: form.address || "",
+        area: form.area || "",
+        city: form.city || "",
+        pincode: form.pincode || "",
+        country: form.country || "India",
+      }).catch(() => {});
+      setUserInfo(prev => ({
+        ...prev,
+        name: form.name.trim(),
+        email: form.email || prev.email,
+        address: form.address || "",
+        area: form.area || "",
+        city: form.city || "",
+        pincode: form.pincode || "",
+        country: form.country || "India",
+      }));
       setModal(null); setForm({});
       showToast("Profile updated!");
     } catch { showToast("Failed to update", "error"); }
@@ -611,7 +642,7 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
         </div>
         <button
-          onClick={() => { setForm({ name: userInfo.name || "", email: userInfo.email || "", city: userInfo.city || "" }); setModal("editProfile"); }}
+          onClick={() => { setForm({ name: userInfo.name || "", email: userInfo.email || "", address: userInfo.address || "", area: userInfo.area || "", city: userInfo.city || "", pincode: userInfo.pincode || "", country: userInfo.country || "India" }); setModal("editProfile"); }}
           className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-2.5 rounded-2xl text-sm transition-all border border-white/20">
           ✏️ Edit Profile
         </button>
@@ -626,7 +657,6 @@ export default function PetclubApp({ session, onLogout }) {
           {[
             ["📱", "Phone", userInfo.phone || session?.phone || "—"],
             ["📧", "Email", userInfo.email || "Not added"],
-            ["📍", "City",  userInfo.city  || "Not added"],
           ].map(([icon, label, val]) => (
             <div key={label} className="flex items-center gap-3 py-3.5 border-b border-gray-50 last:border-0">
               <span className="text-xl w-8 shrink-0">{icon}</span>
@@ -636,6 +666,25 @@ export default function PetclubApp({ session, onLogout }) {
               </div>
             </div>
           ))}
+          {/* Full Address block */}
+          <div className="flex items-start gap-3 py-3.5">
+            <span className="text-xl w-8 shrink-0 mt-0.5">📍</span>
+            <div className="flex-1">
+              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-0.5">Address</p>
+              {(userInfo.address || userInfo.area || userInfo.city || userInfo.pincode) ? (
+                <div className="text-sm font-semibold text-gray-800 space-y-0.5">
+                  {userInfo.address && <p>{userInfo.address}</p>}
+                  {userInfo.area && <p>{userInfo.area}</p>}
+                  <p>
+                    {[userInfo.city, userInfo.pincode].filter(Boolean).join(" – ")}
+                  </p>
+                  {userInfo.country && <p className="text-gray-500 text-xs">{userInfo.country}</p>}
+                </div>
+              ) : (
+                <p className="text-sm font-semibold text-gray-300 italic">Not added</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -947,12 +996,35 @@ export default function PetclubApp({ session, onLogout }) {
           <Fld label="Email">
             <Inp type="email" placeholder="your@email.com" value={form.email||""} onChange={sf("email")} />
           </Fld>
-          <Fld label="City / Location">
-            <Inp placeholder="e.g. Mumbai, Bangalore" value={form.city||""} onChange={sf("city")} />
-          </Fld>
           <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-3 text-xs text-orange-700">
             📱 Phone number cannot be changed. It&apos;s your unique identifier.
           </div>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 mt-1">Address</p>
+          <Fld label="Door / Building / Street">
+            <Inp placeholder="e.g. 12B, Sunshine Apts, MG Road" value={form.address||""} onChange={sf("address")} />
+          </Fld>
+          <Fld label="Area / Locality">
+            <Inp placeholder="e.g. Koramangala, Bandra West" value={form.area||""} onChange={sf("area")} />
+          </Fld>
+          <div className="flex gap-3">
+            <Fld label="City" className="flex-1">
+              <Inp placeholder="e.g. Bengaluru" value={form.city||""} onChange={sf("city")} />
+            </Fld>
+            <Fld label="PIN / ZIP Code" className="flex-1">
+              <Inp placeholder="e.g. 560034" value={form.pincode||""} onChange={sf("pincode")} maxLength={10} />
+            </Fld>
+          </div>
+          <Fld label="Country">
+            <select value={form.country||"India"} onChange={sf("country")}
+              className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400">
+              <option value="India">🇮🇳 India</option>
+              <option value="United States">🇺🇸 United States</option>
+              <option value="United Kingdom">🇬🇧 United Kingdom</option>
+              <option value="Canada">🇨🇦 Canada</option>
+              <option value="Australia">🇦🇺 Australia</option>
+              <option value="Other">🌍 Other</option>
+            </select>
+          </Fld>
           <button onClick={updateProfile} disabled={!form.name?.trim()} className="btn-primary mt-1">Save Profile</button>
         </Modal>
       )}
