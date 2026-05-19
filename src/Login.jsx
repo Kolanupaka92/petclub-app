@@ -1,408 +1,321 @@
 import { useState, useRef, useEffect } from "react";
-import { Button } from "./components/ui.jsx";
 import { api, saveToken } from "./api.js";
 
 const COUNTRIES = [
-  { code: "91", flag: "🇮🇳", label: "India", demo: "9876543210" },
-  { code: "1",  flag: "🇺🇸", label: "USA",   demo: "4697512039" },
+  { code: "91", flag: "🇮🇳", label: "India", placeholder: "9876543210" },
+  { code: "1",  flag: "🇺🇸", label: "USA",   placeholder: "4155552671" },
 ];
 
-const FEATURES = [
-  { icon: "✂️", label: "Grooming" },
-  { icon: "🎓", label: "Training" },
-  { icon: "🍖", label: "Food" },
-  { icon: "🏥", label: "Vet care" },
+const ROLES = [
+  { id: "customer", icon: "🐕", label: "Pet Owner",  badge: null,              desc: "Manage pets, book grooming, training & vet care." },
+  { id: "Groomer",  icon: "✂️", label: "Groomer",    badge: "Needs Approval",  desc: "Offer professional grooming services to pet owners." },
+  { id: "Trainer",  icon: "🎓", label: "Trainer",    badge: "Needs Approval",  desc: "Provide obedience, agility & behaviour training." },
+  { id: "Vet",      icon: "🏥", label: "Veterinarian", badge: "Needs Approval", desc: "Offer in-home vet consultations & health tracking." },
 ];
+
+const HERO_IMG = "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=900&auto=format&fit=crop&q=85";
+
+function OtpBox({ value, onChange, onKeyDown, inputRef, filled }) {
+  return (
+    <input
+      ref={inputRef}
+      type="text" inputMode="numeric" maxLength={1} value={value}
+      onChange={onChange} onKeyDown={onKeyDown}
+      className={`w-12 h-14 text-center text-xl font-bold border-2 rounded-2xl focus:outline-none transition-all duration-200
+        ${filled ? "border-orange-500 bg-orange-50 text-orange-600" : "border-gray-200 bg-white text-gray-900"}
+        focus:border-orange-400 focus:ring-2 focus:ring-orange-100`}
+    />
+  );
+}
 
 export default function Login({ onLogin }) {
-  const [mode, setMode] = useState("phone");
-  const [step, setStep] = useState("identifier"); // identifier | otp | signup
+  const [step, setStep] = useState("phone");
+  const [cc, setCC] = useState("91");
   const [phone, setPhone] = useState("");
-  const [countryCode, setCountryCode] = useState("91");
-  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [signupName, setSignupName] = useState("");
-  const [signupEmail, setSignupEmail] = useState("");
-  const [pendingSession, setPendingSession] = useState(null);
+  const [role, setRole] = useState(null);
+  const [form, setForm] = useState({ name: "", email: "", city: "" });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [err, setErr] = useState("");
   const [shake, setShake] = useState(false);
-  const otpRefs = useRef([]);
+  const [timer, setTimer] = useState(0);
+  const refs = useRef([]);
 
-  const identifier = mode === "phone" ? phone.replace(/\D/g, "") : email.trim();
+  const country = COUNTRIES.find(c => c.code === cc);
 
-  const showError = (msg) => {
-    setError(msg);
-    setShake(true);
-    setTimeout(() => setShake(false), 400);
-  };
+  useEffect(() => {
+    if (timer <= 0) return;
+    const t = setInterval(() => setTimer(r => r - 1), 1000);
+    return () => clearInterval(t);
+  }, [timer]);
+
+  const showErr = (msg) => { setErr(msg); setShake(true); setTimeout(() => setShake(false), 500); };
 
   const sendOtp = async () => {
-    setError("");
-    if (mode === "phone" && identifier.length !== 10) {
-      showError("Enter a valid 10-digit mobile number");
-      return;
-    }
-    if (mode === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
-      showError("Enter a valid email address");
-      return;
-    }
-    setLoading(true);
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 6) return showErr("Enter a valid phone number");
+    setLoading(true); setErr("");
     try {
-      if (mode === "phone") {
-        await api.sendOTP(identifier, countryCode);
-      }
-      setStep("otp");
-      setOtp(["", "", "", "", "", ""]);
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
-    } catch (err) {
-      showError(err.message || "Failed to send OTP. Try again.");
-    } finally {
-      setLoading(false);
-    }
+      await api.sendOTP(digits, cc);
+      setStep("otp"); setOtp(["","","","","",""]); setTimer(45);
+      setTimeout(() => refs.current[0]?.focus(), 120);
+    } catch (e) { showErr(e.message || "Failed to send OTP"); }
+    finally { setLoading(false); }
   };
 
   const verifyOtp = async (codeOverride) => {
     if (loading) return;
     const code = codeOverride ?? otp.join("");
-    if (code.length !== 6) {
-      showError("Enter the 6-digit OTP");
-      return;
-    }
-    setLoading(true);
-    setError("");
+    if (code.length !== 6) return showErr("Enter the 6-digit OTP");
+    setLoading(true); setErr("");
     try {
-      if (mode === "phone") {
-        const res = await api.verifyOTP(identifier, code, countryCode);
-        saveToken(res.token);
-        const country = COUNTRIES.find(c => c.code === countryCode);
-        const session = { phone: `${country?.flag || ""} +${countryCode} ${identifier.slice(0, 5)} ${identifier.slice(5)}`, name: res.user?.name, id: res.user?.id };
-        if (res.isNew) {
-          setPendingSession(session);
-          setStep("signup");
-          setLoading(false);
-          return;
-        }
-        onLogin(session);
+      const res = await api.verifyOTP(phone.replace(/\D/g,""), code, cc);
+      saveToken(res.token);
+      if (res.isNew || res.user?.role === "pending_role") {
+        setStep("role");
       } else {
-        // email mode — fallback demo (no email OTP backend yet)
-        if (code !== DEMO_OTP) { showError("Invalid OTP. Try demo code 123456"); setLoading(false); return; }
-        onLogin({ email: identifier });
+        onLogin({ id: res.user.id, name: res.user.name, phone: res.user.phone, role: res.user.role, verificationStatus: res.user.verificationStatus });
       }
-    } catch (err) {
-      showError(err.message || "Verification failed.");
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { showErr(e.message || "Verification failed"); }
+    finally { setLoading(false); }
   };
 
   const handleOtpChange = (i, val) => {
     if (!/^\d?$/.test(val)) return;
-    const next = [...otp];
-    next[i] = val;
-    setOtp(next);
-    setError("");
-    if (val && i < 5) otpRefs.current[i + 1]?.focus();
-    const joined = next.join("");
-    if (joined.length === 6) verifyOtp(joined);
+    const next = [...otp]; next[i] = val; setOtp(next); setErr("");
+    if (val && i < 5) refs.current[i+1]?.focus();
+    if (next.join("").length === 6) verifyOtp(next.join(""));
   };
 
   const handleOtpPaste = (e) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (!pasted) return;
-    const next = pasted.split("").concat(Array(6).fill("")).slice(0, 6);
+    const p = e.clipboardData.getData("text").replace(/\D/g,"").slice(0,6);
+    if (!p) return;
+    const next = p.split("").concat(Array(6).fill("")).slice(0,6);
     setOtp(next);
-    if (pasted.length === 6) verifyOtp(pasted);
-    else otpRefs.current[pasted.length]?.focus();
+    if (p.length === 6) verifyOtp(p);
+    else refs.current[p.length]?.focus();
   };
 
-  const handleOtpKeyDown = (i, e) => {
-    if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
+  const handleKeyDown = (i, e) => {
+    if (e.key === "Backspace" && !otp[i] && i > 0) refs.current[i-1]?.focus();
   };
 
-  const handleSignup = async () => {
-    if (!signupName.trim()) { showError("Please enter your name"); return; }
-    setLoading(true);
-    setError("");
+  const submitProfile = async () => {
+    if (!form.name.trim()) return showErr("Please enter your name");
+    setLoading(true); setErr("");
     try {
-      await api.updateMe({ name: signupName.trim(), email: signupEmail.trim() || undefined });
-      onLogin({ ...pendingSession, name: signupName.trim() });
-    } catch {
-      onLogin({ ...pendingSession, name: signupName.trim() });
-    } finally {
-      setLoading(false);
-    }
+      const res = await api.setRole(
+        role === "customer" ? "customer" : "professional",
+        role === "customer" ? undefined : role,
+        form.name.trim(), form.email.trim() || undefined, form.city.trim() || undefined
+      );
+      saveToken(res.token);
+      onLogin({ id: res.user.id, name: res.user.name, phone: res.user.phone, role: res.user.role, verificationStatus: res.user.verificationStatus });
+    } catch (e) { showErr(e.message || "Failed to save profile"); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    if (step === "otp") otpRefs.current[0]?.focus();
-  }, [step]);
+  const stepNum = { phone:1, otp:2, role:3, profile:4 }[step];
+  const stepLabel = { phone:"Sign In", otp:"Verify OTP", role:"Choose Role", profile:"Complete Profile" }[step];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col max-w-lg mx-auto">
-      <header className="bg-gradient-to-br from-orange-400 via-brand-500 to-amber-500 px-6 pt-12 pb-20 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
-        <div className="absolute -right-8 -top-8 text-9xl opacity-[0.15] select-none pointer-events-none">🐕</div>
-        <div className="absolute left-2 bottom-6 text-6xl opacity-[0.15] select-none pointer-events-none">🐈</div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_50%)]" />
-
+    <div className="min-h-screen min-h-[100dvh] flex bg-white">
+      {/* LEFT — Photo panel (desktop only) */}
+      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative flex-col justify-between p-10 overflow-hidden">
+        <img src={HERO_IMG} alt="Happy dog" className="absolute inset-0 w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-950/60 via-gray-900/40 to-gray-950/80" />
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-6">
-            <span className="text-3xl drop-shadow-sm">🐾</span>
-            <span className="font-extrabold text-white text-2xl tracking-tight">PETclub</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white text-lg font-black shadow-orange">🐾</div>
+            <span className="font-extrabold text-white text-2xl">PET<span className="text-orange-400">club</span></span>
+          </div>
+        </div>
+        <div className="relative z-10">
+          <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-3">Trusted by 50,000+ pet parents</p>
+          <h2 className="text-3xl font-extrabold text-white leading-tight mb-5">
+            Premium pet care,<br />delivered to your door 🐾
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {["✂️ Grooming", "🎓 Training", "🏥 Vet Care", "🍖 Pet Food"].map(s => (
+              <span key={s} className="text-xs font-semibold bg-white/15 text-white px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20">{s}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT — Form panel */}
+      <div className="flex-1 flex flex-col justify-center items-center px-5 sm:px-10 py-12 min-h-screen overflow-y-auto">
+        <div className={`w-full max-w-md ${shake ? "animate-shake" : ""}`}>
+          {/* Logo (mobile only) */}
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white text-base font-black">🐾</div>
+            <span className="font-extrabold text-gray-900 text-xl">PET<span className="text-orange-500">club</span></span>
           </div>
 
-          <div className="flex gap-2 mb-5" aria-label="Sign-in progress">
-            <div className={`h-1 flex-1 rounded-full transition-all ${step === "identifier" ? "bg-white" : "bg-white/40"}`} />
-            <div className={`h-1 flex-1 rounded-full transition-all ${step === "otp" ? "bg-white" : "bg-white/30"}`} />
-            <div className={`h-1 flex-1 rounded-full transition-all ${step === "signup" ? "bg-white" : "bg-white/20"}`} />
+          {/* Progress */}
+          <div className="flex items-center gap-2 mb-8">
+            {[1,2,3,4].map(n => (
+              <div key={n} className={`h-1 flex-1 rounded-full transition-all duration-500 ${n <= stepNum ? "bg-orange-500" : "bg-gray-200"}`} />
+            ))}
           </div>
 
-          <h1 className="text-2xl font-extrabold text-white mb-1">
-            {step === "identifier" ? "Welcome!" : step === "otp" ? "Verify OTP" : "Complete Sign Up"}
-          </h1>
-          <p className="text-orange-100 text-sm leading-relaxed">
-            {step === "identifier"
-              ? "New user? Just enter your number — we'll create your account."
-              : step === "otp"
-                ? (mode === "phone" ? `Code sent to ${COUNTRIES.find(c=>c.code===countryCode)?.flag} +${countryCode} ${identifier.slice(0,5)}XXXXX` : `Code sent to ${identifier}`)
-                : "Tell us your name to personalize your PETclub experience."}
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">{stepLabel}</h1>
+          <p className="text-gray-500 text-sm mb-8">
+            {step === "phone" && "Enter your number to sign in or create an account."}
+            {step === "otp" && `Code sent to ${country?.flag} +${cc} ${phone.slice(0,3)}·····`}
+            {step === "role" && "How will you be using PETclub? Choose your role."}
+            {step === "profile" && "Just a few details to personalize your experience."}
           </p>
 
-          {step === "identifier" && (
-            <div className="flex flex-wrap gap-2 mt-5">
-              {FEATURES.map((f) => (
-                <span
-                  key={f.label}
-                  className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full"
-                >
-                  {f.icon} {f.label}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </header>
-
-      <div className="flex-1 px-5 -mt-10 relative z-20 pb-8">
-        <div
-          className={`bg-white rounded-2xl shadow-xl border border-gray-100 p-5 animate-fade-in ${shake ? "animate-shake" : ""}`}
-        >
-          {step === "identifier" && (
-            <>
-              <div className="flex bg-gray-100 rounded-xl p-1 mb-5" role="tablist">
-                {[
-                  { id: "phone", label: "📱 Phone" },
-                  { id: "email", label: "📧 Email" },
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={mode === t.id}
-                    onClick={() => {
-                      setMode(t.id);
-                      setError("");
-                    }}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
-                      mode === t.id ? "bg-white text-brand-600 shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    {t.label}
+          {/* ── PHONE ── */}
+          {step === "phone" && (
+            <div className="space-y-4">
+              <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl">
+                {COUNTRIES.map(c => (
+                  <button key={c.code} type="button"
+                    onClick={() => { setCC(c.code); setPhone(""); setErr(""); }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${cc === c.code ? "bg-white shadow-sm text-gray-900" : "text-gray-400 hover:text-gray-600"}`}>
+                    <span className="text-base">{c.flag}</span> +{c.code} {c.label}
                   </button>
                 ))}
               </div>
-
-              {mode === "phone" ? (
-                <div className="mb-4">
-                  <span className="block text-xs font-semibold text-gray-500 mb-1.5">Mobile number</span>
-                  {/* Country selector */}
-                  <div className="flex gap-2 mb-2">
-                    {COUNTRIES.map((c) => (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => { setCountryCode(c.code); setPhone(""); setError(""); }}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 text-sm font-bold transition-all ${
-                          countryCode === c.code
-                            ? "border-brand-500 bg-orange-50 text-brand-600"
-                            : "border-gray-200 text-gray-500 hover:border-gray-300"
-                        }`}
-                      >
-                        <span>{c.flag}</span> +{c.code} {c.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex border border-gray-200 rounded-xl overflow-hidden focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-orange-100 transition-shadow">
-                    <span className="bg-gray-50 px-3 py-3.5 text-sm font-semibold text-gray-600 border-r border-gray-200">
-                      {COUNTRIES.find(c => c.code === countryCode)?.flag} +{countryCode}
-                    </span>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      maxLength={10}
-                      placeholder={COUNTRIES.find(c => c.code === countryCode)?.demo}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                      onKeyDown={(e) => e.key === "Enter" && sendOtp()}
-                      className="flex-1 px-3 py-3.5 text-sm focus:outline-none"
-                    />
-                  </div>
-                  {phone.length > 0 && (
-                    <p className={`text-xs mt-1.5 ${phone.length === 10 ? "text-green-600" : "text-gray-400"}`}>
-                      {phone.length}/10 digits
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <label className="block mb-4">
-                  <span className="block text-xs font-semibold text-gray-500 mb-1.5">Email address</span>
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && sendOtp()}
-                    className="input-field"
-                  />
-                </label>
-              )}
-
-              {error && (
-                <p className="text-red-500 text-xs font-medium mb-3 flex items-center gap-1.5" role="alert">
-                  <span aria-hidden="true">⚠</span> {error}
-                </p>
-              )}
-
-              <Button loading={loading} onClick={sendOtp}>
-                {loading ? "Sending OTP…" : "Send OTP →"}
-              </Button>
-
-              <div className="mt-4 p-3 bg-orange-50 rounded-xl border border-orange-100">
-                <p className="text-center text-xs text-orange-800 font-bold mb-1">Demo login · OTP: <span className="font-mono">123456</span></p>
-                <p className="text-center text-xs text-orange-700">
-                  🇮🇳 India: <span className="font-mono font-semibold">9876543210</span>
-                  <span className="mx-2">·</span>
-                  🇺🇸 USA: <span className="font-mono font-semibold">4697512039</span>
-                </p>
+              <div className="flex border-2 border-gray-200 rounded-2xl overflow-hidden focus-within:border-orange-400 transition-colors">
+                <span className="flex items-center px-4 text-gray-500 font-semibold text-sm bg-gray-50 border-r-2 border-gray-200 whitespace-nowrap">
+                  {country?.flag} +{cc}
+                </span>
+                <input type="tel" inputMode="numeric" autoComplete="tel"
+                  placeholder={country?.placeholder} maxLength={15}
+                  value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g,"").slice(0,15)); setErr(""); }}
+                  onKeyDown={e => e.key === "Enter" && sendOtp()}
+                  className="flex-1 px-4 py-4 text-sm focus:outline-none bg-white font-medium placeholder-gray-400" />
               </div>
-            </>
+              {err && <p className="text-red-500 text-xs font-semibold flex items-center gap-1.5"><span>⚠</span>{err}</p>}
+              <button onClick={sendOtp} disabled={loading}
+                className="btn-primary flex items-center justify-center gap-2 text-base">
+                {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"/>Sending…</> : "Send OTP →"}
+              </button>
+              <p className="text-center text-xs text-gray-400 mt-2">
+                New user? We&apos;ll create your account automatically.
+              </p>
+            </div>
           )}
 
+          {/* ── OTP ── */}
           {step === "otp" && (
-            <>
-              <p className="text-center text-xs text-gray-500 mb-4">Enter the 6-digit code (paste supported)</p>
-              <div className="flex justify-center gap-2 mb-4" onPaste={handleOtpPaste}>
+            <div className="space-y-5">
+              <div className="flex justify-center gap-2.5" onPaste={handleOtpPaste}>
                 {otp.map((d, i) => (
-                  <input
-                    key={i}
-                    ref={(el) => (otpRefs.current[i] = el)}
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={1}
-                    value={d}
-                    onChange={(e) => handleOtpChange(i, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                    className={`w-11 h-12 text-center text-lg font-bold border-2 rounded-xl focus:outline-none transition-all ${
-                      d ? "border-brand-500 bg-orange-50/50" : "border-gray-200"
-                    } focus:border-brand-500 focus:ring-2 focus:ring-orange-100`}
-                    aria-label={`Digit ${i + 1}`}
-                  />
+                  <OtpBox key={i} value={d} filled={!!d}
+                    inputRef={el => (refs.current[i] = el)}
+                    onChange={e => handleOtpChange(i, e.target.value)}
+                    onKeyDown={e => handleKeyDown(i, e)} />
                 ))}
               </div>
-
-              {error && (
-                <p className="text-red-500 text-xs font-medium text-center mb-3" role="alert">
-                  {error}
-                </p>
-              )}
-
-              <Button loading={loading} onClick={() => verifyOtp()} className="mb-3">
-                {loading ? "Verifying…" : "Verify & Sign In 🐾"}
-              </Button>
-
-              <div className="flex flex-col gap-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep("identifier");
-                    setError("");
-                    setOtp(["", "", "", "", "", ""]);
-                  }}
-                  className="w-full text-sm text-brand-500 font-semibold py-2 hover:text-brand-600 transition-colors"
-                >
-                  ← Change {mode === "phone" ? "number" : "email"}
-                </button>
-                <button
-                  type="button"
-                  onClick={sendOtp}
-                  disabled={loading}
-                  className="w-full text-xs text-gray-400 py-1 hover:text-gray-600 disabled:opacity-50"
-                >
-                  Didn&apos;t get it? Resend OTP
-                </button>
-              </div>
-            </>
-          )}
-
-          {step === "signup" && (
-            <>
-              <p className="text-center text-xs text-gray-500 mb-4">Almost there! Just one more step.</p>
-              <label className="block mb-4">
-                <span className="block text-xs font-semibold text-gray-500 mb-1.5">Your name <span className="text-red-400">*</span></span>
-                <input
-                  type="text"
-                  autoComplete="name"
-                  placeholder="e.g. Arjun Mehta"
-                  value={signupName}
-                  onChange={(e) => setSignupName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSignup()}
-                  className="input-field"
-                />
-              </label>
-              <label className="block mb-5">
-                <span className="block text-xs font-semibold text-gray-500 mb-1.5">Email <span className="text-gray-400">(optional)</span></span>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={signupEmail}
-                  onChange={(e) => setSignupEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSignup()}
-                  className="input-field"
-                />
-              </label>
-              {error && (
-                <p className="text-red-500 text-xs font-medium mb-3 flex items-center gap-1.5" role="alert">
-                  <span aria-hidden="true">⚠</span> {error}
-                </p>
-              )}
-              <Button loading={loading} onClick={handleSignup}>
-                {loading ? "Saving…" : "Let's Go 🐾"}
-              </Button>
-              <button
-                type="button"
-                onClick={() => onLogin(pendingSession)}
-                className="w-full text-xs text-gray-400 py-2 hover:text-gray-600 mt-2"
-              >
-                Skip for now
+              {err && <p className="text-red-500 text-xs font-semibold text-center flex items-center justify-center gap-1.5"><span>⚠</span>{err}</p>}
+              <button onClick={() => verifyOtp()} disabled={loading}
+                className="btn-primary flex items-center justify-center gap-2 text-base">
+                {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"/>Verifying…</> : "Verify & Continue →"}
               </button>
-            </>
+              <div className="flex items-center justify-between text-sm">
+                <button onClick={() => { setStep("phone"); setOtp(["","","","","",""]); setErr(""); }}
+                  className="text-gray-400 hover:text-gray-600 font-semibold transition-colors">
+                  ← Change number
+                </button>
+                {timer > 0
+                  ? <span className="text-gray-400 text-xs">Resend in <strong className="text-orange-500">{timer}s</strong></span>
+                  : <button onClick={sendOtp} className="text-orange-500 font-bold text-xs hover:text-orange-600 transition-colors">Resend OTP</button>
+                }
+              </div>
+            </div>
           )}
-        </div>
 
-        <div className="flex items-center justify-center gap-4 mt-6 text-[10px] text-gray-400">
-          <span className="flex items-center gap-1">🔒 Secure</span>
-          <span>·</span>
-          <span className="flex items-center gap-1">💬 WhatsApp updates</span>
-        </div>
+          {/* ── ROLE ── */}
+          {step === "role" && (
+            <div className="space-y-3">
+              {ROLES.map(r => (
+                <button key={r.id} type="button"
+                  onClick={() => { setRole(r.id); setErr(""); }}
+                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
+                    role === r.id ? "border-orange-500 bg-orange-50 shadow-sm" : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                  }`}>
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${role === r.id ? "bg-orange-100" : "bg-gray-100"}`}>
+                    {r.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-gray-900 text-sm">{r.label}</span>
+                      {r.badge && <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{r.badge}</span>}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">{r.desc}</p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 shrink-0 transition-all flex items-center justify-center ${role === r.id ? "border-orange-500 bg-orange-500" : "border-gray-300"}`}>
+                    {role === r.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                  </div>
+                </button>
+              ))}
+              {err && <p className="text-red-500 text-xs font-semibold flex items-center gap-1.5"><span>⚠</span>{err}</p>}
+              <button onClick={() => { if (!role) return showErr("Please select a role"); setStep("profile"); }}
+                className="btn-primary text-base flex items-center justify-center gap-2 mt-2">
+                Continue →
+              </button>
+            </div>
+          )}
 
-        <p className="text-center text-[10px] text-gray-400 mt-3 px-4 leading-relaxed">
-          By continuing, you agree to PETclub&apos;s Terms of Service and Privacy Policy.
-        </p>
+          {/* ── PROFILE ── */}
+          {step === "profile" && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Your Name <span className="text-red-400">*</span>
+                </label>
+                <input type="text" autoComplete="name" placeholder="e.g. Arjun Mehta"
+                  value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  onKeyDown={e => e.key === "Enter" && submitProfile()}
+                  className="input-field text-base" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Email Address <span className="text-gray-400 font-normal normal-case">(optional — for confirmation email)</span>
+                </label>
+                <input type="email" autoComplete="email" placeholder="you@example.com"
+                  value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className="input-field" />
+              </div>
+              {role !== "customer" && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">
+                    Operating City
+                  </label>
+                  <input type="text" placeholder="e.g. Mumbai / Dallas"
+                    value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                    className="input-field" />
+                </div>
+              )}
+              {role !== "customer" && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800">
+                  <strong>⏳ Approval required</strong> — your {role} profile will be reviewed within 24–48 hours. You&apos;ll receive an SMS once approved.
+                </div>
+              )}
+              {err && <p className="text-red-500 text-xs font-semibold flex items-center gap-1.5"><span>⚠</span>{err}</p>}
+              <button onClick={submitProfile} disabled={loading}
+                className="btn-primary text-base flex items-center justify-center gap-2">
+                {loading
+                  ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"/>Saving…</>
+                  : role === "customer" ? "Enter PETclub 🐾" : "Submit Application 🐾"
+                }
+              </button>
+              <button type="button" onClick={() => { setStep("role"); setErr(""); }}
+                className="w-full text-xs text-gray-400 hover:text-gray-600 py-2 transition-colors">
+                ← Back to role selection
+              </button>
+            </div>
+          )}
+
+          <p className="text-center text-[11px] text-gray-400 mt-8 leading-relaxed">
+            By continuing, you agree to PETclub&apos;s <span className="underline cursor-pointer">Terms</span> &amp; <span className="underline cursor-pointer">Privacy Policy</span>.
+          </p>
+        </div>
       </div>
     </div>
   );

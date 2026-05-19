@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE = import.meta.env.VITE_API_URL || 'https://petclub-backend-production.up.railway.app/api';
 
 const getToken = () => localStorage.getItem('petclub_token');
 
@@ -23,6 +23,8 @@ export const api = {
   // User
   getMe: () => req('GET', '/users/me', null, true),
   updateMe: (data) => req('PUT', '/users/me', data, true),
+  setRole: (role, subRole, name, email, city) =>
+    req('POST', '/users/set-role', { role, subRole, name, email, city }, true),
 
   // Pets
   getPets: () => req('GET', '/pets', null, true),
@@ -41,9 +43,15 @@ export const api = {
   // Professionals
   getProfessionals: (city, role) =>
     req('GET', `/professionals?city=${city || ''}&sub_role=${role || ''}`),
+  getMyProProfile: () => req('GET', '/professionals/me', null, true),
+  updateMyProProfile: (data) => req('PUT', '/professionals/me', data, true),
 
-  // Contact (website)
-  sendAppLink: (data) => req('POST', '/contact/send-link', data),
+  // Admin
+  getAdminStats: () => req('GET', '/admin/stats', null, true),
+  getAdminUsers: () => req('GET', '/admin/users', null, true),
+  getPendingVerifications: () => req('GET', '/admin/pending-verifications', null, true),
+  verifyProfessional: (id, action, reason) => req('PUT', `/admin/verify/${id}`, { action, reason }, true),
+  suspendUser: (id) => req('PUT', `/admin/users/${id}/suspend`, {}, true),
 
   // Health
   health: () => req('GET', '/health'),

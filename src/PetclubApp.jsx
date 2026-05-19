@@ -1,219 +1,197 @@
 import { useState, useEffect } from "react";
-import { INIT_CUSTOMER, INIT_PETS, TC, fmtDate, within } from "./data/mockData.js";
-import { getGreeting, isDueSoon, daysUntil } from "./utils/dates.js";
+import { api } from "./api.js";
 import { loadPets, savePets } from "./utils/storage.js";
-import { api, hasToken } from "./api.js";
-import {
-  Stars,
-  Badge,
-  Modal,
-  Field,
-  Input,
-  Select,
-  Textarea,
-  Button,
-  EmptyState,
-  Toast,
-} from "./components/ui.jsx";
+import { TC, fmtDate } from "./data/mockData.js";
+
+/* ── helpers ── */
+const today = () => new Date().toISOString().split("T")[0];
+const getGreeting = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; };
+const daysUntil = s => Math.ceil((new Date(s) - Date.now()) / 864e5);
+const isDueSoon = (s, d) => { const n = daysUntil(s); return n >= 0 && n <= d; };
+const speciesEmoji = s => s === "cat" ? "🐈" : "🐕";
+
+const INITIAL_PETS = [];
 
 const SVC_OPTS = {
-  grooming: ["Full Groom", "Basic Groom", "Bath & Brush", "Nail Trim", "De-shedding", "Herbal Bath", "Spa Treatment", "Tick & Flea Bath"],
-  training: ["Puppy Basics", "Basic Obedience", "Advanced Obedience", "Agility", "Behaviour Correction", "Leash Training", "Litter Training"],
-  food: ["Dry Food", "Wet Food", "Raw Diet", "Treats", "Supplement"],
-  vet: ["General Check-up", "Vaccination", "Deworming", "Dental Care", "Surgery", "Emergency Care", "Nutrition Consult"],
+  grooming: ["Full Groom","Basic Groom","Bath & Brush","Nail Trim","De-shedding","Herbal Bath","Spa Treatment"],
+  training: ["Puppy Basics","Basic Obedience","Advanced Obedience","Agility","Behaviour Correction","Leash Training"],
+  food:     ["Dry Food","Wet Food","Raw Diet","Treats","Supplement"],
+  vet:      ["General Check-up","Vaccination","Deworming","Dental Care","Surgery","Emergency Care"],
 };
 
 const TAB_META = {
-  grooming: { icon: "✂️", label: "Grooming" },
-  training: { icon: "🎓", label: "Training" },
-  food: { icon: "🍖", label: "Food" },
-  vet: { icon: "🏥", label: "Vet" },
+  grooming: { icon:"✂️", label:"Grooming", color:"blue" },
+  training: { icon:"🎓", label:"Training", color:"purple" },
+  food:     { icon:"🍖", label:"Food",     color:"green" },
+  vet:      { icon:"🏥", label:"Vet",      color:"rose" },
 };
 
-function petRecordCount(p) {
+const SERVICES = [
+  { id:"grooming", icon:"✂️", label:"Grooming", bg:"bg-blue-50",   tc:"text-blue-600",   desc:"Doorstep grooming" },
+  { id:"training", icon:"🎓", label:"Training", bg:"bg-purple-50", tc:"text-purple-600", desc:"Certified trainers" },
+  { id:"vet",      icon:"🏥", label:"Vet Care",  bg:"bg-rose-50",   tc:"text-rose-600",   desc:"In-home vet visits" },
+  { id:"food",     icon:"🍖", label:"Pet Food",  bg:"bg-green-50",  tc:"text-green-600",  desc:"Free delivery" },
+];
+
+/* ── Shared UI ── */
+const Spinner = ({ sm }) => <div className={`border-2 border-orange-400 border-t-transparent rounded-full animate-spin ${sm ? "w-4 h-4" : "w-8 h-8"}`} />;
+const Bdg = ({ text, cls }) => <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>{text}</span>;
+
+function Modal({ title, onClose, children }) {
   return (
-    p.records.grooming.length +
-    p.records.training.length +
-    p.records.food.length +
-    p.records.vet.length
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
+          <h3 className="font-extrabold text-gray-900">{title}</h3>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 text-lg transition-colors">✕</button>
+        </div>
+        <div className="overflow-y-auto flex-1 p-5">{children}</div>
+      </div>
+    </div>
   );
 }
 
+function Fld({ label, children }) {
+  return <div className="mb-3.5"><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>{children}</div>;
+}
+
+function Inp(props) {
+  return <input className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all" {...props} />;
+}
+function Sel({ opts, ...props }) {
+  return <select className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-orange-400 bg-white" {...props}>{opts.map(o => <option key={o}>{o}</option>)}</select>;
+}
+function Txta(props) {
+  return <textarea className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-orange-400 resize-none" rows={3} {...props} />;
+}
+
+function Stars({ n }) {
+  return <span>{Array.from({length:5},(_,i)=><span key={i} className={i<n?"text-amber-400":"text-gray-200"}>★</span>)}</span>;
+}
+
+function Toast({ msg, type, onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, 3000); return () => clearTimeout(t); }, [onDone]);
+  const bg = type === "error" ? "bg-red-500" : "bg-green-500";
+  return (
+    <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 ${bg} text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-xl animate-slide-up max-w-xs text-center`}>
+      {msg}
+    </div>
+  );
+}
+
+/* ══════════ MAIN APP ══════════ */
 export default function PetclubApp({ session, onLogout }) {
-  const [customer] = useState({
-    ...INIT_CUSTOMER,
-    ...(session?.phone ? { phone: session.phone } : {}),
-    ...(session?.email ? { email: session.email } : {}),
-  });
-  const [pets, setPets] = useState(() => loadPets(INIT_PETS));
+  const [pets, setPets] = useState(() => loadPets(INITIAL_PETS));
   const [apiMode, setApiMode] = useState(false);
-  const [view, setView] = useState("dashboard");
+  const [userInfo, setUserInfo] = useState({ name: session?.name, phone: session?.phone });
+  const [view, setView] = useState("home");
   const [activePetId, setActivePetId] = useState(null);
   const [activeTab, setActiveTab] = useState("grooming");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [toast, setToast] = useState(null);
   const [search, setSearch] = useState("");
+  const [loadingPets, setLoadingPets] = useState(true);
 
-  const pet = pets.find((p) => p.id === activePetId);
-  const setF = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const sf = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const pet = pets.find(p => p.id === activePetId);
 
-  const goTo = (v) => {
-    setView(v);
-    if (v === "pets") setActivePetId(null);
-  };
-
-  const openPet = (id) => {
-    setActivePetId(id);
-    setActiveTab("grooming");
-    setView("petDetail");
-  };
-
-  // Try to load real data from API; fall back to local mock
+  // Load from API
   useEffect(() => {
-    if (!hasToken()) return;
-    api.getPets().then((res) => {
-      if (res.pets && res.pets.length > 0) {
-        // Map API pet shape → app shape
-        const mapped = res.pets.map((p) => ({
-          id: p.id, name: p.name, species: p.species || "dog",
-          breed: p.breed || "Mixed", age: p.age || "", dob: p.dob || "",
-          weight: p.weight || "", gender: p.gender || "", color: p.color || "", chip: p.chip || "",
-          records: { grooming: [], training: [], food: [], vet: [] },
-        }));
-        setPets(mapped);
+    api.getMe().then(r => { if (r.user?.name) setUserInfo({ name: r.user.name, phone: r.user.phone, email: r.user.email, city: r.user.customer_profiles?.[0]?.city }); }).catch(() => {});
+    api.getPets().then(r => {
+      if (r.pets?.length) {
+        setPets(r.pets.map(p => ({ id: p.id, name: p.name, species: p.species || "dog", breed: p.breed || "Mixed", age: p.age || "", dob: p.dob || "", weight: p.weight || "", gender: p.gender || "", color: p.color || "", chip: p.chip || "", records: { grooming:[], training:[], food:[], vet:[] } })));
         setApiMode(true);
       }
-    }).catch(() => {/* stay on local mock */});
+    }).catch(() => {}).finally(() => setLoadingPets(false));
   }, []);
 
-  useEffect(() => {
-    if (!apiMode) savePets(pets);
-  }, [pets, apiMode]);
+  useEffect(() => { if (!apiMode) savePets(pets); }, [pets, apiMode]);
 
-  useEffect(() => {
-    if (view === "petDetail" && activePetId && !pets.some((p) => p.id === activePetId)) {
-      goTo("pets");
-    }
-  }, [view, activePetId, pets]);
+  const goTo = v => { setView(v); if (v !== "petDetail") setActivePetId(null); };
+  const openPet = id => { setActivePetId(id); setActiveTab("grooming"); setView("petDetail"); };
+  const showToast = (msg, type="success") => setToast({ msg, type });
 
   const addPet = async () => {
-    const name = form.name?.trim();
-    if (!name) return;
-    const petData = { name, species: form.species || "dog", breed: form.breed || "Mixed", age: "", dob: "", weight: "", gender: "", color: "", chip: "" };
+    if (!form.name?.trim()) return;
+    const data = { name: form.name.trim(), species: form.species || "dog", breed: form.breed || "Mixed", age:"", dob:"", weight:"", gender:"", color:"", chip:"" };
     try {
-      if (apiMode || hasToken()) {
-        const res = await api.addPet(petData);
-        setPets((prev) => [...prev, { ...res.pet, records: { grooming: [], training: [], food: [], vet: [] } }]);
-        setApiMode(true);
+      let newPet;
+      if (apiMode) {
+        const r = await api.addPet(data);
+        newPet = { ...r.pet, records: { grooming:[], training:[], food:[], vet:[] } };
       } else {
-        setPets((prev) => [...prev, { id: `p${Date.now()}`, ...petData, records: { grooming: [], training: [], food: [], vet: [] } }]);
+        newPet = { id: `p${Date.now()}`, ...data, records: { grooming:[], training:[], food:[], vet:[] } };
       }
-      setModal(null);
-      setForm({});
-      setToast({ message: `${name} added to your family! 🐾`, type: "success" });
-    } catch {
-      setToast({ message: "Failed to save pet. Try again.", type: "error" });
-    }
+      setPets(prev => [...prev, newPet]);
+      setModal(null); setForm({});
+      showToast(`${data.name} added! 🐾`);
+    } catch { showToast("Failed to save pet", "error"); }
   };
 
   const addRecord = async () => {
     if (!activePetId) return;
-    const tab = activeTab;
-    const date = form.date || new Date().toISOString().split("T")[0];
+    const date = form.date || today();
     const base = { id: `r${Date.now()}`, date };
-    let rec, apiPayload;
-    if (tab === "grooming") {
-      rec = { ...base, service: form.service || "Grooming", by: form.by || "", cost: form.cost || "", notes: form.notes || "", rating: form.rating ? Number(form.rating) : undefined };
-      apiPayload = { service: rec.service, by: rec.by, cost: rec.cost, notes: rec.notes, rating: rec.rating, date };
-    } else if (tab === "training") {
-      rec = { ...base, session: form.service || "Training", by: form.by || "", notes: form.notes || "", rating: form.rating ? Number(form.rating) : undefined };
-      apiPayload = { session: rec.session, by: rec.by, notes: rec.notes, rating: rec.rating, date };
-    } else if (tab === "food") {
-      rec = { ...base, product: form.service || "Food", brand: form.by || "", qty: form.qty || "", cost: form.cost || "", notes: form.notes || "" };
-      apiPayload = { product: rec.product, brand: rec.brand, qty: rec.qty, cost: rec.cost, notes: rec.notes, date };
-    } else {
-      rec = { ...base, detail: form.service || "Vet Visit", vet: form.by || "", clinic: form.clinic || "", vtype: form.vtype || "General Check-up", nextDue: form.nextDue || undefined, cost: form.cost || "", notes: form.notes || "" };
-      apiPayload = { detail: rec.detail, vet: rec.vet, clinic: rec.clinic, vtype: rec.vtype, next_due: rec.nextDue, cost: rec.cost, notes: rec.notes, date };
-    }
+    let rec;
+    if (activeTab === "grooming")      rec = { ...base, service: form.service || "Grooming", by: form.by || "", cost: form.cost || "", notes: form.notes || "", rating: form.rating ? Number(form.rating) : 0 };
+    else if (activeTab === "training") rec = { ...base, session: form.service || "Training", by: form.by || "", notes: form.notes || "", rating: form.rating ? Number(form.rating) : 0 };
+    else if (activeTab === "food")     rec = { ...base, product: form.service || "Food", brand: form.by || "", qty: form.qty || "", cost: form.cost || "", notes: form.notes || "" };
+    else                               rec = { ...base, detail: form.service || "Vet Visit", vet: form.by || "", clinic: form.clinic || "", vtype: form.vtype || "General Check-up", nextDue: form.nextDue || undefined, cost: form.cost || "", notes: form.notes || "" };
     try {
-      if (apiMode || hasToken()) {
-        await api.addRecord(activePetId, tab, apiPayload);
+      if (apiMode) {
+        const ap = { date, service: rec.service, session: rec.session, product: rec.product, detail: rec.detail, by: rec.by, brand: rec.brand, qty: rec.qty, vet: rec.vet, clinic: rec.clinic, cost: rec.cost, notes: rec.notes, rating: rec.rating, next_due: rec.nextDue };
+        await api.addRecord(activePetId, activeTab, ap).catch(() => {});
       }
-    } catch { /* still save locally */ }
-    setPets((prev) => prev.map((p) => p.id === activePetId ? { ...p, records: { ...p.records, [tab]: [rec, ...p.records[tab]] } } : p));
-    setModal(null);
-    setForm({});
-    setToast({ message: "Record added!", type: "success" });
+    } catch { }
+    setPets(prev => prev.map(p => p.id === activePetId ? { ...p, records: { ...p.records, [activeTab]: [rec, ...p.records[activeTab]] } } : p));
+    setModal(null); setForm({});
+    showToast("Record saved!");
   };
 
-  const filt = (arr) => arr?.filter((r) => within(r.date, 9999)) || [];
+  const firstName = (userInfo.name || session?.name || "there").split(" ")[0];
+  const totalRecs = pets.reduce((s,p) => s + p.records.grooming.length + p.records.training.length + p.records.food.length + p.records.vet.length, 0);
+  const allUpcoming = pets.flatMap(p => p.records.vet.filter(v => v.nextDue && isDueSoon(v.nextDue, 60)).map(v => ({ ...v, petName: p.name, petId: p.id })));
+  const filteredPets = pets.filter(p => !search.trim() || p.name.toLowerCase().includes(search.toLowerCase()) || p.breed.toLowerCase().includes(search.toLowerCase()));
 
-  const totalRec = pets.reduce(
-    (s, p) =>
-      s + p.records.grooming.length + p.records.training.length + p.records.food.length + p.records.vet.length,
-    0
-  );
-
-  const filteredPets = pets.filter(
-    (p) =>
-      !search.trim() ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.breed.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const navItems = [
-    { id: "dashboard", icon: "🏠", label: "Home" },
-    { id: "pets", icon: "🐾", label: "Pets" },
-    { id: "profile", icon: "👤", label: "Profile" },
+  /* ── NAV ── */
+  const NAV = [
+    { id:"home",    icon:"🏠", label:"Home" },
+    { id:"pets",    icon:"🐾", label:"My Pets" },
+    { id:"profile", icon:"👤", label:"Profile" },
   ];
 
-  const AppHeader = () => (
-    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 px-5 py-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center text-xl shrink-0 shadow-sm">
-            {customer.avatar}
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-gray-400 font-medium truncate">PETclub</p>
-            <p className="text-sm font-bold text-gray-800 truncate">{customer.name.split(" ")[0]}</p>
+  /* ── HEADER ── */
+  const Header = () => (
+    <header className="sticky top-0 z-30 glass-white border-b border-gray-100 px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-brand-gradient flex items-center justify-center text-white text-lg font-black shadow-orange shrink-0">🐾</div>
+          <div>
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">PETclub</p>
+            <p className="text-sm font-extrabold text-gray-900 leading-tight">{firstName}</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setModal("reminders")}
-          className="relative w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-lg hover:bg-gray-100 transition-colors"
-          aria-label="View reminders"
-        >
+        <button onClick={() => setModal("reminders")}
+          className="relative w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center text-lg hover:bg-orange-50 transition-colors">
           🔔
-          {pets
-            .flatMap((p) => p.records.vet.map((v) => ({ ...v, petName: p.name, petId: p.id })))
-            .some((v) => v.nextDue && isDueSoon(v.nextDue, 30)) && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
-          )}
+          {allUpcoming.length > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />}
         </button>
       </div>
     </header>
   );
 
+  /* ── BOTTOM NAV ── */
   const BottomNav = () => (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 max-w-lg mx-auto nav-safe">
-      <div className="bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-nav mx-2 mb-2 rounded-2xl flex">
-        {navItems.map((n) => {
+    <nav className="fixed bottom-0 inset-x-0 z-40 max-w-lg mx-auto nav-safe">
+      <div className="bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-nav mx-3 mb-3 rounded-2xl flex">
+        {NAV.map(n => {
           const active = view === n.id || (view === "petDetail" && n.id === "pets");
           return (
-            <button
-              key={n.id}
-              type="button"
-              onClick={() => goTo(n.id)}
-              className={`flex-1 flex flex-col items-center py-2.5 text-[11px] font-semibold transition-all duration-200 relative ${
-                active ? "text-brand-500" : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              {active && (
-                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-brand-500 rounded-full" />
-              )}
+            <button key={n.id} onClick={() => goTo(n.id)}
+              className={`flex-1 flex flex-col items-center py-3 text-[11px] font-bold transition-all relative ${active ? "text-orange-500" : "text-gray-400"}`}>
+              {active && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-orange-500 rounded-full" />}
               <span className={`text-xl mb-0.5 transition-transform ${active ? "scale-110" : ""}`}>{n.icon}</span>
               {n.label}
             </button>
@@ -223,255 +201,150 @@ export default function PetclubApp({ session, onLogout }) {
     </nav>
   );
 
-  const Dashboard = () => {
-    const upcoming = pets
-      .flatMap((p) =>
-        p.records.vet
-          .filter((v) => v.nextDue && daysUntil(v.nextDue) >= 0 && daysUntil(v.nextDue) <= 90)
-          .map((v) => ({ pet: p.name, detail: v.detail, due: v.nextDue, petId: p.id }))
-      )
-      .sort((a, b) => daysUntil(a.due) - daysUntil(b.due));
+  /* ── HOME DASHBOARD ── */
+  const Home = () => (
+    <div className="p-4 space-y-5 animate-fade-in">
+      {/* Hero greeting */}
+      <div className="bg-brand-gradient rounded-3xl p-5 text-white relative overflow-hidden">
+        <div className="absolute -right-6 -top-6 text-8xl opacity-20 select-none">🐕</div>
+        <div className="absolute -left-4 -bottom-4 text-7xl opacity-15 select-none">🐈</div>
+        <div className="relative z-10">
+          <p className="text-orange-100 text-xs font-semibold uppercase tracking-wide mb-1">{getGreeting()}</p>
+          <h1 className="text-2xl font-extrabold mb-1">{firstName}! 👋</h1>
+          <p className="text-orange-100 text-sm">{pets.length > 0 ? `${pets.length} pet${pets.length!==1?"s":""} · ${totalRecs} care record${totalRecs!==1?"s":""}` : "Add your first pet to get started"}</p>
+        </div>
+      </div>
 
-    const recent = pets
-      .flatMap((p) => [
-        ...p.records.grooming.map((r) => ({
-          pet: p.name,
-          petId: p.id,
-          type: "grooming",
-          icon: TAB_META.grooming.icon,
-          label: r.service,
-          by: r.by,
-          date: r.date,
-        })),
-        ...p.records.training.map((r) => ({
-          pet: p.name,
-          petId: p.id,
-          type: "training",
-          icon: TAB_META.training.icon,
-          label: r.session,
-          by: r.by,
-          date: r.date,
-        })),
-        ...p.records.food.map((r) => ({
-          pet: p.name,
-          petId: p.id,
-          type: "food",
-          icon: TAB_META.food.icon,
-          label: r.product,
-          by: r.brand,
-          date: r.date,
-        })),
-        ...p.records.vet.map((r) => ({
-          pet: p.name,
-          petId: p.id,
-          type: "vet",
-          icon: TAB_META.vet.icon,
-          label: r.detail,
-          by: r.vet,
-          date: r.date,
-        })),
-      ])
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 5);
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <button onClick={() => goTo("pets")}
+          className="bg-white rounded-2xl border border-gray-100 p-4 text-left shadow-card hover:shadow-card-hover hover:border-orange-100 transition-all active:scale-[0.98]">
+          <div className="text-2xl mb-2">🐾</div>
+          <div className="text-2xl font-extrabold text-orange-500">{pets.length}</div>
+          <div className="text-xs text-gray-400 font-medium">My Pets</div>
+        </button>
+        <button onClick={() => pets[0] && openPet(pets[0].id)}
+          className="bg-white rounded-2xl border border-gray-100 p-4 text-left shadow-card hover:shadow-card-hover hover:border-blue-100 transition-all active:scale-[0.98]">
+          <div className="text-2xl mb-2">📋</div>
+          <div className="text-2xl font-extrabold text-blue-600">{totalRecs}</div>
+          <div className="text-xs text-gray-400 font-medium">Care Records</div>
+        </button>
+      </div>
 
-    return (
-      <div className="p-5 animate-fade-in">
-        <h1 className="text-2xl font-extrabold text-gray-800 mb-0.5">
-          {getGreeting()}, {customer.name.split(" ")[0]}! 👋
-        </h1>
-        <p className="text-gray-500 text-sm mb-5">Here&apos;s how your pets are doing today.</p>
-
-        <div className="grid grid-cols-2 gap-3 mb-5">
-          {[
-            { label: "My Pets", val: pets.length, icon: "🐾", bg: "from-orange-50 to-amber-50", tc: "text-brand-600", action: () => goTo("pets") },
-            { label: "Care Records", val: totalRec, icon: "📋", bg: "from-blue-50 to-indigo-50", tc: "text-blue-600", action: () => pets[0] && openPet(pets[0].id) },
-          ].map((s) => (
-            <button
-              key={s.label}
-              type="button"
-              onClick={s.action}
-              className={`bg-gradient-to-br ${s.bg} rounded-2xl p-4 text-left card-interactive border border-white/80`}
-            >
-              <p className="text-2xl mb-2">{s.icon}</p>
-              <p className={`text-3xl font-extrabold ${s.tc}`}>{s.val}</p>
-              <p className="text-xs text-gray-500 font-medium mt-0.5">{s.label}</p>
+      {/* Services */}
+      <div>
+        <h2 className="font-extrabold text-gray-900 mb-3">Quick Book</h2>
+        <div className="grid grid-cols-4 gap-2">
+          {SERVICES.map(s => (
+            <button key={s.id} onClick={() => setModal("bookService")}
+              className={`${s.bg} rounded-2xl p-3 text-center transition-all active:scale-[0.95] hover:opacity-90`}>
+              <div className="text-2xl mb-1">{s.icon}</div>
+              <div className={`text-xs font-bold ${s.tc}`}>{s.label}</div>
             </button>
           ))}
         </div>
+      </div>
 
-        {pets.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-5 -mx-1 px-1 scrollbar-hide">
-            {pets.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => openPet(p.id)}
-                className="shrink-0 flex items-center gap-2 bg-white border border-gray-100 rounded-full pl-1 pr-4 py-1 shadow-sm hover:border-orange-200 hover:shadow-md transition-all active:scale-95"
-              >
-                <span className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center text-lg">
-                  {p.species === "dog" ? "🐕" : "🐈"}
-                </span>
-                <span className="text-sm font-semibold text-gray-700">{p.name}</span>
+      {/* My Pets carousel */}
+      {pets.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-extrabold text-gray-900">My Pets</h2>
+            <button onClick={() => goTo("pets")} className="text-xs text-orange-500 font-bold">See all →</button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+            {pets.map(p => (
+              <button key={p.id} onClick={() => openPet(p.id)}
+                className="shrink-0 bg-white rounded-2xl border border-gray-100 shadow-card hover:shadow-card-hover hover:border-orange-100 p-3 text-center w-24 transition-all active:scale-[0.95]">
+                <div className="text-4xl mb-1.5">{speciesEmoji(p.species)}</div>
+                <div className="text-xs font-bold text-gray-800 truncate">{p.name}</div>
+                <div className="text-[10px] text-gray-400 mt-0.5">{p.breed.length>8?p.breed.slice(0,8)+"…":p.breed}</div>
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => {
-                setForm({ species: "dog" });
-                setModal("addPet");
-              }}
-              className="shrink-0 flex items-center gap-1 text-brand-500 text-sm font-bold px-3 py-2 rounded-full border-2 border-dashed border-orange-200 hover:bg-orange-50 transition-colors"
-            >
-              + Add
+            <button onClick={() => { setForm({species:"dog"}); setModal("addPet"); }}
+              className="shrink-0 w-24 border-2 border-dashed border-orange-200 text-orange-400 rounded-2xl p-3 text-center hover:bg-orange-50 transition-colors flex flex-col items-center justify-center">
+              <span className="text-2xl mb-1">+</span>
+              <span className="text-[10px] font-bold">Add Pet</span>
             </button>
           </div>
-        )}
-
-        <section className="card p-5 mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-gray-700">💉 Upcoming</h2>
-            {upcoming.length > 0 && <Badge text={`${upcoming.length} due`} cls="bg-amber-100 text-amber-800" />}
-          </div>
-          {upcoming.length === 0 ? (
-            <p className="text-sm text-gray-400 py-2">All caught up — no vaccinations due soon.</p>
-          ) : (
-            <div className="space-y-1">
-              {upcoming.map((u, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => openPet(u.petId)}
-                  className="w-full flex justify-between items-center py-3 border-b border-gray-50 last:border-0 text-sm text-left hover:bg-gray-50 rounded-lg px-2 -mx-2 transition-colors"
-                >
-                  <span className="font-semibold text-gray-800">
-                    {u.pet} — {u.detail}
-                  </span>
-                  <Badge
-                    text={daysUntil(u.due) === 0 ? "Today" : daysUntil(u.due) <= 7 ? `${daysUntil(u.due)}d` : fmtDate(u.due)}
-                    cls={daysUntil(u.due) <= 7 ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-700"}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="card p-5">
-          <h2 className="font-bold text-gray-700 mb-3">🕐 Recent activity</h2>
-          {recent.length === 0 ? (
-            <p className="text-sm text-gray-400 py-2">No activity yet. Add a pet to get started!</p>
-          ) : (
-            <div className="space-y-1">
-              {recent.map((r, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => openPet(r.petId)}
-                  className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded-lg px-1 -mx-1 transition-colors text-left"
-                >
-                  <span
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${TC[r.type].light}`}
-                  >
-                    {r.icon}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">
-                      {r.pet} · {r.label}
-                    </p>
-                    <p className="text-xs text-gray-400">{r.by}</p>
-                  </div>
-                  <span className="text-xs text-gray-400 shrink-0">{fmtDate(r.date)}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-    );
-  };
-
-  const MyPets = () => (
-    <div className="p-5 animate-fade-in">
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-800">My Pets</h1>
-          <p className="text-gray-500 text-sm">{pets.length} companion{pets.length !== 1 ? "s" : ""}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setForm({ species: "dog" });
-            setModal("addPet");
-          }}
-          className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-sm hover:shadow-md transition-all active:scale-95 shrink-0"
-        >
+      )}
+
+      {/* No pets CTA */}
+      {pets.length === 0 && !loadingPets && (
+        <div className="bg-white rounded-3xl border-2 border-dashed border-orange-200 p-8 text-center">
+          <div className="text-5xl mb-3">🐾</div>
+          <h3 className="font-extrabold text-gray-900 mb-1">Add your first pet</h3>
+          <p className="text-gray-400 text-sm mb-5">Track grooming, vet visits & more.</p>
+          <button onClick={() => { setForm({species:"dog"}); setModal("addPet"); }}
+            className="btn-primary px-8 py-2.5 rounded-2xl text-sm w-auto inline-flex">
+            + Add Pet
+          </button>
+        </div>
+      )}
+
+      {/* Upcoming reminders */}
+      {allUpcoming.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">💉</span>
+            <h2 className="font-extrabold text-gray-900">Upcoming ({allUpcoming.length})</h2>
+          </div>
+          {allUpcoming.slice(0,3).map((v, i) => (
+            <button key={i} onClick={() => openPet(v.petId)}
+              className="w-full flex items-center justify-between py-2 border-b border-amber-100 last:border-0 text-sm text-left">
+              <span className="font-semibold text-gray-800">{v.petName} · {v.detail}</span>
+              <Bdg text={daysUntil(v.nextDue)===0?"Today":`${daysUntil(v.nextDue)}d`} cls="bg-amber-200 text-amber-800" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  /* ── MY PETS ── */
+  const MyPets = () => (
+    <div className="p-4 animate-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-xl font-extrabold text-gray-900">My Pets</h1>
+          <p className="text-xs text-gray-400">{pets.length} companion{pets.length!==1?"s":""}</p>
+        </div>
+        <button onClick={() => { setForm({species:"dog"}); setModal("addPet"); }}
+          className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-orange transition-all active:scale-95">
           + Add Pet
         </button>
       </div>
 
       {pets.length > 1 && (
         <div className="relative mb-4">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">🔍</span>
-          <input
-            type="search"
-            placeholder="Search by name or breed…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-field pl-9 py-2.5"
-          />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300">🔍</span>
+          <input type="search" placeholder="Search pets…" value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-orange-400 bg-white" />
         </div>
       )}
 
       {filteredPets.length === 0 ? (
-        <EmptyState
-          icon="🐾"
-          title={search ? "No pets found" : "No pets yet"}
-          description={search ? "Try a different search term." : "Add your first furry friend to start tracking their care."}
-          action={
-            !search && (
-              <button
-                type="button"
-                onClick={() => {
-                  setForm({ species: "dog" });
-                  setModal("addPet");
-                }}
-                className="bg-brand-500 text-white font-bold px-6 py-2.5 rounded-full text-sm hover:bg-brand-600 transition-colors"
-              >
-                Add your first pet
-              </button>
-            )
-          }
-        />
+        <div className="text-center py-16 text-gray-300">
+          <div className="text-5xl mb-3">🐾</div>
+          <div className="font-bold text-gray-500">{search ? "No pets found" : "No pets yet"}</div>
+          {!search && <button onClick={() => { setForm({species:"dog"}); setModal("addPet"); }} className="mt-4 btn-primary px-8 py-2.5 rounded-2xl text-sm w-auto inline-flex">Add your first pet</button>}
+        </div>
       ) : (
-        <div className="space-y-4">
-          {filteredPets.map((p) => {
-            const count = petRecordCount(p);
+        <div className="space-y-3">
+          {filteredPets.map(p => {
+            const cnt = p.records.grooming.length + p.records.training.length + p.records.food.length + p.records.vet.length;
             return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => openPet(p.id)}
-                className="w-full text-left card-interactive overflow-hidden group"
-              >
-                <div
-                  className={`p-6 text-center relative ${
-                    p.species === "dog"
-                      ? "bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100"
-                      : "bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100"
-                  }`}
-                >
-                  <p className="text-5xl mb-2 group-hover:scale-110 transition-transform duration-200">
-                    {p.species === "dog" ? "🐕" : "🐈"}
-                  </p>
-                  <h2 className="text-xl font-extrabold text-gray-800">{p.name}</h2>
-                  <p className="text-sm text-gray-500">{p.breed}</p>
-                  {p.age && <p className="text-xs text-gray-400 mt-1">{p.age}</p>}
-                </div>
-                <div className="px-4 py-3 flex items-center justify-between bg-white border-t border-gray-50">
-                  <span className="text-xs text-gray-500">{count} care record{count !== 1 ? "s" : ""}</span>
-                  <span className="text-xs font-semibold text-brand-500 group-hover:translate-x-0.5 transition-transform">
-                    View →
-                  </span>
+              <button key={p.id} onClick={() => openPet(p.id)}
+                className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-card hover:shadow-card-hover hover:border-orange-100 transition-all active:scale-[0.98] overflow-hidden">
+                <div className={`flex items-center gap-4 p-4 ${p.species==="dog"?"bg-gradient-to-r from-orange-50 to-amber-50":"bg-gradient-to-r from-purple-50 to-pink-50"}`}>
+                  <div className="text-5xl">{speciesEmoji(p.species)}</div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-extrabold text-gray-900 text-lg">{p.name}</h2>
+                    <p className="text-sm text-gray-500">{p.breed}{p.gender?` · ${p.gender}`:""}{p.age?` · ${p.age}`:""}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{cnt} care record{cnt!==1?"s":""}</p>
+                  </div>
+                  <span className="text-orange-400 font-bold text-lg">→</span>
                 </div>
               </button>
             );
@@ -481,331 +354,189 @@ export default function PetclubApp({ session, onLogout }) {
     </div>
   );
 
+  /* ── PET DETAIL ── */
   const PetDetail = () => {
     if (!pet) return null;
-    const records = {
-      grooming: filt(pet.records.grooming),
-      training: filt(pet.records.training),
-      food: filt(pet.records.food),
-      vet: filt(pet.records.vet),
-    };
-    const list = records[activeTab] || [];
-
+    const list = pet.records[activeTab] || [];
     return (
-      <div className="p-5 animate-fade-in">
-        <button
-          type="button"
-          onClick={() => goTo("pets")}
-          className="inline-flex items-center gap-1 text-sm text-brand-500 font-semibold mb-4 hover:text-brand-600 transition-colors"
-        >
-          ← Back to My Pets
+      <div className="p-4 animate-fade-in">
+        <button onClick={() => goTo("pets")} className="inline-flex items-center gap-1.5 text-sm text-orange-500 font-bold mb-4 hover:text-orange-600">
+          ← Back
         </button>
-
-        <div
-          className={`rounded-2xl p-6 mb-5 text-center shadow-card ${
-            pet.species === "dog"
-              ? "bg-gradient-to-br from-orange-50 to-amber-100"
-              : "bg-gradient-to-br from-purple-50 to-pink-100"
-          }`}
-        >
-          <p className="text-6xl mb-2">{pet.species === "dog" ? "🐕" : "🐈"}</p>
-          <h1 className="text-2xl font-extrabold text-gray-800">{pet.name}</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {pet.breed}
-            {pet.gender ? ` · ${pet.gender}` : ""}
-            {pet.weight ? ` · ${pet.weight}` : ""}
-          </p>
+        <div className={`rounded-2xl p-5 mb-4 text-center ${pet.species==="dog"?"bg-gradient-to-br from-orange-50 to-amber-100":"bg-gradient-to-br from-purple-50 to-pink-100"}`}>
+          <div className="text-6xl mb-2">{speciesEmoji(pet.species)}</div>
+          <h1 className="text-2xl font-extrabold text-gray-900">{pet.name}</h1>
+          <p className="text-gray-500 text-sm">{pet.breed}{pet.gender?` · ${pet.gender}`:""}{pet.weight?` · ${pet.weight}`:""}</p>
+          {pet.chip && <p className="text-xs text-gray-400 mt-1">🔖 Chip: {pet.chip}</p>}
         </div>
 
-        {(pet.chip || pet.color || pet.dob) && (
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {pet.dob && (
-              <div className="card p-3 text-center">
-                <p className="text-[10px] text-gray-400 font-semibold uppercase">Born</p>
-                <p className="text-xs font-bold text-gray-700 mt-0.5">{fmtDate(pet.dob)}</p>
-              </div>
-            )}
-            {pet.color && (
-              <div className="card p-3 text-center">
-                <p className="text-[10px] text-gray-400 font-semibold uppercase">Color</p>
-                <p className="text-xs font-bold text-gray-700 mt-0.5">{pet.color}</p>
-              </div>
-            )}
-            {pet.chip && (
-              <div className="card p-3 text-center col-span-2">
-                <p className="text-[10px] text-gray-400 font-semibold uppercase">Microchip</p>
-                <p className="text-xs font-mono font-bold text-gray-700 mt-0.5">{pet.chip}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-1 px-1 scrollbar-hide">
-          {Object.entries(TAB_META).map(([t, meta]) => {
-            const count = pet.records[t]?.length || 0;
-            const active = activeTab === t;
+        {/* Tabs */}
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 mb-3">
+          {Object.entries(TAB_META).map(([t, m]) => {
+            const cnt = pet.records[t]?.length || 0;
             return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setActiveTab(t)}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
-                  active ? `${TC[t].btn} text-white shadow-sm scale-[1.02]` : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
-                }`}
-              >
-                <span>{meta.icon}</span>
-                {meta.label}
-                {count > 0 && (
-                  <span
-                    className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] ${active ? "bg-white/25" : "bg-gray-100 text-gray-500"}`}
-                  >
-                    {count}
-                  </span>
-                )}
+              <button key={t} onClick={() => setActiveTab(t)}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${activeTab===t ? "bg-orange-500 text-white shadow-orange" : "bg-white border border-gray-200 text-gray-600 hover:border-orange-200"}`}>
+                {m.icon} {m.label}
+                {cnt > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeTab===t?"bg-white/25":"bg-gray-100 text-gray-500"}`}>{cnt}</span>}
               </button>
             );
           })}
         </div>
 
-        <button
-          type="button"
-          onClick={() => { setForm({ date: new Date().toISOString().split("T")[0] }); setModal("addRecord"); }}
-          className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-orange-200 text-orange-500 font-bold py-3 rounded-2xl hover:bg-orange-50 transition-colors mb-3"
-        >
+        <button onClick={() => { setForm({ date: today() }); setModal("addRecord"); }}
+          className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-orange-200 text-orange-500 font-bold py-3.5 rounded-2xl hover:bg-orange-50 transition-colors mb-3 text-sm">
           + Add {TAB_META[activeTab].label} Record
         </button>
 
         <div className="space-y-3">
-          {list.length === 0 ? (
-            <EmptyState
-              icon={TAB_META[activeTab].icon}
-              title={`No ${TAB_META[activeTab].label.toLowerCase()} records`}
-              description="Records you add will show up here for easy tracking."
-            />
-          ) : (
-            list.map((r) => (
-              <article key={r.id} className={`card p-4 border-l-4 ${TC[activeTab].border} animate-fade-in`}>
+          {list.length === 0
+            ? <div className="text-center py-10 text-gray-300"><div className="text-4xl mb-2">{TAB_META[activeTab].icon}</div><div className="font-bold text-gray-400">No {TAB_META[activeTab].label.toLowerCase()} records yet</div></div>
+            : list.map(r => (
+              <div key={r.id} className={`bg-white rounded-2xl border-l-4 ${TC[activeTab]?.border||"border-gray-200"} border border-gray-100 p-4 shadow-card animate-fade-in`}>
                 <div className="flex justify-between items-start gap-2">
-                  <p className="font-bold text-sm text-gray-800">{r.service || r.session || r.product || r.detail}</p>
+                  <p className="font-bold text-sm text-gray-900">{r.service||r.session||r.product||r.detail}</p>
                   {r.cost && <span className="text-xs font-semibold text-gray-500 shrink-0">{r.cost}</span>}
                 </div>
-                <p className="text-xs text-gray-500 mt-1.5">
-                  {r.by || r.brand || r.vet}
-                  {r.clinic ? ` · ${r.clinic}` : ""} · {fmtDate(r.date)}
-                </p>
-                {r.notes && <p className="text-xs text-gray-400 mt-2 italic">&ldquo;{r.notes}&rdquo;</p>}
-                {r.rating ? (
-                  <div className="mt-2">
-                    <Stars n={r.rating} />
-                  </div>
-                ) : null}
-                {r.nextDue && (
-                  <div className="mt-2">
-                    <Badge text={`Next: ${fmtDate(r.nextDue)}`} cls="bg-green-100 text-green-700" />
-                  </div>
-                )}
-              </article>
+                <p className="text-xs text-gray-400 mt-1">{r.by||r.brand||r.vet}{r.clinic?` · ${r.clinic}`:""} · {fmtDate(r.date)}</p>
+                {r.rating > 0 && <div className="mt-1.5"><Stars n={r.rating} /></div>}
+                {r.notes && <p className="text-xs text-gray-400 mt-2 italic border-t border-gray-50 pt-2">&ldquo;{r.notes}&rdquo;</p>}
+                {r.nextDue && <div className="mt-2"><Bdg text={`Next: ${fmtDate(r.nextDue)}`} cls="bg-green-100 text-green-700" /></div>}
+              </div>
             ))
-          )}
+          }
         </div>
       </div>
     );
   };
 
+  /* ── PROFILE ── */
   const Profile = () => (
-    <div className="p-5 animate-fade-in">
-      <h1 className="text-2xl font-extrabold text-gray-800 mb-5">My Profile</h1>
-      <div className="card p-5 mb-4">
-        <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-100">
-          <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl flex items-center justify-center text-5xl shadow-inner">
-            {customer.avatar}
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">{customer.name}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Member since {customer.since}</p>
-            <Badge text="Customer" cls="bg-orange-100 text-orange-700 mt-2" />
-          </div>
+    <div className="p-4 animate-fade-in">
+      <h1 className="text-xl font-extrabold text-gray-900 mb-5">My Profile</h1>
+      <div className="bg-brand-gradient rounded-3xl p-5 mb-4 flex items-center gap-4">
+        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-4xl shadow-inner">🐕</div>
+        <div>
+          <h2 className="text-xl font-bold text-white">{userInfo.name || "Pet Parent"}</h2>
+          <p className="text-orange-100 text-xs mt-0.5">PETclub Member</p>
+          <Bdg text="🐾 Customer" cls="bg-white/20 text-white mt-1" />
         </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-4 space-y-0">
         {[
-          ["📧", "Email", customer.email],
-          ["📱", "Phone", customer.phone],
-          ["🏙️", "City", customer.city],
-          ["📍", "Address", customer.address],
+          ["📱", "Phone", userInfo.phone || session?.phone || "—"],
+          ["📧", "Email", userInfo.email || "Add email"],
+          ["📍", "City",  userInfo.city || "Add city"],
         ].map(([icon, label, val]) => (
-          <div key={label} className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-0">
-            <span className="text-lg shrink-0">{icon}</span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-gray-400">{label}</p>
-              <p className="text-sm font-medium text-gray-800 break-words">{val}</p>
-            </div>
+          <div key={label} className="flex items-center gap-3 py-3.5 border-b border-gray-50 last:border-0">
+            <span className="text-xl w-8 shrink-0">{icon}</span>
+            <div className="flex-1"><p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">{label}</p><p className="text-sm font-semibold text-gray-800">{val}</p></div>
           </div>
         ))}
       </div>
 
-      <div className="card p-4 mb-4">
-        <p className="text-xs font-semibold text-gray-400 mb-2">Quick stats</p>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-orange-50 rounded-xl py-3">
-            <p className="text-lg font-extrabold text-brand-600">{pets.length}</p>
-            <p className="text-[10px] text-gray-500 font-medium">Pets</p>
-          </div>
-          <div className="bg-blue-50 rounded-xl py-3">
-            <p className="text-lg font-extrabold text-blue-600">{totalRec}</p>
-            <p className="text-[10px] text-gray-500 font-medium">Records</p>
-          </div>
-          <div className="bg-green-50 rounded-xl py-3">
-            <p className="text-lg font-extrabold text-green-600">{customer.since.split(" ")[0]}</p>
-            <p className="text-[10px] text-gray-500 font-medium">Since</p>
-          </div>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-4">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Quick Stats</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-orange-50 rounded-xl p-3 text-center"><div className="text-xl font-extrabold text-orange-500">{pets.length}</div><div className="text-[10px] text-gray-400">Pets</div></div>
+          <div className="bg-blue-50 rounded-xl p-3 text-center"><div className="text-xl font-extrabold text-blue-600">{totalRecs}</div><div className="text-[10px] text-gray-400">Records</div></div>
         </div>
       </div>
 
-      <Button
-        variant="secondary"
-        onClick={() => setModal("logout")}
-        className="border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200"
-      >
-        Sign Out
-      </Button>
+      <button onClick={() => setModal("logout")} className="w-full border border-red-200 text-red-500 font-bold py-3 rounded-2xl text-sm hover:bg-red-50 transition-colors">
+        🚪 Sign Out
+      </button>
     </div>
   );
 
   return (
     <div className="app-shell">
-      <AppHeader />
+      <Header />
       <main key={view} className="safe-bottom min-h-screen">
-        {view === "dashboard" && <Dashboard />}
-        {view === "pets" && <MyPets />}
+        {view === "home"      && <Home />}
+        {view === "pets"      && <MyPets />}
         {view === "petDetail" && <PetDetail />}
-        {view === "profile" && <Profile />}
+        {view === "profile"   && <Profile />}
       </main>
       <BottomNav />
+      {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
 
-      {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
-
+      {/* ADD PET */}
       {modal === "addPet" && (
         <Modal title="Add New Pet 🐾" onClose={() => setModal(null)}>
-          <Field label="Pet name *">
-            <Input placeholder="e.g. Bruno" value={form.name || ""} onChange={setF("name")} autoFocus />
-          </Field>
-          <Field label="Species">
-            <Select opts={["dog", "cat"]} value={form.species || "dog"} onChange={setF("species")} />
-          </Field>
-          <Field label="Breed (optional)">
-            <Input placeholder="e.g. Labrador" value={form.breed || ""} onChange={setF("breed")} />
-          </Field>
-          <Button onClick={addPet} disabled={!form.name?.trim()}>
-            Add Pet
-          </Button>
+          <Fld label="Pet Name *"><Inp autoFocus placeholder="e.g. Bruno" value={form.name||""} onChange={sf("name")} onKeyDown={e=>e.key==="Enter"&&addPet()} /></Fld>
+          <Fld label="Species"><Sel opts={["dog","cat","bird","rabbit","other"]} value={form.species||"dog"} onChange={sf("species")} /></Fld>
+          <Fld label="Breed"><Inp placeholder="e.g. Labrador" value={form.breed||""} onChange={sf("breed")} /></Fld>
+          <Fld label="Age"><Inp placeholder="e.g. 3 years" value={form.age||""} onChange={sf("age")} /></Fld>
+          <button onClick={addPet} disabled={!form.name?.trim()} className="btn-primary mt-1">Add Pet</button>
         </Modal>
       )}
 
+      {/* ADD RECORD */}
       {modal === "addRecord" && pet && (
         <Modal title={`Add ${TAB_META[activeTab].label} Record`} onClose={() => { setModal(null); setForm({}); }}>
-          <Field label={activeTab === "food" ? "Product name *" : activeTab === "vet" ? "Visit type *" : "Service *"}>
-            <Select opts={SVC_OPTS[activeTab]} value={form.service || ""} onChange={setF("service")} />
-          </Field>
-          <Field label={activeTab === "food" ? "Brand" : activeTab === "vet" ? "Vet name" : "Provider name"}>
-            <Input placeholder={activeTab === "vet" ? "Dr. Kavitha R." : activeTab === "food" ? "Royal Canin" : "Arjun Mehta"} value={form.by || ""} onChange={setF("by")} />
-          </Field>
-          {activeTab === "vet" && (
-            <Field label="Clinic / Hospital">
-              <Input placeholder="PetCare Clinic, Andheri" value={form.clinic || ""} onChange={setF("clinic")} />
-            </Field>
-          )}
-          {activeTab === "food" && (
-            <Field label="Quantity">
-              <Input placeholder="3 kg / 24 sachets" value={form.qty || ""} onChange={setF("qty")} />
-            </Field>
-          )}
+          <Fld label={activeTab==="food"?"Product":"Service"}>
+            <Sel opts={SVC_OPTS[activeTab]} value={form.service||""} onChange={sf("service")} />
+          </Fld>
+          <Fld label={activeTab==="food"?"Brand":activeTab==="vet"?"Vet Name":"Provider"}>
+            <Inp placeholder={activeTab==="vet"?"Dr. Kavitha":"Arjun Mehta"} value={form.by||""} onChange={sf("by")} />
+          </Fld>
+          {activeTab==="vet" && <Fld label="Clinic"><Inp placeholder="PetCare Clinic" value={form.clinic||""} onChange={sf("clinic")} /></Fld>}
+          {activeTab==="food" && <Fld label="Quantity"><Inp placeholder="3 kg" value={form.qty||""} onChange={sf("qty")} /></Fld>}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Date *">
-              <Input type="date" value={form.date || ""} onChange={setF("date")} />
-            </Field>
-            <Field label="Cost (₹)">
-              <Input placeholder="₹999" value={form.cost || ""} onChange={setF("cost")} />
-            </Field>
+            <Fld label="Date *"><Inp type="date" value={form.date||""} onChange={sf("date")} /></Fld>
+            <Fld label="Cost (₹/$)"><Inp placeholder="₹999" value={form.cost||""} onChange={sf("cost")} /></Fld>
           </div>
-          {activeTab === "vet" && (
-            <Field label="Next due date">
-              <Input type="date" value={form.nextDue || ""} onChange={setF("nextDue")} />
-            </Field>
+          {activeTab==="vet" && <Fld label="Next Due Date"><Inp type="date" value={form.nextDue||""} onChange={sf("nextDue")} /></Fld>}
+          {(activeTab==="grooming"||activeTab==="training") && (
+            <Fld label="Rating"><Sel opts={["","5 ★","4 ★","3 ★","2 ★","1 ★"]} value={form.rating||""} onChange={sf("rating")} /></Fld>
           )}
-          {(activeTab === "grooming" || activeTab === "training") && (
-            <Field label="Rating">
-              <Select opts={["", "5", "4", "3", "2", "1"]} value={form.rating || ""} onChange={setF("rating")} />
-            </Field>
-          )}
-          <Field label="Notes">
-            <Textarea placeholder="Any additional notes…" value={form.notes || ""} onChange={setF("notes")} />
-          </Field>
-          <Button onClick={addRecord} disabled={!form.date}>
-            Save Record
-          </Button>
+          <Fld label="Notes"><Txta placeholder="Additional notes…" value={form.notes||""} onChange={sf("notes")} /></Fld>
+          <button onClick={addRecord} disabled={!form.date} className="btn-primary mt-1">Save Record</button>
         </Modal>
       )}
 
+      {/* REMINDERS */}
       {modal === "reminders" && (
         <Modal title="Reminders 🔔" onClose={() => setModal(null)}>
-          {(() => {
-            const items = pets
-              .flatMap((p) =>
-                p.records.vet
-                  .filter((v) => v.nextDue && isDueSoon(v.nextDue, 90))
-                  .map((v) => ({
-                    pet: p.name,
-                    petId: p.id,
-                    detail: v.detail,
-                    due: v.nextDue,
-                    days: daysUntil(v.nextDue),
-                  }))
-              )
-              .sort((a, b) => a.days - b.days);
-            if (items.length === 0) {
-              return <p className="text-sm text-gray-500 py-4 text-center">No vaccinations due in the next 90 days.</p>;
-            }
-            return (
-              <ul className="space-y-2">
-                {items.map((item, i) => (
-                  <li key={i}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setModal(null);
-                        openPet(item.petId);
-                      }}
-                      className="w-full text-left card p-3 hover:border-orange-200 transition-colors"
-                    >
-                      <p className="font-semibold text-sm text-gray-800">
-                        {item.pet} — {item.detail}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {item.days === 0 ? "Due today" : item.days === 1 ? "Due tomorrow" : `Due in ${item.days} days`} ·{" "}
-                        {fmtDate(item.due)}
-                      </p>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            );
-          })()}
+          {allUpcoming.length === 0
+            ? <p className="text-sm text-gray-400 py-6 text-center">No upcoming reminders! All caught up ✅</p>
+            : allUpcoming.map((v, i) => (
+              <button key={i} onClick={() => { setModal(null); openPet(v.petId); }}
+                className="w-full text-left bg-gray-50 rounded-2xl p-3.5 mb-2 last:mb-0 hover:bg-orange-50 transition-colors">
+                <p className="font-bold text-sm text-gray-900">{v.petName} — {v.detail}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{daysUntil(v.nextDue)===0?"Due today":daysUntil(v.nextDue)===1?"Due tomorrow":`Due in ${daysUntil(v.nextDue)} days`} · {fmtDate(v.nextDue)}</p>
+              </button>
+            ))
+          }
         </Modal>
       )}
 
+      {/* BOOK SERVICE */}
+      {modal === "bookService" && (
+        <Modal title="Book a Service 📅" onClose={() => setModal(null)}>
+          <div className="space-y-3">
+            {SERVICES.map(s => (
+              <button key={s.id} onClick={() => { setModal(null); showToast("Opening booking…"); }}
+                className={`w-full flex items-center gap-4 p-4 rounded-2xl ${s.bg} text-left hover:opacity-90 transition-opacity`}>
+                <div className="text-2xl">{s.icon}</div>
+                <div><div className={`font-bold ${s.tc}`}>{s.label}</div><div className="text-xs text-gray-500">{s.desc}</div></div>
+                <span className={`ml-auto font-bold ${s.tc}`}>→</span>
+              </button>
+            ))}
+            <p className="text-center text-xs text-gray-400 mt-2">Live booking coming soon! Sign up to be notified.</p>
+          </div>
+        </Modal>
+      )}
+
+      {/* LOGOUT */}
       {modal === "logout" && (
         <Modal title="Sign out?" onClose={() => setModal(null)}>
-          <p className="text-sm text-gray-500 mb-5">You&apos;ll need to sign in again to access your pets and records.</p>
+          <p className="text-sm text-gray-500 mb-5">You&apos;ll need to sign in again to access your pets.</p>
           <div className="flex gap-3">
-            <Button variant="secondary" onClick={() => setModal(null)} className="flex-1">
-              Cancel
-            </Button>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-full transition-colors"
-            >
-              Sign Out
-            </button>
+            <button onClick={() => setModal(null)} className="flex-1 border border-gray-200 text-gray-600 font-bold py-3 rounded-2xl text-sm hover:bg-gray-50">Cancel</button>
+            <button onClick={onLogout} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-2xl text-sm hover:bg-red-600">Sign Out</button>
           </div>
         </Modal>
       )}
