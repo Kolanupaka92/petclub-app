@@ -233,8 +233,9 @@ export default function PetclubApp({ session, onLogout }) {
       }
     }
 
-    // Address: if user typed something but didn't confirm from dropdown, warn them
-    if (form.address && form.address.trim().length > 3 && !editAddrMeta.lat) {
+    // Address: only require dropdown re-verification if the address was actually changed
+    const addressChanged = form.address.trim() !== (userInfo.address || "").trim();
+    if (addressChanged && form.address.trim().length > 3 && !editAddrMeta.lat) {
       showToast("Please select your address from the dropdown suggestions to verify it.", "error");
       return;
     }

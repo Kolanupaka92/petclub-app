@@ -9,10 +9,11 @@
  *  - ⚠️  Warns when user types free text without selecting from the list
  *  - 📍 Static map pin preview after selection (Mapbox only)
  *  - Mobile-safe: onPointerDown prevents blur-before-select race
+ *  - Modal-safe: suggestions use position:fixed so they escape overflow:hidden parents
  *
  * onChange({ address, lat, lng, postalCode, city, state }) — always an object
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 const MAPBOX = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -50,16 +51,24 @@ const fromNominatim = (f, i) => {
   };
 };
 
+/* Check if string looks like raw GPS coords (no street info) */
+const isRawCoords = (s) => /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test((s || "").trim());
+
 export function AddressPicker({ value, onChange, placeholder, countryCode = "in", className }) {
   const [query,           setQuery]           = useState(value || "");
   const [suggestions,     setSuggestions]     = useState([]);
   const [searching,       setSearching]       = useState(false);
   const [gpsLoading,      setGpsLoading]      = useState(false);
+  const [gpsError,        setGpsError]        = useState("");
   const [confirmedCoords, setConfirmedCoords] = useState(null);
-  const [confirmedDetails,setConfirmedDetails]= useState(null); // { postalCode, city, state }
+  const [confirmedDetails,setConfirmedDetails]= useState(null);
   const [showUnverified,  setShowUnverified]  = useState(false);
+  // Fixed-position dropdown rect (escapes modal overflow clipping)
+  const [dropRect,        setDropRect]        = useState(null);
+
   const debounceRef  = useRef(null);
   const containerRef = useRef(null);
+  const inputWrapRef = useRef(null);
 
   /* Sync if parent clears the field */
   useEffect(() => {
@@ -68,17 +77,25 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
       setConfirmedCoords(null);
       setConfirmedDetails(null);
       setShowUnverified(false);
-    } else {
+    } else if (value !== query) {
       setQuery(value);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
+
+  /* Compute fixed dropdown position from input wrapper rect */
+  const calcDropRect = useCallback(() => {
+    if (!inputWrapRef.current) return;
+    const r = inputWrapRef.current.getBoundingClientRect();
+    setDropRect({ top: r.bottom + 4, left: r.left, width: r.width });
+  }, []);
 
   /* Close dropdown on outside click */
   useEffect(() => {
     const close = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
         setSuggestions([]);
-        // If user has typed 3+ chars but never selected → show warning
+        setDropRect(null);
         if (query.length >= 3 && !confirmedCoords) setShowUnverified(true);
       }
     };
@@ -86,9 +103,21 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
     return () => document.removeEventListener("pointerdown", close);
   }, [query, confirmedCoords]);
 
+  /* Recompute dropdown rect on scroll/resize so it follows the input */
+  useEffect(() => {
+    if (suggestions.length === 0) return;
+    const update = () => calcDropRect();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [suggestions.length, calcDropRect]);
+
   /* ── Geocoding ── */
   const geocode = async (q) => {
-    if (!q || q.length < 3) { setSuggestions([]); return; }
+    if (!q || q.length < 3) { setSuggestions([]); setDropRect(null); return; }
     setSearching(true);
     try {
       let results = [];
@@ -109,7 +138,8 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
         results = (d || []).map(fromNominatim);
       }
       setSuggestions(results);
-    } catch { setSuggestions([]); }
+      if (results.length > 0) calcDropRect();
+    } catch { setSuggestions([]); setDropRect(null); }
     finally  { setSearching(false); }
   };
 
@@ -120,17 +150,19 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
     setConfirmedCoords(null);
     setConfirmedDetails(null);
     setShowUnverified(false);
+    setGpsError("");
     onChange({ address: v, lat: null, lng: null, postalCode: "", city: "", state: "" });
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => geocode(v), 300);
   };
 
-  /* onPointerDown + preventDefault = stops blur before tap-select fires (mobile fix) */
   const select = (s) => {
     setQuery(s.full);
     setConfirmedCoords({ lat: s.lat, lng: s.lng });
     setConfirmedDetails({ postalCode: s.postalCode, city: s.city, state: s.state });
     setShowUnverified(false);
+    setSuggestions([]);
+    setDropRect(null);
     onChange({
       address:    s.full,
       lat:        s.lat,
@@ -139,7 +171,6 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
       city:       s.city,
       state:      s.state,
     });
-    setSuggestions([]);
   };
 
   const clearAddress = () => {
@@ -147,6 +178,7 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
     setConfirmedDetails(null);
     setQuery("");
     setShowUnverified(false);
+    setGpsError("");
     onChange({ address: "", lat: null, lng: null, postalCode: "", city: "", state: "" });
   };
 
@@ -155,12 +187,12 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
     if (!navigator.geolocation)
       return alert("GPS is not available on this device.");
     setGpsLoading(true);
+    setGpsError("");
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
-          let addr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-          let postalCode = "", city = "", state = "";
+          let addr = "", postalCode = "", city = "", state = "";
           if (MAPBOX) {
             const d = await fetch(
               `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json` +
@@ -177,16 +209,26 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
             const r = fromNominatim(d, 0);
             addr = r.full; postalCode = r.postalCode; city = r.city; state = r.state;
           }
+
+          // Reject if reverse geocoding returned nothing useful
+          if (!addr || isRawCoords(addr)) {
+            setGpsError("📡 GPS found your location but couldn't get a street address. Please type your address below.");
+            setGpsLoading(false);
+            return;
+          }
+
           setQuery(addr);
           setConfirmedCoords({ lat, lng });
           setConfirmedDetails({ postalCode, city, state });
           onChange({ address: addr, lat, lng, postalCode, city, state });
-        } catch { /* silently use raw coords */ }
+        } catch {
+          setGpsError("📡 Couldn't fetch address. Please type your address below.");
+        }
         setGpsLoading(false);
       },
       () => {
         setGpsLoading(false);
-        alert("Location access denied. Please allow location access and try again.");
+        setGpsError("📍 Location access denied. Please allow location or type your address.");
       },
       { timeout: 12000, maximumAge: 30000 }
     );
@@ -221,11 +263,12 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
             : <span className="text-lg">🎯</span>}
         </button>
 
-        <div className="relative flex-1">
+        <div ref={inputWrapRef} className="relative flex-1">
           <input
             type="text"
             value={query}
             onChange={handleChange}
+            onFocus={() => { if (suggestions.length > 0) calcDropRect(); }}
             placeholder={placeholder || "Start typing your address…"}
             autoComplete="off"
             autoCorrect="off"
@@ -241,6 +284,13 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
         </div>
       </div>
 
+      {/* ── GPS error message ── */}
+      {gpsError && (
+        <div className="mt-1.5 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+          <p className="text-xs text-amber-700 font-medium">{gpsError}</p>
+        </div>
+      )}
+
       {/* ── Unverified warning ── */}
       {showUnverified && !confirmedCoords && query.length >= 3 && (
         <div className="mt-1.5 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
@@ -251,11 +301,19 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
         </div>
       )}
 
-      {/* ── Suggestions dropdown ── */}
-      {suggestions.length > 0 && (
+      {/* ── Suggestions dropdown — position:fixed to escape modal overflow clipping ── */}
+      {suggestions.length > 0 && dropRect && (
         <div
-          className="absolute left-0 right-0 mt-1 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
-          style={{ zIndex: 99999, top: "100%" }}>
+          className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+          style={{
+            position: "fixed",
+            top:      dropRect.top,
+            left:     dropRect.left,
+            width:    dropRect.width,
+            zIndex:   999999,
+            maxHeight: 320,
+            overflowY: "auto",
+          }}>
           {suggestions.map(s => (
             <button
               key={s.id}
@@ -269,7 +327,6 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
                   style={{ display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
                   {s.full}
                 </div>
-                {/* Show postal/city/state inline in suggestion */}
                 {(s.postalCode || s.city || s.state) && (
                   <div className="flex gap-1.5 mt-1.5 flex-wrap">
                     {s.postalCode && (

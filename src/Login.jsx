@@ -147,26 +147,56 @@ const CountryPicker = ({ value, onChange }) => {
 
 /* ── Email typo detection ── */
 const EMAIL_TYPOS = {
+  // gmail
   'gamil.com':'gmail.com','gmai.com':'gmail.com','gmail.co':'gmail.com',
-  'gmail.con':'gmail.com','gmail.cim':'gmail.com','gmail.cm':'gmail.com',
+  'gmail.con':'gmail.com','gmail.conm':'gmail.com','gmail.cpm':'gmail.com',
+  'gmail.cim':'gmail.com','gmail.cm':'gmail.com','gmail.cmo':'gmail.com',
+  'gmail.ocm':'gmail.com','gmail.copm':'gmail.com','gmail.conm':'gmail.com',
   'gmal.com':'gmail.com','gmial.com':'gmail.com','gnail.com':'gmail.com',
+  'gmali.com':'gmail.com','gmil.com':'gmail.com','gmaill.com':'gmail.com',
+  // yahoo
   'yaho.com':'yahoo.com','yahooo.com':'yahoo.com','yahoo.co':'yahoo.com',
   'yamil.com':'yahoo.com','ymail.com':'yahoo.com','yahool.com':'yahoo.com',
   'yhoo.com':'yahoo.com','yaho.in':'yahoo.com','yahoo.con':'yahoo.com',
+  'yahoo.conm':'yahoo.com','yahoo.cmo':'yahoo.com','yahoo.ocm':'yahoo.com',
+  // hotmail
   'hotmial.com':'hotmail.com','hotmai.com':'hotmail.com','hotmail.co':'hotmail.com',
-  'hotmil.com':'hotmail.com','hotmail.con':'hotmail.com',
+  'hotmil.com':'hotmail.com','hotmail.con':'hotmail.com','hotmail.conm':'hotmail.com',
+  'hotmail.cmo':'hotmail.com','hotmaill.com':'hotmail.com',
+  // outlook
   'outlok.com':'outlook.com','outook.com':'outlook.com','outlook.co':'outlook.com',
-  'outllook.com':'outlook.com','outlook.con':'outlook.com',
+  'outllook.com':'outlook.com','outlook.con':'outlook.com','outlook.conm':'outlook.com',
+  'outlook.cmo':'outlook.com',
+  // icloud
   'iclod.com':'icloud.com','icould.com':'icloud.com','icloud.co':'icloud.com',
-  'zoho.co':'zoho.com',
+  'icloud.con':'icloud.com','icloud.conm':'icloud.com',
+  // rediffmail
+  'redif.com':'rediffmail.com','redifmail.com':'rediffmail.com',
+  // others
+  'zoho.co':'zoho.com','protonmal.com':'protonmail.com',
 };
 export const getEmailSuggestion = (email) => {
   if (!email?.includes('@')) return null;
   const at = email.lastIndexOf('@');
   const local = email.slice(0, at);
   const domain = email.slice(at + 1).toLowerCase();
-  const fix = EMAIL_TYPOS[domain];
-  return fix ? `${local}@${fix}` : null;
+
+  // Exact typo map lookup
+  if (EMAIL_TYPOS[domain]) return `${local}@${EMAIL_TYPOS[domain]}`;
+
+  // Regex catch-all: fix common TLD scrambles on known providers
+  const [provider, tld] = domain.split('.');
+  if (tld) {
+    // .conm / .cmo / .ocm / .con / .cpm → .com
+    if (/^c[o]?[nm][m]?$/.test(tld) || tld === 'cmo' || tld === 'ocm' || tld === 'cpm') {
+      const knownProviders = { gmail:'gmail.com', yahoo:'yahoo.com', hotmail:'hotmail.com', outlook:'outlook.com', icloud:'icloud.com', rediffmail:'rediffmail.com' };
+      if (knownProviders[provider]) return `${local}@${knownProviders[provider]}`;
+      return `${local}@${provider}.com`;
+    }
+    // .con → .com
+    if (tld === 'con') return `${local}@${provider}.com`;
+  }
+  return null;
 };
 
 /* ── Address Autocomplete (thin wrapper — keeps backward compat with App.jsx / PetclubApp.jsx) ── */
