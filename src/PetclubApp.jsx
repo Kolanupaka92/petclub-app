@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { api } from "./api.js";
 import { loadPets, savePets } from "./utils/storage.js";
 import { TC, fmtDate } from "./data/mockData.js";
-import { AddressInput } from "./Login.jsx";
+import { AddressInput, getEmailSuggestion } from "./Login.jsx";
 import { AddressPicker } from "./components/AddressPicker.jsx";
 
 // Lazy-load heavy map component (Mapbox GL is ~500 KB)
@@ -109,6 +109,8 @@ export default function PetclubApp({ session, onLogout }) {
   const [bookingStep, setBookingStep] = useState(1); // 1=service 2=details 3=confirm
   const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
   const [bookingAddrMeta, setBookingAddrMeta] = useState({ lat: null, lng: null });
+  const [editAddrMeta,   setEditAddrMeta]   = useState({ lat: null, lng: null, postalCode: "", city: "", state: "" });
+  const [editEmailErr,   setEditEmailErr]   = useState("");
   const [bookingLoading, setBookingLoading] = useState(false);
   const [ratingModal, setRatingModal] = useState(null); // { bookingId, serviceName }
   const [ratingVal, setRatingVal] = useState(0);
@@ -213,29 +215,62 @@ export default function PetclubApp({ session, onLogout }) {
   };
 
   const updateProfile = async () => {
-    if (!form.name?.trim()) return;
+    if (!form.name?.trim()) return showToast("Name is required", "error");
+
+    // Email validation
+    if (form.email) {
+      const em = form.email.trim().toLowerCase();
+      const sugg = getEmailSuggestion(em);
+      if (sugg) {
+        setEditEmailErr(`"${em.split('@')[1]}" doesn't look right. Did you mean ${sugg}?`);
+        return;
+      }
+      // Block obviously fake TLDs
+      const fakeTlds = ['.con','.cmo','.cim','.ocm','.cm','.co.'];
+      if (fakeTlds.some(t => em.endsWith(t))) {
+        setEditEmailErr(`"${em}" is not a valid email address. Please check the domain.`);
+        return;
+      }
+    }
+
+    // Address: if user typed something but didn't confirm from dropdown, warn them
+    if (form.address && form.address.trim().length > 3 && !editAddrMeta.lat) {
+      showToast("Please select your address from the dropdown suggestions to verify it.", "error");
+      return;
+    }
+
     try {
+      const city = editAddrMeta.city || form.city || "";
+      const pincode = editAddrMeta.postalCode || form.pincode || "";
       await api.updateMe({
         name: form.name.trim(),
-        email: form.email || "",
+        email: form.email?.trim() || "",
         address: form.address || "",
         area: form.area || "",
-        city: form.city || "",
-        pincode: form.pincode || "",
+        city,
+        pincode,
         country: form.country || "India",
+        addressLat: editAddrMeta.lat || null,
+        addressLng: editAddrMeta.lng || null,
+        addressPostalCode: editAddrMeta.postalCode || null,
+        addressCity: editAddrMeta.city || null,
+        addressState: editAddrMeta.state || null,
       }).catch(() => {});
       setUserInfo(prev => ({
         ...prev,
         name: form.name.trim(),
-        email: form.email || prev.email,
+        email: form.email?.trim() || prev.email,
         address: form.address || "",
         area: form.area || "",
-        city: form.city || "",
-        pincode: form.pincode || "",
+        city,
+        pincode,
         country: form.country || "India",
       }));
-      setModal(null); setForm({});
-      showToast("Profile updated!");
+      setModal(null);
+      setForm({});
+      setEditAddrMeta({ lat: null, lng: null, postalCode: "", city: "", state: "" });
+      setEditEmailErr("");
+      showToast("Profile updated! ✅");
     } catch { showToast("Failed to update", "error"); }
   };
 
@@ -791,7 +826,7 @@ export default function PetclubApp({ session, onLogout }) {
             </div>
           </div>
           <button
-            onClick={() => { setForm({ name: userInfo.name || "", email: userInfo.email || "", address: userInfo.address || "", area: userInfo.area || "", city: userInfo.city || "", pincode: userInfo.pincode || "", country: userInfo.country || "India" }); setModal("editProfile"); }}
+            onClick={() => { setForm({ name: userInfo.name || "", email: userInfo.email || "", address: userInfo.address || "", area: userInfo.area || "", city: userInfo.city || "", pincode: userInfo.pincode || "", country: userInfo.country || "India" }); setEditAddrMeta({ lat: null, lng: null, postalCode: "", city: "", state: "" }); setEditEmailErr(""); setModal("editProfile"); }}
             className="w-full bg-white/20 hover:bg-white/30 active:scale-[0.98] text-white font-bold py-2.5 rounded-2xl text-sm transition-all border border-white/20">
             ✏️ Edit Profile
           </button>
@@ -1166,45 +1201,40 @@ export default function PetclubApp({ session, onLogout }) {
 
       {/* EDIT PROFILE */}
       {modal === "editProfile" && (
-        <Modal title="Edit Profile ✏️" onClose={() => { setModal(null); setForm({}); }}>
+        <Modal title="Edit Profile ✏️" onClose={() => { setModal(null); setForm({}); setEditAddrMeta({ lat:null, lng:null, postalCode:"", city:"", state:"" }); setEditEmailErr(""); }}>
           <Fld label="Full Name *"><Inp autoFocus placeholder="Your full name" value={form.name||""} onChange={sf("name")} /></Fld>
           <Fld label="Email">
-            <Inp type="email" placeholder="your@email.com" value={form.email||""} onChange={sf("email")} />
+            <Inp
+              type="email"
+              placeholder="your@email.com"
+              value={form.email||""}
+              onChange={e => { sf("email")(e); setEditEmailErr(""); }}
+            />
+            {editEmailErr && (
+              <div className="mt-1.5 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                <span className="text-red-500 text-sm shrink-0">⚠️</span>
+                <p className="text-xs text-red-700 font-medium">{editEmailErr}</p>
+              </div>
+            )}
           </Fld>
           <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-3 text-xs text-orange-700">
             📱 Phone number cannot be changed. It&apos;s your unique identifier.
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 mt-1">Address</p>
           <Fld label="Full Address">
-            <AddressInput
+            <AddressPicker
               value={form.address||""}
-              onChange={v => setForm(f => ({ ...f, address: v }))}
+              onChange={({ address, lat, lng, postalCode, city, state }) => {
+                setForm(f => ({ ...f, address }));
+                setEditAddrMeta({ lat: lat||null, lng: lng||null, postalCode: postalCode||"", city: city||"", state: state||"" });
+              }}
               placeholder="Start typing your address…"
-              cc={session.phone?.startsWith("+91") ? "91" : "1"}
+              countryCode={session.phone?.startsWith("+91") ? "in" : "us"}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition placeholder-gray-400"
             />
           </Fld>
           <Fld label="Area / Locality">
             <Inp placeholder="e.g. LB Nagar, Sainikpuri" value={form.area||""} onChange={sf("area")} />
-          </Fld>
-          <div className="flex gap-3">
-            <Fld label="City" className="flex-1">
-              <Inp placeholder="e.g. Hyderabad" value={form.city||""} onChange={sf("city")} />
-            </Fld>
-            <Fld label="PIN / ZIP Code" className="flex-1">
-              <Inp placeholder="e.g. 560034" value={form.pincode||""} onChange={sf("pincode")} maxLength={10} />
-            </Fld>
-          </div>
-          <Fld label="Country">
-            <select value={form.country||"India"} onChange={sf("country")}
-              className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400">
-              <option value="India">🇮🇳 India</option>
-              <option value="United States">🇺🇸 United States</option>
-              <option value="United Kingdom">🇬🇧 United Kingdom</option>
-              <option value="Canada">🇨🇦 Canada</option>
-              <option value="Australia">🇦🇺 Australia</option>
-              <option value="Other">🌍 Other</option>
-            </select>
           </Fld>
           <button onClick={updateProfile} disabled={!form.name?.trim()} className="btn-primary mt-1">Save Profile</button>
         </Modal>

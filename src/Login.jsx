@@ -160,7 +160,7 @@ const EMAIL_TYPOS = {
   'iclod.com':'icloud.com','icould.com':'icloud.com','icloud.co':'icloud.com',
   'zoho.co':'zoho.com',
 };
-const getEmailSuggestion = (email) => {
+export const getEmailSuggestion = (email) => {
   if (!email?.includes('@')) return null;
   const at = email.lastIndexOf('@');
   const local = email.slice(0, at);
