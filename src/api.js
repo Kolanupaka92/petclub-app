@@ -24,9 +24,8 @@ const req = async (method, path, body, requireAuth = false) => {
 };
 
 export const api = {
-  // Auth
-  sendOTP: (phone, countryCode = '91', email) => req('POST', '/auth/send-otp', { phone, countryCode, email }),
-  verifyOTP: (phone, otp, countryCode = '91') => req('POST', '/auth/verify-otp', { phone, otp, countryCode }),
+  // Auth — Firebase Phone Auth (primary) + Email OTP (fallback)
+  // Legacy /auth/send-otp and /auth/verify-otp removed — use firebaseVerify or sendEmailOTP/verifyEmailOTP
 
   // User
   getMe: () => req('GET', '/users/me', null, true),
