@@ -70,6 +70,9 @@ export const api = {
   // ID Documents
   uploadUserIdPhoto: (data) => req('POST', '/users/upload-id-photo', data, true),
 
+  // Auth — Firebase Phone Auth token exchange
+  firebaseVerify: (idToken) => req('POST', '/auth/firebase-verify', { idToken }),
+
   // Push Notifications (FCM)
   saveFcmToken: (token) => req('POST', '/users/fcm-token', { token }, true),
 

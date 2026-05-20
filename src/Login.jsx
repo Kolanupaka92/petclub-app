@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { api, saveToken } from "./api.js";
+import { initPhoneAuth, sendPhoneOtp, verifyPhoneOtp, clearPhoneAuth } from "./firebase.js";
 
 /* ── Constants ── */
 const COUNTRIES = [
@@ -252,6 +253,14 @@ export default function Login({ onLogin }) {
   const [timer, setTimer]   = useState(0);
   const otpRefs = useRef([]);
 
+  /* ── Init Firebase Phone Auth when phone step mounts ── */
+  useEffect(() => {
+    if (step === "phone") {
+      initPhoneAuth("recaptcha-container").catch(() => {});
+    }
+    return () => { if (step !== "phone") clearPhoneAuth(); };
+  }, [step]);
+
   /* ── Customer profile ── */
   const [cust, setCust] = useState({
     name:"", email:"", address:"",
@@ -291,35 +300,49 @@ export default function Login({ onLogin }) {
   const flowSteps   = mode === "signup" ? signupSteps : signinSteps;
   const stepIdx     = flowSteps.indexOf(step);
 
-  /* ── Send OTP ── */
+  /* ── Send OTP via Firebase Phone Auth ── */
   const sendOtp = async () => {
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 6) return showErr("Enter a valid phone number");
-    if (isIndia && !email.trim()) return showErr("Email is required for India (+91) — OTP will be sent to your email");
+    const e164 = `+${cc}${digits}`;
     setLoading(true); setErr("");
     try {
-      await api.sendOTP(digits, cc, email || undefined);
+      await sendPhoneOtp(e164);
       setStep("otp"); setOtp(["","","","","",""]); setTimer(60);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
-    } catch (e) { showErr(e.message || "Failed to send OTP. Try again."); }
+    } catch (e) {
+      // reCAPTCHA may expire on retry — reinit and try once more
+      if (e.code === "auth/captcha-check-failed" || e.code === "auth/internal-error") {
+        try {
+          await initPhoneAuth("recaptcha-container");
+          await sendPhoneOtp(e164);
+          setStep("otp"); setOtp(["","","","","",""]); setTimer(60);
+          setTimeout(() => otpRefs.current[0]?.focus(), 100);
+          return;
+        } catch {}
+      }
+      showErr(e.message?.replace("Firebase: ", "").replace(/ \(auth\/.*\)/, "") || "Failed to send OTP. Try again.");
+    }
     finally { setLoading(false); }
   };
 
-  /* ── Verify OTP ── */
+  /* ── Verify OTP via Firebase → exchange for PETclub JWT ── */
   const verifyOtp = async (code) => {
     if (loading) return;
     const c = code ?? otp.join("");
     if (c.length !== 6) return showErr("Enter all 6 digits");
     setLoading(true); setErr("");
     try {
-      const res = await api.verifyOTP(phone.replace(/\D/g,""), c, cc);
+      const res = await verifyPhoneOtp(c);
       saveToken(res.token);
       if (mode === "signup" || res.isNew || res.user?.role === "pending_role") {
         setStep("profile");
       } else {
         onLogin({ ...res.user });
       }
-    } catch (e) { showErr(e.message || "Wrong OTP. Try again."); }
+    } catch (e) {
+      showErr(e.message?.replace("Firebase: ", "").replace(/ \(auth\/.*\)/, "") || "Wrong OTP. Try again.");
+    }
     finally { setLoading(false); }
   };
 
@@ -579,32 +602,26 @@ export default function Login({ onLogin }) {
                 </div>
               </div>
 
-              {isIndia && (
-                <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
-                  <span className="text-base shrink-0">📧</span>
-                  <p className="text-xs text-blue-800 font-medium leading-relaxed">
-                    <strong>India users:</strong> SMS OTP isn't available yet. Your OTP will be sent to your email — please enter it below.
-                  </p>
-                </div>
-              )}
+              <div className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
+                <span className="text-base shrink-0">📱</span>
+                <p className="text-xs text-emerald-800 font-medium leading-relaxed">
+                  OTP sent via <strong>SMS</strong> to your mobile — works in India &amp; USA.
+                </p>
+              </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  Email{" "}
-                  {isIndia
-                    ? <span className="text-red-500 normal-case font-semibold">* required for India OTP</span>
-                    : <span className="text-gray-400 normal-case font-normal">(optional — backup OTP if SMS delays)</span>
-                  }
+                  Email <span className="text-gray-400 normal-case font-normal">(optional — booking confirmations)</span>
                 </label>
                 <input type="email" autoComplete="email"
-                  placeholder={isIndia ? "your@email.com (required)" : "you@example.com"}
+                  placeholder="you@example.com"
                   value={email} onChange={e => { setEmail(e.target.value); setErr(""); }}
                   onKeyDown={e => e.key === "Enter" && sendOtp()}
-                  className={`w-full h-12 border-2 rounded-2xl px-4 text-sm font-medium focus:outline-none focus:ring-4 bg-white placeholder-gray-300 transition-all ${
-                    isIndia ? "border-blue-300 focus:border-blue-500 focus:ring-blue-50"
-                            : "border-gray-200 focus:border-orange-400 focus:ring-orange-50"
-                  }`} />
+                  className="w-full h-12 border-2 border-gray-200 rounded-2xl px-4 text-sm font-medium focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
               </div>
+
+              {/* Hidden reCAPTCHA container — Firebase invisible reCAPTCHA renders here */}
+              <div id="recaptcha-container" />
 
               {err && <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
 
@@ -628,10 +645,8 @@ export default function Login({ onLogin }) {
               <div>
                 <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Enter OTP</h1>
                 <p className="text-gray-500 text-sm mt-1">
-                  {isIndia
-                    ? <>OTP sent to <span className="text-blue-600 font-semibold">{email}</span><br/><span className="text-xs text-gray-400">Check your inbox (and spam folder)</span></>
-                    : <>Sent to {country.flag} +{cc} ···{phone.slice(-4)}{email && <><br/><span className="text-orange-500 font-medium text-xs">Also sent to {email}</span></>}</>
-                  }
+                  SMS sent to {country.flag} <span className="font-semibold text-gray-700">+{cc} ···{phone.slice(-4)}</span>
+                  {email && <><br/><span className="text-xs text-gray-400">Confirmation emails will go to {email}</span></>}
                 </p>
               </div>
 

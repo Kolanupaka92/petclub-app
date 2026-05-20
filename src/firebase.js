@@ -1,14 +1,8 @@
 /**
- * PETclub — Firebase Cloud Messaging (Push Notifications)
- *
- * Setup steps (when ready to activate):
- * 1. Create a Firebase project at https://console.firebase.google.com
- * 2. Add a Web app → copy the config below into .env as VITE_FIREBASE_* vars
- * 3. Enable Cloud Messaging in Firebase Console
- * 4. Generate a VAPID key pair (Project Settings → Cloud Messaging → Web Push Certificates)
- * 5. Add VITE_FIREBASE_VAPID_KEY to .env
- * 6. Add service account JSON to Railway as FIREBASE_SERVICE_ACCOUNT_JSON (backend)
- * 7. Deploy both frontend and backend
+ * PETclub — Firebase module
+ * - Phone Auth (OTP via Firebase SMS — 10k/month free)
+ * - Cloud Messaging (push notifications — FCM)
+ * - Razorpay checkout helper
  */
 
 import { api } from './api.js';
@@ -23,10 +17,103 @@ const FIREBASE_CONFIG = {
 };
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-
-// Only activate if all config vars are present
 const isConfigured = Object.values(FIREBASE_CONFIG).every(Boolean) && VAPID_KEY;
 
+// ─── Shared Firebase app init ────────────────────────────────────────────────
+let _app = null;
+const getApp = async () => {
+  if (_app) return _app;
+  const { initializeApp, getApps, getApp: _getApp } = await import('firebase/app');
+  _app = getApps().length ? _getApp() : initializeApp(FIREBASE_CONFIG);
+  return _app;
+};
+
+// ═══════════════════════════════════════════════════════
+//  PHONE AUTH — Firebase Phone Auth (replaces Twilio OTP)
+//  Free tier: 10,000 SMS verifications/month
+// ═══════════════════════════════════════════════════════
+let _auth = null;
+let _recaptchaVerifier = null;
+let _confirmationResult = null;
+
+/**
+ * Initialize Firebase Auth + invisible reCAPTCHA.
+ * Call once when the phone-entry screen mounts.
+ * @param {string} containerId — id of a <div> in the DOM for the reCAPTCHA widget
+ */
+export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
+  if (!isConfigured) {
+    console.warn('[PhoneAuth] Firebase not configured — set VITE_FIREBASE_* env vars');
+    return false;
+  }
+  try {
+    const app = await getApp();
+    const { getAuth } = await import('firebase/auth');
+    const { RecaptchaVerifier } = await import('firebase/auth');
+
+    _auth = getAuth(app);
+
+    // Clear any stale verifier
+    if (_recaptchaVerifier) {
+      try { _recaptchaVerifier.clear(); } catch {}
+      _recaptchaVerifier = null;
+    }
+
+    _recaptchaVerifier = new RecaptchaVerifier(_auth, containerId, {
+      size: 'invisible',
+      callback: () => {},          // reCAPTCHA solved automatically
+      'expired-callback': () => { // Token expired — will auto-retry
+        _recaptchaVerifier = null;
+      },
+    });
+    await _recaptchaVerifier.render();
+    return true;
+  } catch (e) {
+    console.error('[PhoneAuth] Init failed:', e.message);
+    return false;
+  }
+};
+
+/**
+ * Send OTP to a phone number via Firebase.
+ * @param {string} e164Phone — E.164 format e.g. '+919876543210' or '+14155552671'
+ * @returns {boolean} true if sent successfully
+ */
+export const sendPhoneOtp = async (e164Phone) => {
+  if (!_auth || !_recaptchaVerifier) throw new Error('Phone auth not initialized');
+  const { signInWithPhoneNumber } = await import('firebase/auth');
+  _confirmationResult = await signInWithPhoneNumber(_auth, e164Phone, _recaptchaVerifier);
+  return true;
+};
+
+/**
+ * Verify the 6-digit OTP the user entered.
+ * On success, exchanges the Firebase ID token for a PETclub JWT via the backend.
+ * @param {string} otp — 6-digit code from the user
+ * @returns {{ token, isNew, user }} — same shape as the old /auth/verify-otp response
+ */
+export const verifyPhoneOtp = async (otp) => {
+  if (!_confirmationResult) throw new Error('No pending OTP — send one first');
+  const result = await _confirmationResult.confirm(otp);
+  const idToken = await result.user.getIdToken();
+  // Exchange Firebase token for our JWT (keeps rest of app unchanged)
+  return api.firebaseVerify(idToken);
+};
+
+/**
+ * Clean up reCAPTCHA (call when the login component unmounts).
+ */
+export const clearPhoneAuth = () => {
+  if (_recaptchaVerifier) {
+    try { _recaptchaVerifier.clear(); } catch {}
+    _recaptchaVerifier = null;
+  }
+  _confirmationResult = null;
+};
+
+// ═══════════════════════════════════════════════════════
+//  PUSH NOTIFICATIONS — Firebase Cloud Messaging (FCM)
+// ═══════════════════════════════════════════════════════
 let messagingInstance = null;
 
 /**
@@ -39,56 +126,42 @@ export const initPushNotifications = async () => {
     console.info('[FCM] Push notifications not configured yet — set VITE_FIREBASE_* env vars to activate.');
     return null;
   }
-
-  // Check browser support
   if (!('Notification' in window) || !('serviceWorker' in navigator)) {
     console.warn('[FCM] Browser does not support notifications or service workers.');
     return null;
   }
-
   try {
-    // Dynamic import — only loads firebase if env vars are set (saves bundle size)
-    const { initializeApp, getApps } = await import('firebase/app');
+    const app = await getApp();
     const { getMessaging, getToken, onMessage } = await import('firebase/messaging');
 
-    const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
     const messaging = getMessaging(app);
     messagingInstance = messaging;
 
-    // Request permission
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       console.info('[FCM] Notification permission denied by user.');
       return null;
     }
 
-    // Register service worker
     const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-
-    // Get FCM token
     const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
     if (!token) {
       console.warn('[FCM] No token returned — check VAPID key and Firebase config.');
       return null;
     }
 
-    // Save token to backend
     await api.saveFcmToken(token).catch(() => {});
     console.info('[FCM] Push notifications enabled ✅');
 
-    // Handle foreground messages (app is open)
     onMessage(messaging, (payload) => {
       const { title, body } = payload.notification || {};
-      if (title) {
-        // Show a browser notification even when the app is in foreground
-        if (Notification.permission === 'granted') {
-          new Notification(title, {
-            body,
-            icon: '/icon.svg',
-            badge: '/icon-72.svg',
-            data: payload.data,
-          });
-        }
+      if (title && Notification.permission === 'granted') {
+        new Notification(title, {
+          body,
+          icon: '/icon.svg',
+          badge: '/icon-72.svg',
+          data: payload.data,
+        });
       }
     });
 
@@ -99,31 +172,17 @@ export const initPushNotifications = async () => {
   }
 };
 
-/**
- * Razorpay payment checkout helper.
- * Call this when the user clicks "Pay Now" on a confirmed booking.
- *
- * @param {object} opts
- * @param {number}  opts.amount      - Amount in INR (e.g. 599 for ₹599)
- * @param {string}  opts.bookingId   - Booking UUID
- * @param {string}  opts.userName    - Customer's name
- * @param {string}  opts.userPhone   - Customer's phone
- * @param {string}  opts.userEmail   - Customer's email
- * @param {string}  opts.description - Service description
- * @param {function} opts.onSuccess  - Callback with payment result
- * @param {function} opts.onFailure  - Callback with error
- */
+// ═══════════════════════════════════════════════════════
+//  RAZORPAY — Payment checkout helper
+//  Active after LLC registration (set RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET)
+// ═══════════════════════════════════════════════════════
 export const openRazorpayCheckout = async ({ amount, bookingId, userName, userPhone, userEmail, description, onSuccess, onFailure }) => {
   try {
-    // Get Razorpay order from backend
     const { order, key, coming_soon } = await api.createPaymentOrder(amount, bookingId);
-
     if (coming_soon) {
       alert('💳 Payments coming soon! LLC registration is in progress. Your booking is confirmed, pay in person.');
       return;
     }
-
-    // Load Razorpay checkout script dynamically
     if (!window.Razorpay) {
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -133,7 +192,6 @@ export const openRazorpayCheckout = async ({ amount, bookingId, userName, userPh
         document.head.appendChild(script);
       });
     }
-
     const rzp = new window.Razorpay({
       key,
       amount: order.amount,
@@ -146,7 +204,6 @@ export const openRazorpayCheckout = async ({ amount, bookingId, userName, userPh
       theme: { color: '#f97316' },
       handler: async (response) => {
         try {
-          // Verify payment signature on backend
           const result = await api.verifyPayment(
             response.razorpay_order_id,
             response.razorpay_payment_id,
@@ -154,15 +211,10 @@ export const openRazorpayCheckout = async ({ amount, bookingId, userName, userPh
             bookingId,
           );
           onSuccess?.(result);
-        } catch (e) {
-          onFailure?.(e);
-        }
+        } catch (e) { onFailure?.(e); }
       },
-      modal: {
-        ondismiss: () => onFailure?.(new Error('Payment cancelled')),
-      },
+      modal: { ondismiss: () => onFailure?.(new Error('Payment cancelled')) },
     });
-
     rzp.open();
   } catch (err) {
     onFailure?.(err);
