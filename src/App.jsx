@@ -1271,6 +1271,9 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [roleFilter, setRoleFilter] = useState("All");
   const [rejectModal,setRejectModal]= useState(null);
   const [rejectReason,setRejectReason]=useState("");
+  const [editUserModal, setEditUserModal] = useState(null); // { id, name, email, address, city, area, pincode }
+  const [editUserForm,  setEditUserForm]  = useState({});
+  const [editUserSaving,setEditUserSaving]= useState(false);
   const [toast,      setToast]      = useState({ msg:"", type:"success" });
   const [health,     setHealth]     = useState(null);
 
@@ -1324,6 +1327,27 @@ const AdminDashboard = ({ session, onLogout }) => {
       setUsers(l => l.filter(u => u.id !== userId));
       showToast("🗑️ User deleted.");
     } catch (e) { showToast("❌ " + e.message, "error"); }
+  };
+
+  const saveEditUser = async () => {
+    if (!editUserModal) return;
+    setEditUserSaving(true);
+    try {
+      await api.adminEditUser(editUserModal.id, {
+        name:    editUserForm.name    ?? editUserModal.name,
+        email:   editUserForm.email   ?? editUserModal.email,
+        address: editUserForm.address ?? editUserModal.address,
+        city:    editUserForm.city    ?? editUserModal.city,
+        area:    editUserForm.area    ?? editUserModal.area,
+        pincode: editUserForm.pincode ?? editUserModal.pincode,
+      });
+      setUsers(l => l.map(u => u.id === editUserModal.id
+        ? { ...u, name: editUserForm.name ?? u.name, email: editUserForm.email ?? u.email }
+        : u));
+      setEditUserModal(null); setEditUserForm({});
+      showToast("✅ User profile updated.");
+    } catch (e) { showToast("❌ " + e.message, "error"); }
+    setEditUserSaving(false);
   };
 
   // Returns a human-readable countdown for suspended_at timestamp
@@ -1649,6 +1673,39 @@ const AdminDashboard = ({ session, onLogout }) => {
                 </div>
               </Modal>
             )}
+
+            {/* Edit User Modal — fix bad email / address */}
+            {editUserModal && (
+              <Modal title={`✏️ Edit User — ${editUserModal.name || editUserModal.id}`} onClose={() => { setEditUserModal(null); setEditUserForm({}); }}>
+                <p className="text-xs text-gray-400 mb-4">Correct bad data for this user. Leave a field unchanged to keep the current value.</p>
+                <Inp label="Full Name" defaultValue={editUserModal.name || ""} onChange={e => setEditUserForm(f => ({ ...f, name: e.target.value }))} placeholder="Full name" />
+                <div className="mb-3">
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+                  <input
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all bg-white"
+                    defaultValue={editUserModal.email || ""}
+                    onChange={e => setEditUserForm(f => ({ ...f, email: e.target.value }))}
+                    placeholder="correct@email.com"
+                    type="email"
+                  />
+                  {editUserModal.email && (
+                    <p className="text-xs text-amber-600 mt-1">Current: <strong>{editUserModal.email}</strong> {editUserModal.email.endsWith('.conm') || editUserModal.email.endsWith('.con') ? '⚠️ Bad TLD' : ''}</p>
+                  )}
+                </div>
+                <Inp label="Address" defaultValue={editUserModal.address || ""} onChange={e => setEditUserForm(f => ({ ...f, address: e.target.value }))} placeholder="Full address" />
+                <div className="grid grid-cols-2 gap-3">
+                  <Inp label="City" defaultValue={editUserModal.city || ""} onChange={e => setEditUserForm(f => ({ ...f, city: e.target.value }))} placeholder="City" />
+                  <Inp label="Pincode" defaultValue={editUserModal.pincode || ""} onChange={e => setEditUserForm(f => ({ ...f, pincode: e.target.value }))} placeholder="Pincode" />
+                </div>
+                <Inp label="Area / Locality" defaultValue={editUserModal.area || ""} onChange={e => setEditUserForm(f => ({ ...f, area: e.target.value }))} placeholder="Area" />
+                <div className="flex gap-3 mt-2">
+                  <button onClick={() => { setEditUserModal(null); setEditUserForm({}); }} className="flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
+                  <button onClick={saveEditUser} disabled={editUserSaving} className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition">
+                    {editUserSaving ? "Saving…" : "💾 Save Changes"}
+                  </button>
+                </div>
+              </Modal>
+            )}
           </div>
         )}
 
@@ -1715,6 +1772,20 @@ const AdminDashboard = ({ session, onLogout }) => {
                         {custDoc && custDoc.id_doc_type && !hasCustDoc && (
                           <span className="text-xs text-gray-400 px-2 py-1.5">{custDoc.id_doc_type}: {custDoc.id_doc_number || '—'} (no photo)</span>
                         )}
+                        {/* Edit user profile (fix bad email / address) */}
+                        <button onClick={() => {
+                          const cp = u.customer_profiles?.[0] || {};
+                          const pp = u.professional_profiles?.[0] || {};
+                          setEditUserModal({ id: u.id, name: u.name, email: u.email,
+                            address: cp.address || pp.address || "",
+                            city: cp.city || pp.city || "",
+                            area: cp.area || pp.area || "",
+                            pincode: cp.pincode || "" });
+                          setEditUserForm({});
+                        }}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                          ✏️ Edit
+                        </button>
                         {/* Suspend / Restore */}
                         <button onClick={() => suspend(u.id)}
                           className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${u.is_active ? "border-red-200 text-red-500 hover:bg-red-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>

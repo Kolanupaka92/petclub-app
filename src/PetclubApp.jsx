@@ -109,6 +109,7 @@ export default function PetclubApp({ session, onLogout }) {
   const [bookingStep, setBookingStep] = useState(1); // 1=service 2=details 3=confirm
   const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
   const [bookingAddrMeta, setBookingAddrMeta] = useState({ lat: null, lng: null });
+  const [bookingAddrErr,  setBookingAddrErr]  = useState("");
   const [editAddrMeta,   setEditAddrMeta]   = useState({ lat: null, lng: null, postalCode: "", city: "", state: "" });
   const [editEmailErr,   setEditEmailErr]   = useState("");
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -327,6 +328,7 @@ export default function PetclubApp({ session, onLogout }) {
       setModal(null);
       setBookingStep(1);
       setBookingAddrMeta({ lat: null, lng: null });
+      setBookingAddrErr("");
       setBookingForm({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
       showToast("✅ Booking placed! Finding your professional…");
       setView("bookings");
@@ -1122,17 +1124,27 @@ export default function PetclubApp({ session, onLogout }) {
                 </Fld>
               </div>
               {/* Address */}
-              <Fld label="Address">
+              <Fld label="Service Address *">
                 <AddressPicker
                   value={bookingForm.address}
-                  onChange={({ address, lat, lng }) => {
+                  onChange={({ address, lat, lng, postalCode, city, state }) => {
                     setBookingForm(f => ({ ...f, address }));
-                    setBookingAddrMeta({ lat: lat || null, lng: lng || null });
+                    setBookingAddrMeta({ lat: lat || null, lng: lng || null, postalCode: postalCode || "", city: city || "", state: state || "" });
+                    setBookingAddrErr("");
                   }}
-                  placeholder="House/flat, street, locality"
+                  placeholder="Type and select from suggestions…"
                   countryCode={session.phone?.startsWith("+91") ? "in" : "us"}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition placeholder-gray-400"
                 />
+                {bookingAddrErr && (
+                  <div className="mt-1.5 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                    <span className="text-red-500 shrink-0">⚠️</span>
+                    <p className="text-xs text-red-700 font-medium">{bookingAddrErr}</p>
+                  </div>
+                )}
+                {!bookingAddrErr && !bookingAddrMeta.lat && (
+                  <p className="text-xs text-gray-400 mt-1 pl-1">💡 Type your address and <strong>select from the list</strong> to verify it</p>
+                )}
               </Fld>
               <Fld label="City *">
                 <Inp placeholder="e.g. Hyderabad" value={bookingForm.city || userInfo.city || ""} onChange={bsf("city")}/>
@@ -1143,7 +1155,17 @@ export default function PetclubApp({ session, onLogout }) {
               </Fld>
               <div className="flex gap-3 mt-2">
                 <button onClick={() => setBookingStep(1)} className="flex-1 border border-gray-200 text-gray-600 font-bold py-3 rounded-2xl text-sm hover:bg-gray-50">← Back</button>
-                <button disabled={!bookingForm.service_name || !bookingForm.date || !(bookingForm.city || userInfo.city)} onClick={() => setBookingStep(3)}
+                <button
+                  disabled={!bookingForm.service_name || !bookingForm.date || !(bookingForm.city || userInfo.city)}
+                  onClick={() => {
+                    // Require verified address (geocoded from dropdown) if any address was typed
+                    if (bookingForm.address?.trim() && !bookingAddrMeta.lat) {
+                      setBookingAddrErr("Please select your address from the dropdown list to verify it — this ensures we send the right professional to you.");
+                      return;
+                    }
+                    setBookingAddrErr("");
+                    setBookingStep(3);
+                  }}
                   className="flex-1 bg-orange-500 text-white font-bold py-3 rounded-2xl text-sm disabled:opacity-40 hover:bg-orange-600 transition">Next →</button>
               </div>
             </div>
@@ -1229,6 +1251,13 @@ export default function PetclubApp({ session, onLogout }) {
               countryCode={session.phone?.startsWith("+91") ? "in" : "us"}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition placeholder-gray-400"
             />
+            {/* Warn if address is typed but not verified from dropdown */}
+            {form.address?.trim() && !editAddrMeta.lat && (
+              <div className="mt-1.5 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                <span className="text-amber-500 shrink-0 text-sm">⚠️</span>
+                <p className="text-xs text-amber-700 font-medium">Address not verified — type and <strong>select from the dropdown</strong> to confirm postal code &amp; city</p>
+              </div>
+            )}
           </Fld>
           <Fld label="Area / Locality">
             <Inp placeholder="e.g. LB Nagar, Sainikpuri" value={form.area||""} onChange={sf("area")} />
