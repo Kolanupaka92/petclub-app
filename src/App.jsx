@@ -246,6 +246,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
 
   const [step, setStep]     = useState(1);
   const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState("");
   const [idPhoto, setIdPhoto] = useState(null);
   // If sub_role is missing (null in DB), let user pick it on Step 1
   const [pickedRole, setPickedRole] = useState(subRole !== "Groomer" || session.subRole ? subRole : null);
@@ -324,6 +325,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
 
   const handleSubmit = async () => {
     setSaving(true);
+    setSaveErr("");
     try {
       await api.updateMyProProfile({
         sub_role: pickedRole || subRole,    // always save sub_role so DB stays correct
@@ -334,14 +336,18 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
         clinic_name: form.clinic_name,
         price_basic: form.priceA, price_full: form.priceB, price_custom: form.priceC,
       });
+      // ID upload is non-critical — errors are swallowed so profile always saves
       if (form.idNumber.trim()) {
         await api.uploadIdPhoto({
           docType: form.idType, docNumber: form.idNumber.trim(), docPhoto: idPhoto || undefined,
         }).catch(() => {});
       }
-    } catch { /* proceed */ }
-    setSaving(false);
-    onComplete();
+      setSaving(false);
+      onComplete(); // only called after a successful save
+    } catch (e) {
+      setSaving(false);
+      setSaveErr(e.message || "Failed to save profile. Please check your connection and try again.");
+    }
   };
 
   const selectedIdType = idTypes.find(t => t.value === form.idType) || idTypes[0];
@@ -578,6 +584,11 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
             </button>
           )}
         </div>
+        {saveErr && (
+          <div className="mt-3 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl px-4 py-3">
+            <span>⚠️</span><span>{saveErr}</span>
+          </div>
+        )}
         {step === 3 && (
           <button onClick={() => setStep(4)} className="w-full mt-3 text-xs text-gray-400 hover:text-gray-600 py-2 text-center transition-colors">
             Skip ID upload for now →
@@ -768,7 +779,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
             <div className="font-bold text-white text-sm truncate">{profile?.name || session.name || "Pro"}</div>
             <div className="text-white/70 text-xs">{subRole}</div>
             <div className={`mt-2 inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full ${isVerified ? "bg-white/20 text-white" : "bg-white/10 text-white/70"}`}>
-              {isVerified ? "✅ Verified" : "⏳ Pending"}
+              {isVerified ? (available ? "🟢 Online" : "⏸ Offline") : "⏳ Pending"}
             </div>
           </div>
           <button onClick={onLogout} className="w-full text-xs text-gray-500 hover:text-red-400 flex items-center justify-center gap-2 py-2 rounded-xl hover:bg-white/5 transition">
@@ -800,7 +811,11 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                   <div className="text-white text-2xl font-extrabold leading-tight mt-0.5">{(profile?.name || session.name || "Pro").split(" ")[0]}</div>
                   <div className="text-white/60 text-sm mt-0.5">{subRole} · {profile?.city || "Set your city"}</div>
                 </div>
-                {isVerified && <div className="bg-white/20 border border-white/30 text-white text-xs font-bold px-3 py-1.5 rounded-full">✅ Live</div>}
+                {isVerified && (
+                  <div className={`text-white text-xs font-bold px-3 py-1.5 rounded-full border ${available ? "bg-emerald-500/80 border-emerald-400/40" : "bg-gray-500/60 border-white/10"}`}>
+                    {available ? "🟢 Online" : "⏸ Offline"}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -814,17 +829,33 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                   </div>
                 </div>
               ) : (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4 flex items-center justify-between shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-xl">✅</div>
-                    <div>
-                      <div className="font-bold text-emerald-800 text-sm">Verified & Active</div>
-                      <div className="text-xs text-emerald-600">Listed on PETclub · Accepting bookings</div>
+                <div className={`rounded-2xl p-4 mb-4 shadow-sm border transition-colors ${available ? "bg-emerald-50 border-emerald-200" : "bg-gray-50 border-gray-200"}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 transition-colors ${available ? "bg-emerald-100" : "bg-gray-100"}`}>
+                        {available ? "🟢" : "⏸"}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`font-bold text-sm ${available ? "text-emerald-800" : "text-gray-700"}`}>
+                          {available ? "Online — Accepting Bookings" : "Offline — Not Accepting Bookings"}
+                        </div>
+                        <div className={`text-xs mt-0.5 ${available ? "text-emerald-600" : "text-gray-400"}`}>
+                          {available ? "Customers can find & book you" : "You won't receive new requests"}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <button onClick={async () => { setAvailable(true); await api.setAvailability(true).catch(() => {}); showToast("🟢 You're now Online"); }} className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${available ? "bg-emerald-500 text-white shadow-sm" : "bg-gray-100 text-gray-400"}`}>🟢 Online</button>
-                    <button onClick={async () => { setAvailable(false); await api.setAvailability(false).catch(() => {}); showToast("⏸ You're now Offline"); }} className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${!available ? "bg-red-400 text-white shadow-sm" : "bg-gray-100 text-gray-400"}`}>⏸ Offline</button>
+                    {/* Toggle switch */}
+                    <button
+                      onClick={async () => {
+                        const next = !available;
+                        setAvailable(next);
+                        await api.setAvailability(next).catch(() => {});
+                        showToast(next ? "🟢 You're now Online" : "⏸ You're now Offline");
+                      }}
+                      className={`relative w-14 h-7 rounded-full transition-colors duration-300 flex-shrink-0 focus:outline-none ${available ? "bg-emerald-500" : "bg-gray-300"}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ${available ? "translate-x-7" : "translate-x-0"}`}/>
+                    </button>
                   </div>
                 </div>
               )}
