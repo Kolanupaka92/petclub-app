@@ -233,12 +233,8 @@ export default function PetclubApp({ session, onLogout }) {
       }
     }
 
-    // Address: only require dropdown re-verification if the address was actually changed
-    const addressChanged = form.address.trim() !== (userInfo.address || "").trim();
-    if (addressChanged && form.address.trim().length > 3 && !editAddrMeta.lat) {
-      showToast("Please select your address from the dropdown suggestions to verify it.", "error");
-      return;
-    }
+    // If address was changed, try to get GPS from dropdown — but don't block save if not selected
+    // (user may be on poor connection or just correcting a typo)
 
     try {
       const city = editAddrMeta.city || form.city || "";
