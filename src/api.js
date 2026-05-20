@@ -73,6 +73,10 @@ export const api = {
   // Auth — Firebase Phone Auth token exchange
   firebaseVerify: (idToken) => req('POST', '/auth/firebase-verify', { idToken }),
 
+  // Auth — Email OTP fallback (for users without phone access)
+  sendEmailOTP: (email) => req('POST', '/auth/send-email-otp', { email }),
+  verifyEmailOTP: (email, otp) => req('POST', '/auth/verify-email-otp', { email, otp }),
+
   // Push Notifications (FCM)
   saveFcmToken: (token) => req('POST', '/users/fcm-token', { token }, true),
 

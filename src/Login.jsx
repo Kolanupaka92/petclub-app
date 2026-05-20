@@ -245,6 +245,7 @@ export default function Login({ onLogin }) {
   const [cc, setCC]         = useState("91");   // default India
   const [phone, setPhone]   = useState("");
   const [email, setEmail]   = useState("");
+  const [loginMethod, setLoginMethod] = useState("phone"); // "phone" | "email"
   const [otp, setOtp]       = useState(["","","","","",""]);
   const [role, setRole]     = useState(null);
   const [loading, setLoading] = useState(false);
@@ -300,40 +301,48 @@ export default function Login({ onLogin }) {
   const flowSteps   = mode === "signup" ? signupSteps : signinSteps;
   const stepIdx     = flowSteps.indexOf(step);
 
-  /* ── Send OTP via Firebase Phone Auth ── */
+  /* ── Send OTP — phone (Firebase) or email (backend) ── */
   const sendOtp = async () => {
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length < 6) return showErr("Enter a valid phone number");
-    const e164 = `+${cc}${digits}`;
     setLoading(true); setErr("");
     try {
-      await sendPhoneOtp(e164);
+      if (loginMethod === "email") {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+          return showErr("Enter a valid email address");
+        await api.sendEmailOTP(email.trim());
+      } else {
+        const digits = phone.replace(/\D/g, "");
+        if (digits.length < 6) return showErr("Enter a valid phone number");
+        const e164 = `+${cc}${digits}`;
+        try {
+          await sendPhoneOtp(e164);
+        } catch (e) {
+          // reCAPTCHA may expire on retry — reinit and try once more
+          if (e.code === "auth/captcha-check-failed" || e.code === "auth/internal-error") {
+            await initPhoneAuth("recaptcha-container");
+            await sendPhoneOtp(e164);
+          } else throw e;
+        }
+      }
       setStep("otp"); setOtp(["","","","","",""]); setTimer(60);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } catch (e) {
-      // reCAPTCHA may expire on retry — reinit and try once more
-      if (e.code === "auth/captcha-check-failed" || e.code === "auth/internal-error") {
-        try {
-          await initPhoneAuth("recaptcha-container");
-          await sendPhoneOtp(e164);
-          setStep("otp"); setOtp(["","","","","",""]); setTimer(60);
-          setTimeout(() => otpRefs.current[0]?.focus(), 100);
-          return;
-        } catch {}
-      }
       showErr(e.message?.replace("Firebase: ", "").replace(/ \(auth\/.*\)/, "") || "Failed to send OTP. Try again.");
-    }
-    finally { setLoading(false); }
+    } finally { setLoading(false); }
   };
 
-  /* ── Verify OTP via Firebase → exchange for PETclub JWT ── */
+  /* ── Verify OTP — phone (Firebase) or email (backend) ── */
   const verifyOtp = async (code) => {
     if (loading) return;
     const c = code ?? otp.join("");
     if (c.length !== 6) return showErr("Enter all 6 digits");
     setLoading(true); setErr("");
     try {
-      const res = await verifyPhoneOtp(c);
+      let res;
+      if (loginMethod === "email") {
+        res = await api.verifyEmailOTP(email.trim(), c);
+      } else {
+        res = await verifyPhoneOtp(c);
+      }
       saveToken(res.token);
       if (mode === "signup" || res.isNew || res.user?.role === "pending_role") {
         setStep("profile");
@@ -342,8 +351,7 @@ export default function Login({ onLogin }) {
       }
     } catch (e) {
       showErr(e.message?.replace("Firebase: ", "").replace(/ \(auth\/.*\)/, "") || "Wrong OTP. Try again.");
-    }
-    finally { setLoading(false); }
+    } finally { setLoading(false); }
   };
 
   const handleBox = (i, val) => {
@@ -579,46 +587,67 @@ export default function Login({ onLogin }) {
                       <p className="text-xs text-gray-500">{selRole.tagline}</p>
                     </div>
                   </div>
-                  <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Enter your number</h1>
-                  <p className="text-gray-500 text-sm mt-0.5">We'll send a one-time code to verify your identity.</p>
+                  <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Verify your identity</h1>
+                  <p className="text-gray-500 text-sm mt-0.5">We'll send a one-time code to verify you.</p>
                 </div>
               ) : (
                 <div>
                   <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Welcome back 👋</h1>
-                  <p className="text-gray-500 text-sm mt-1">Enter your registered mobile number to sign in.</p>
+                  <p className="text-gray-500 text-sm mt-1">Sign in with your phone or email.</p>
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Mobile Number</label>
-                <div className="flex border-2 border-gray-200 rounded-2xl focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-50 transition-all bg-white h-14"
-                  style={{overflow:"visible", position:"relative"}}>
-                  <CountryPicker value={cc} onChange={v => { setCC(v); setPhone(""); setErr(""); }} />
-                  <input type="tel" inputMode="numeric" autoComplete="tel"
-                    placeholder={country.placeholder} maxLength={15}
-                    value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g,"").slice(0,15)); setErr(""); }}
-                    onKeyDown={e => e.key === "Enter" && sendOtp()}
-                    className="flex-1 px-4 text-base font-semibold focus:outline-none bg-transparent placeholder-gray-300 rounded-r-2xl" />
+              {/* ── Login method toggle ── */}
+              <div className="flex rounded-2xl border-2 border-gray-200 overflow-hidden bg-gray-50 p-1 gap-1">
+                <button type="button"
+                  onClick={() => { setLoginMethod("phone"); setErr(""); }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${loginMethod === "phone" ? "bg-white text-orange-600 shadow-sm border border-orange-200" : "text-gray-400 hover:text-gray-600"}`}>
+                  📱 Phone SMS
+                </button>
+                <button type="button"
+                  onClick={() => { setLoginMethod("email"); setErr(""); }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${loginMethod === "email" ? "bg-white text-orange-600 shadow-sm border border-orange-200" : "text-gray-400 hover:text-gray-600"}`}>
+                  📧 Email OTP
+                </button>
+              </div>
+
+              {/* ── Phone input ── */}
+              {loginMethod === "phone" && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Mobile Number</label>
+                  <div className="flex border-2 border-gray-200 rounded-2xl focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-50 transition-all bg-white h-14"
+                    style={{overflow:"visible", position:"relative"}}>
+                    <CountryPicker value={cc} onChange={v => { setCC(v); setPhone(""); setErr(""); }} />
+                    <input type="tel" inputMode="numeric" autoComplete="tel"
+                      placeholder={country.placeholder} maxLength={15}
+                      value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g,"").slice(0,15)); setErr(""); }}
+                      onKeyDown={e => e.key === "Enter" && sendOtp()}
+                      className="flex-1 px-4 text-base font-semibold focus:outline-none bg-transparent placeholder-gray-300 rounded-r-2xl" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 mt-3">
+                      Email <span className="text-gray-400 normal-case font-normal">(optional — booking confirmations)</span>
+                    </label>
+                    <input type="email" autoComplete="email" placeholder="you@example.com"
+                      value={email} onChange={e => { setEmail(e.target.value); setErr(""); }}
+                      onKeyDown={e => e.key === "Enter" && sendOtp()}
+                      className="w-full h-12 border-2 border-gray-200 rounded-2xl px-4 text-sm font-medium focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
-                <span className="text-base shrink-0">📱</span>
-                <p className="text-xs text-emerald-800 font-medium leading-relaxed">
-                  OTP sent via <strong>SMS</strong> to your mobile — works in India &amp; USA.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  Email <span className="text-gray-400 normal-case font-normal">(optional — booking confirmations)</span>
-                </label>
-                <input type="email" autoComplete="email"
-                  placeholder="you@example.com"
-                  value={email} onChange={e => { setEmail(e.target.value); setErr(""); }}
-                  onKeyDown={e => e.key === "Enter" && sendOtp()}
-                  className="w-full h-12 border-2 border-gray-200 rounded-2xl px-4 text-sm font-medium focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
-              </div>
+              {/* ── Email input ── */}
+              {loginMethod === "email" && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
+                  <input type="email" autoComplete="email" autoFocus
+                    placeholder="your@email.com"
+                    value={email} onChange={e => { setEmail(e.target.value); setErr(""); }}
+                    onKeyDown={e => e.key === "Enter" && sendOtp()}
+                    className="w-full h-14 border-2 border-gray-200 rounded-2xl px-4 text-base font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
+                  <p className="text-xs text-gray-400 mt-2">📧 A 6-digit OTP will be sent to this email address.</p>
+                </div>
+              )}
 
               {/* Hidden reCAPTCHA container — Firebase invisible reCAPTCHA renders here */}
               <div id="recaptcha-container" />
@@ -645,8 +674,10 @@ export default function Login({ onLogin }) {
               <div>
                 <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Enter OTP</h1>
                 <p className="text-gray-500 text-sm mt-1">
-                  SMS sent to {country.flag} <span className="font-semibold text-gray-700">+{cc} ···{phone.slice(-4)}</span>
-                  {email && <><br/><span className="text-xs text-gray-400">Confirmation emails will go to {email}</span></>}
+                  {loginMethod === "email"
+                    ? <>OTP sent to <span className="font-semibold text-orange-600">{email}</span><br/><span className="text-xs text-gray-400">Check your inbox and spam folder</span></>
+                    : <>SMS sent to {country.flag} <span className="font-semibold text-gray-700">+{cc} ···{phone.slice(-4)}</span>{email && <><br/><span className="text-xs text-gray-400">Confirmation emails will go to {email}</span></>}</>
+                  }
                 </p>
               </div>
 
