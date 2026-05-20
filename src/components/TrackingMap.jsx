@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-const BASE  = import.meta.env.VITE_API_URL || "https://api.mypetclub.app/api";
+const BASE  = import.meta.env.VITE_API_URL || "https://petclub-backend-1084002294076.us-central1.run.app/api";
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "";
 
 const SVC_ICON  = { Groomer: "✂️", Trainer: "🎓", Vet: "🏥" };
