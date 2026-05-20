@@ -181,22 +181,9 @@ export const getEmailSuggestion = (email) => {
   const local = email.slice(0, at);
   const domain = email.slice(at + 1).toLowerCase();
 
-  // Exact typo map lookup
-  if (EMAIL_TYPOS[domain]) return `${local}@${EMAIL_TYPOS[domain]}`;
-
-  // Regex catch-all: fix common TLD scrambles on known providers
-  const [provider, tld] = domain.split('.');
-  if (tld) {
-    // .conm / .cmo / .ocm / .con / .cpm → .com
-    if (/^c[o]?[nm][m]?$/.test(tld) || tld === 'cmo' || tld === 'ocm' || tld === 'cpm') {
-      const knownProviders = { gmail:'gmail.com', yahoo:'yahoo.com', hotmail:'hotmail.com', outlook:'outlook.com', icloud:'icloud.com', rediffmail:'rediffmail.com' };
-      if (knownProviders[provider]) return `${local}@${knownProviders[provider]}`;
-      return `${local}@${provider}.com`;
-    }
-    // .con → .com
-    if (tld === 'con') return `${local}@${provider}.com`;
-  }
-  return null;
+  // Exact typo map lookup only — no regex (regex was matching valid .com)
+  const fix = EMAIL_TYPOS[domain];
+  return fix ? `${local}@${fix}` : null;
 };
 
 /* ── Address Autocomplete (thin wrapper — keeps backward compat with App.jsx / PetclubApp.jsx) ── */

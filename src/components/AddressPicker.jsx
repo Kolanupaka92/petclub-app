@@ -54,11 +54,11 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
     if (!value) { setQuery(""); setConfirmed(false); setResults([]); }
   }, [value]);
 
-  /* ── compute dropdown position from input rect ── */
+  /* ── compute dropdown position (fixed = viewport-relative, no scrollY needed) ── */
   const calcPos = useCallback(() => {
     if (!inputRef.current) return;
     const r = inputRef.current.getBoundingClientRect();
-    setDropStyle({ top: r.bottom + window.scrollY + 4, left: r.left + window.scrollX, width: r.width });
+    setDropStyle({ top: r.bottom + 4, left: r.left, width: r.width });
   }, []);
 
   /* reposition on scroll/resize while open */
@@ -199,7 +199,7 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
         <div
           onPointerDown={() => { skipBlur.current = true; }}
           style={{
-            position:  "absolute",
+            position:  "fixed",
             top:       dropStyle.top,
             left:      dropStyle.left,
             width:     dropStyle.width,
