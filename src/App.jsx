@@ -614,6 +614,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [profile,   setProfile]   = useState(null);
   const [bookings,  setBookings]  = useState([]);
   const [requests,  setRequests]  = useState([]);
+  const [health,    setHealth]    = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [available, setAvailable] = useState(true);
   const [editModal, setEditModal] = useState(false);
@@ -661,10 +662,12 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
       api.getMyProProfile().catch(() => null),
       api.getBookings().catch(() => ({ bookings: [] })),
       api.getIncomingBookings().catch(() => ({ bookings: [] })),
-    ]).then(([profRes, bkRes, reqRes]) => {
+      api.health().catch(() => null),
+    ]).then(([profRes, bkRes, reqRes, healthRes]) => {
       if (profRes?.profile) { setProfile(profRes.profile); setAvailable(profRes.profile?.is_available ?? true); }
       setBookings(bkRes?.bookings || []);
       setRequests(reqRes?.bookings || []);
+      if (healthRes) setHealth(healthRes);
     }).finally(() => setLoading(false));
 
     // Auto-refresh requests every 30 seconds (like Ola/Uber)
@@ -864,7 +867,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
               <h1 className="text-2xl font-extrabold text-gray-800">Incoming Requests</h1>
               <button onClick={refreshRequests} className="text-xs font-semibold text-orange-500 border border-orange-200 px-3 py-1.5 rounded-full hover:bg-orange-50 transition">🔄 Refresh</button>
             </div>
-            <p className="text-xs text-gray-400 mb-5">Accept or Reject within <strong>5 minutes</strong> — unanswered requests auto-pass to the next professional.</p>
+            <p className="text-xs text-gray-400 mb-5">Accept or Reject within <strong>{health?.config?.booking_response_timeout_mins ?? 5} minutes</strong> — unanswered requests auto-pass to the next professional.</p>
 
             {activeRequests.length === 0 ? (
               <EmptyState icon="🔔" title="No incoming requests" desc="New booking requests will appear here. Refreshes every 30 sec automatically."/>
@@ -1218,6 +1221,7 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [rejectModal,setRejectModal]= useState(null);
   const [rejectReason,setRejectReason]=useState("");
   const [toast,      setToast]      = useState({ msg:"", type:"success" });
+  const [health,     setHealth]     = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -1225,11 +1229,13 @@ const AdminDashboard = ({ session, onLogout }) => {
       api.getPendingVerifications().catch(() => ({ pending:[] })),
       api.getAdminUsers().catch(() => ({ users:[] })),
       api.getBookings().catch(() => ({ bookings:[] })),
-    ]).then(([statsRes, pendRes, usersRes, bkRes]) => {
+      api.health().catch(() => null),
+    ]).then(([statsRes, pendRes, usersRes, bkRes, healthRes]) => {
       if (statsRes?.stats) setStats(statsRes.stats);
       setPending(pendRes?.pending || []);
       setUsers(usersRes?.users || []);
       setBookings(bkRes?.bookings || []);
+      if (healthRes) setHealth(healthRes);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -1346,11 +1352,13 @@ const AdminDashboard = ({ session, onLogout }) => {
               <div className="flex items-start justify-between">
                 <div>
                   <h1 className="text-white text-2xl font-extrabold mb-1">Admin Dashboard</h1>
-                  <p className="text-gray-400 text-sm">PETclub · HQ: Sahara, LB Nagar, Hyderabad</p>
+                  <p className="text-gray-400 text-sm">PETclub · Super Admin</p>
                 </div>
                 <div className="hidden md:block text-right">
-                  <div className="text-xs text-gray-500">{new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
-                  <div className="text-xs text-emerald-400 mt-1 font-semibold">● Platform Live</div>
+                  <div className="text-xs text-gray-500">{new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
+                  <div className={`text-xs mt-1 font-semibold ${health ? "text-emerald-400" : "text-gray-500"}`}>
+                    {health ? "● Platform Live" : "● Checking…"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1367,7 +1375,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                 <div>
                   <div className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">Total Revenue</div>
                   <div className="text-white text-3xl font-extrabold">
-                    ₹{(stats?.revenue ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.amount||0),0)).toLocaleString("en-IN")}
+                    ₹{(stats?.revenue ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.amount||0),0)).toLocaleString()}
                   </div>
                   <div className="text-gray-400 text-xs mt-1">{bookings.filter(b=>b.status==="completed").length} completed bookings</div>
                 </div>
@@ -1465,23 +1473,30 @@ const AdminDashboard = ({ session, onLogout }) => {
                 })}
               </div>
 
-              {/* ── Platform Info ── */}
+              {/* ── Platform Status — driven from /health API ── */}
               <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4 mb-4">
                 <h2 className="font-bold text-gray-700 text-sm mb-3">⚙️ Platform Status</h2>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  {[
-                    { label:"Backend", val:"Cloud Run ✅", color:"text-emerald-600" },
-                    { label:"Frontend", val:"Vercel ✅", color:"text-emerald-600" },
-                    { label:"Database", val:"Supabase ✅", color:"text-emerald-600" },
-                    { label:"Payments", val:"⏳ Pending LLC", color:"text-amber-600" },
-                    { label:"iOS App", val:"📱 Coming soon", color:"text-blue-600" },
-                    { label:"Android", val:"📱 Coming soon", color:"text-blue-600" },
-                  ].map(s => (
-                    <div key={s.label} className="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-gray-100">
-                      <span className="text-gray-500">{s.label}</span>
-                      <span className={`font-semibold ${s.color}`}>{s.val}</span>
-                    </div>
-                  ))}
+                  {(() => {
+                    const svc = health?.services || {};
+                    const ok  = v => v?.startsWith("✅");
+                    const rows = [
+                      { label:"Backend API",  val: health ? (ok(svc.supabase) ? "Cloud Run ✅" : "Cloud Run ⚠️") : "Checking…",    color: health ? (ok(svc.supabase) ? "text-emerald-600":"text-amber-600") : "text-gray-400" },
+                      { label:"Frontend",     val: "Vercel ✅",                                                                       color: "text-emerald-600" },
+                      { label:"Database",     val: svc.supabase   ? `Supabase ${svc.supabase}`   : "Supabase —",                     color: ok(svc.supabase)    ? "text-emerald-600":"text-amber-600" },
+                      { label:"Auth / Push",  val: svc.firebase_auth ? `Firebase ${svc.firebase_auth.replace(" live","").replace(" pending (set FIREBASE_SERVICE_ACCOUNT_JSON)","⚠️")}` : "Firebase —", color: ok(svc.firebase_auth) ? "text-emerald-600":"text-amber-600" },
+                      { label:"Email (SMTP)", val: svc.zoho_smtp  ? `Zoho ${svc.zoho_smtp}`      : "Zoho —",                         color: ok(svc.zoho_smtp)   ? "text-emerald-600":"text-amber-600" },
+                      { label:"Payments",     val: svc.razorpay   ? (ok(svc.razorpay) ? "Razorpay ✅" : "⏳ Pending LLC")            : "⏳ Pending LLC",          color: ok(svc.razorpay)    ? "text-emerald-600":"text-amber-600" },
+                      { label:"iOS App",      val: "📱 Coming soon",  color:"text-blue-600" },
+                      { label:"Android",      val: "📱 Coming soon",  color:"text-blue-600" },
+                    ];
+                    return rows.map(s => (
+                      <div key={s.label} className="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-gray-100">
+                        <span className="text-gray-500">{s.label}</span>
+                        <span className={`font-semibold ${s.color}`}>{s.val}</span>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
             </div>
