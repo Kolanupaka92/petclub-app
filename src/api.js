@@ -91,6 +91,7 @@ export const api = {
   getPendingVerifications: () => req('GET', '/admin/pending-verifications', null, true),
   verifyProfessional: (id, action, reason) => req('PUT', `/admin/verify/${id}`, { action, reason }, true),
   suspendUser: (id) => req('PUT', `/admin/users/${id}/suspend`, {}, true),
+  deleteUser: (id) => req('DELETE', `/admin/users/${id}`, null, true),
   setUserSubRole: (id, subRole) => req('PUT', `/admin/users/${id}/set-role`, { subRole }, true),
   // Admin testing tools
   getOtp: (phone, cc = '91') => req('GET', `/admin/otp?phone=${encodeURIComponent(phone)}&cc=${cc}`, null, true),

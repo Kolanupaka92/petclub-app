@@ -1252,10 +1252,33 @@ const AdminDashboard = ({ session, onLogout }) => {
   };
   const suspend = async userId => {
     try {
-      await api.suspendUser(userId);
-      setUsers(l => l.map(u => u.id === userId ? { ...u, is_active: !u.is_active } : u));
-      showToast("User status updated.");
+      const res = await api.suspendUser(userId);
+      setUsers(l => l.map(u => u.id === userId
+        ? { ...u, is_active: res.is_active, suspended_at: res.suspended_at ?? u.suspended_at }
+        : u));
+      showToast(res.is_active ? "✅ User restored." : "⚠️ User suspended — will be deleted in 24 hrs.");
     } catch { showToast("❌ Failed to update user.", "error"); }
+  };
+
+  const deleteUser = async userId => {
+    if (!window.confirm("Permanently delete this user? This cannot be undone.")) return;
+    try {
+      await api.deleteUser(userId);
+      setUsers(l => l.filter(u => u.id !== userId));
+      showToast("🗑️ User deleted.");
+    } catch (e) { showToast("❌ " + e.message, "error"); }
+  };
+
+  // Returns a human-readable countdown for suspended_at timestamp
+  const deletionCountdown = suspendedAt => {
+    if (!suspendedAt) return null;
+    const deletesAt = new Date(new Date(suspendedAt).getTime() + 24 * 60 * 60 * 1000);
+    const msLeft = deletesAt - Date.now();
+    if (msLeft <= 0) return "Deletes soon";
+    const h = Math.floor(msLeft / 3600000);
+    const m = Math.floor((msLeft % 3600000) / 60000);
+    if (h > 0) return `🗑️ Deletes in ${h}h ${m}m`;
+    return `🗑️ Deletes in ${m}m`;
   };
 
   const filteredUsers = users.filter(u =>
@@ -1554,12 +1577,15 @@ const AdminDashboard = ({ session, onLogout }) => {
                   const proRole = u.professional_profiles?.[0]?.sub_role;
                   const verStatus = u.professional_profiles?.[0]?.verification_status;
                   return (
-                    <div key={u.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+                    <div key={u.id} className={`bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-3 ${!u.is_active ? "border-red-100 bg-red-50/30" : "border-gray-100"}`}>
                       <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center text-xl shrink-0">{rIcon(proRole || u.role)}</div>
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-sm text-gray-800 truncate">{u.name || "—"}</div>
                         <div className="text-xs text-gray-400 capitalize truncate">{proRole || u.role} · {u.phone}</div>
                         {proRole && verStatus && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border mt-1 inline-block ${sColor(verStatus)}`}>{verStatus}</span>}
+                        {!u.is_active && u.suspended_at && (
+                          <div className="text-xs font-semibold text-red-500 mt-1">{deletionCountdown(u.suspended_at)}</div>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0">
                         <Bdg text={u.is_active ? "active" : "suspended"} cls={sColor(u.is_active ? "active" : "suspended")}/>
@@ -1567,6 +1593,12 @@ const AdminDashboard = ({ session, onLogout }) => {
                           className={`text-xs font-semibold px-3 py-1 rounded-full border transition ${u.is_active ? "border-red-200 text-red-500 hover:bg-red-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>
                           {u.is_active ? "Suspend" : "Restore"}
                         </button>
+                        {!u.is_active && (
+                          <button onClick={() => deleteUser(u.id)}
+                            className="text-xs font-semibold px-3 py-1 rounded-full border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 transition">
+                            🗑️ Delete Now
+                          </button>
+                        )}
                         {/* Role assignment for professionals with missing sub_role */}
                         {u.role === "professional" && !proRole && (
                           <select
