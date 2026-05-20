@@ -1034,6 +1034,16 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                         <Bdg text={b.status} cls={sColor(b.status)}/>
                       </div>
                       {b.amount && <div className="text-sm font-bold text-gray-700 mb-2">{b.amount}</div>}
+                      {/* 🗺️ Navigate to customer — shown when coords available */}
+                      {(b.address_lat && b.address_lng) && (
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${b.address_lat},${b.address_lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full flex items-center justify-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 font-bold text-xs py-2.5 rounded-xl transition-all hover:bg-blue-100 active:scale-[0.97] mb-2">
+                          🗺️ Navigate to Customer
+                        </a>
+                      )}
                       {/* 📍 Share Location — only on active/confirmed bookings */}
                       {isActive && (
                         isSharing ? (

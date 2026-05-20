@@ -33,8 +33,8 @@ export const api = {
   // User
   getMe: () => req('GET', '/users/me', null, true),
   updateMe: (data) => req('PUT', '/users/me', data, true),
-  setRole: (role, subRole, name, email, city, address, pet) =>
-    req('POST', '/users/set-role', { role, subRole, name, email, city, address, pet }, true),
+  setRole: (role, subRole, name, email, city, address, pet, addressLat, addressLng, addressPostalCode, addressCity, addressState) =>
+    req('POST', '/users/set-role', { role, subRole, name, email, city, address, pet, addressLat, addressLng, addressPostalCode, addressCity, addressState }, true),
 
   // Pets
   getPets: () => req('GET', '/pets', null, true),

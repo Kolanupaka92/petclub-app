@@ -420,6 +420,7 @@ export default function Login({ onLogin }) {
 
     setLoading(true);
     try {
+      const addrMeta = isCust ? custAddrMeta : proAddrMeta;
       const res = await api.setRole(
         isCust ? "customer" : "professional",
         isCust ? undefined : role,
@@ -427,7 +428,12 @@ export default function Login({ onLogin }) {
         isCust ? (cust.email.trim()||undefined) : pro.email.trim(),
         isCust ? undefined : pro.city.trim(),
         isCust ? cust.address.trim() : pro.address.trim(),
-        isCust ? { name: cust.petName.trim(), species: cust.petSpecies, breed: cust.petBreed||undefined, age: cust.petAge||undefined, gender: cust.petGender } : undefined
+        isCust ? { name: cust.petName.trim(), species: cust.petSpecies, breed: cust.petBreed||undefined, age: cust.petAge||undefined, gender: cust.petGender } : undefined,
+        addrMeta.lat,
+        addrMeta.lng,
+        addrMeta.postalCode || undefined,
+        addrMeta.city       || undefined,
+        addrMeta.state      || undefined
       );
       saveToken(res.token);
 

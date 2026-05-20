@@ -3,6 +3,7 @@ import { api } from "./api.js";
 import { loadPets, savePets } from "./utils/storage.js";
 import { TC, fmtDate } from "./data/mockData.js";
 import { AddressInput } from "./Login.jsx";
+import { AddressPicker } from "./components/AddressPicker.jsx";
 
 // Lazy-load heavy map component (Mapbox GL is ~500 KB)
 const TrackingMap = lazy(() => import("./components/TrackingMap.jsx"));
@@ -107,6 +108,7 @@ export default function PetclubApp({ session, onLogout }) {
   const [myBookings, setMyBookings] = useState([]);
   const [bookingStep, setBookingStep] = useState(1); // 1=service 2=details 3=confirm
   const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
+  const [bookingAddrMeta, setBookingAddrMeta] = useState({ lat: null, lng: null });
   const [bookingLoading, setBookingLoading] = useState(false);
   const [ratingModal, setRatingModal] = useState(null); // { bookingId, serviceName }
   const [ratingVal, setRatingVal] = useState(0);
@@ -286,10 +288,13 @@ export default function PetclubApp({ session, onLogout }) {
         address: bookingForm.address || "",
         notes: bookingForm.notes || "",
         amount: bookingForm.amount ? parseFloat(bookingForm.amount) : null,
+        lat: bookingAddrMeta.lat,
+        lng: bookingAddrMeta.lng,
       });
       setMyBookings(prev => [res.booking, ...prev]);
       setModal(null);
       setBookingStep(1);
+      setBookingAddrMeta({ lat: null, lng: null });
       setBookingForm({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
       showToast("✅ Booking placed! Finding your professional…");
       setView("bookings");
@@ -1086,11 +1091,14 @@ export default function PetclubApp({ session, onLogout }) {
               </div>
               {/* Address */}
               <Fld label="Address">
-                <AddressInput
+                <AddressPicker
                   value={bookingForm.address}
-                  onChange={v => setBookingForm(f => ({ ...f, address: v }))}
+                  onChange={({ address, lat, lng }) => {
+                    setBookingForm(f => ({ ...f, address }));
+                    setBookingAddrMeta({ lat: lat || null, lng: lng || null });
+                  }}
                   placeholder="House/flat, street, locality"
-                  cc={session.phone?.startsWith("+91") ? "91" : "1"}
+                  countryCode={session.phone?.startsWith("+91") ? "in" : "us"}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition placeholder-gray-400"
                 />
               </Fld>
