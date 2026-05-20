@@ -1,6 +1,4 @@
-// api.mypetclub.app domain mapping active — SSL cert provisioning by Google (~60min)
-// Fallback to direct Cloud Run URL until custom domain SSL is ready
-const BASE = import.meta.env.VITE_API_URL || 'https://petclub-backend-1084002294076.us-central1.run.app/api';
+const BASE = import.meta.env.VITE_API_URL || 'https://api.mypetclub.app/api';
 
 const getToken = () => localStorage.getItem('petclub_token');
 
