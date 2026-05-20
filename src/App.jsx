@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { api } from "./api.js";
+import { AddressInput } from "./Login.jsx";
 
 /* ── Helpers ── */
 const fmtDate = s => { try { return new Date(s).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }); } catch { return s || "—"; } };
@@ -411,7 +412,16 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
               <Inp label="Date of Birth" type="date" max={new Date().toISOString().split("T")[0]} value={form.dob} onChange={sf("dob")}/>
               <Sel label="Gender" opts={["Male","Female","Other"]} value={form.gender} onChange={sf("gender")}/>
             </div>
-            <Txta label="Full Address" placeholder="House/Flat No., Street, Locality" value={form.address} onChange={sf("address")} rows={2}/>
+            <div className="mb-3">
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Full Address</label>
+              <AddressInput
+                value={form.address}
+                onChange={v => setForm(f => ({ ...f, address: v }))}
+                placeholder="Start typing your address…"
+                cc={session.phone?.startsWith("+91") ? "91" : "1"}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition placeholder-gray-400"
+              />
+            </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="relative">
                 <Inp label="PIN / ZIP" placeholder={isIndia ? "500074" : "90210"} maxLength={6} value={form.pincode} onChange={sf("pincode")}/>

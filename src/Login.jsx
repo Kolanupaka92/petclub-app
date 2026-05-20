@@ -148,22 +148,55 @@ const CountryPicker = ({ value, onChange }) => {
 const AddressInput = ({ value, onChange, placeholder, cc, className }) => {
   const [inputVal, setInputVal]     = useState(value || "");
   const [suggestions, setSuggestions] = useState([]);
-  const timerRef = useRef(null);
-  const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+  const [loading, setLoading]       = useState(false);
+  const timerRef  = useRef(null);
+  const MAPBOX    = import.meta.env.VITE_MAPBOX_TOKEN;
 
-  // Sync if parent resets value
+  // Sync if parent resets value (e.g. form clear)
   useEffect(() => { setInputVal(value || ""); }, [value]);
 
-  const search = (q) => {
-    if (!q || q.length < 3 || !TOKEN) { setSuggestions([]); return; }
-    const country = cc === "91" ? "IN" : "US";
-    fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json` +
-      `?country=${country}&types=address,place&access_token=${TOKEN}&limit=5`
-    )
-      .then(r => r.json())
-      .then(d => setSuggestions(d.features || []))
-      .catch(() => setSuggestions([]));
+  const search = async (q) => {
+    if (!q || q.length < 3) { setSuggestions([]); return; }
+    setLoading(true);
+    try {
+      const countryCode = cc === "91" ? "in" : "us";
+      let results = [];
+
+      if (MAPBOX) {
+        // Mapbox (if token configured in Vercel env)
+        const r = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json` +
+          `?country=${countryCode.toUpperCase()}&types=address,place,locality,neighborhood` +
+          `&access_token=${MAPBOX}&limit=6`
+        );
+        const d = await r.json();
+        results = (d.features || []).map(f => ({
+          id:    f.id,
+          short: f.text,
+          full:  f.place_name,
+        }));
+      } else {
+        // OpenStreetMap Nominatim — free, no key needed, works globally
+        const r = await fetch(
+          `https://nominatim.openstreetmap.org/search` +
+          `?q=${encodeURIComponent(q)}&format=jsonv2&addressdetails=1` +
+          `&countrycodes=${countryCode}&accept-language=en&limit=6`,
+          { headers: { "Accept-Language": "en" } }
+        );
+        const d = await r.json();
+        results = (d || []).map((f, i) => {
+          const parts = (f.display_name || "").split(", ");
+          // Show first part as "short" (building/street), rest as context
+          return {
+            id:    f.place_id || i,
+            short: parts[0] || f.display_name,
+            full:  f.display_name,
+          };
+        });
+      }
+      setSuggestions(results);
+    } catch { setSuggestions([]); }
+    finally { setLoading(false); }
   };
 
   const handleChange = (e) => {
@@ -171,15 +204,16 @@ const AddressInput = ({ value, onChange, placeholder, cc, className }) => {
     setInputVal(v);
     onChange(v);
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => search(v), 350);
+    timerRef.current = setTimeout(() => search(v), 380);
   };
 
-  const select = (feature) => {
-    const addr = feature.place_name;
-    setInputVal(addr);
-    onChange(addr);
+  const select = (full) => {
+    setInputVal(full);
+    onChange(full);
     setSuggestions([]);
   };
+
+  const defaultClass = "w-full h-12 border-2 border-gray-200 rounded-xl px-4 pr-10 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all";
 
   return (
     <div className="relative">
@@ -187,28 +221,32 @@ const AddressInput = ({ value, onChange, placeholder, cc, className }) => {
         type="text"
         value={inputVal}
         onChange={handleChange}
-        onBlur={() => setTimeout(() => setSuggestions([]), 180)}
-        placeholder={placeholder || (TOKEN ? "Start typing your address…" : "Enter your full address")}
+        onBlur={() => setTimeout(() => setSuggestions([]), 200)}
+        placeholder={placeholder || "Start typing your address…"}
         autoComplete="off"
-        className={className || "w-full h-12 border-2 border-gray-200 rounded-xl px-4 pr-10 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all"}
+        className={className || defaultClass}
       />
-      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base pointer-events-none">📍</span>
+      {/* Icon / spinner */}
+      {loading
+        ? <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin pointer-events-none"/>
+        : <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base pointer-events-none select-none">📍</span>
+      }
+      {/* Suggestions dropdown */}
       {suggestions.length > 0 && (
-        <div style={{
-          position:"absolute", top:"calc(100% + 4px)", left:0, right:0, zIndex:9999,
-          background:"#fff", borderRadius:14, boxShadow:"0 8px 32px rgba(0,0,0,0.15)",
-          border:"1px solid #e2e8f0", overflow:"hidden",
-        }}>
-          {suggestions.map(f => (
-            <button key={f.id} type="button" onMouseDown={() => select(f)}
-              style={{ display:"block", width:"100%", padding:"10px 14px", textAlign:"left",
-                background:"none", border:"none", borderBottom:"1px solid #f1f5f9",
-                cursor:"pointer", transition:"background 0.1s" }}
-              onMouseEnter={e => e.currentTarget.style.background="#fff7ed"}
-              onMouseLeave={e => e.currentTarget.style.background="none"}>
-              <div style={{ fontWeight:600, fontSize:13, color:"#1e293b" }}>{f.text}</div>
-              <div style={{ fontSize:11, color:"#94a3b8", marginTop:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-                {f.place_name}
+        <div className="absolute top-full mt-1 left-0 right-0 z-[9999] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          {suggestions.map(s => (
+            <button
+              key={s.id}
+              type="button"
+              onMouseDown={() => select(s.full)}
+              onTouchStart={() => select(s.full)}
+              className="w-full text-left px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-gray-50 last:border-0 flex items-start gap-2.5">
+              <span className="text-orange-400 mt-0.5 shrink-0 text-sm">📍</span>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-800 truncate">{s.short}</div>
+                <div className="text-xs text-gray-400 leading-snug mt-0.5" style={{ display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                  {s.full}
+                </div>
               </div>
             </button>
           ))}
