@@ -26,7 +26,7 @@ function PendingApproval({ session, onLogout, onApproved }) {
         saveSession(updated);
         onApproved(updated);
       } else if (vs === "rejected") {
-        setMsg("❌ Your application was not approved. Please contact support at support@petclub.in");
+        setMsg("❌ Your application was not approved. Please contact support at support@mypetclub.app");
       } else {
         setMsg("⏳ Still under review. Check back in a few hours.");
       }
