@@ -1,0 +1,15 @@
+steps:
+  # Install dependencies
+  - name: 'node:22-alpine'
+    entrypoint: npm
+    args: ['ci']
+
+  # Build the React app (catches any compile errors before Vercel deploys)
+  - name: 'node:22-alpine'
+    entrypoint: npm
+    args: ['run', 'build']
+    env:
+      - 'VITE_API_URL=https://api.mypetclub.app/api'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
