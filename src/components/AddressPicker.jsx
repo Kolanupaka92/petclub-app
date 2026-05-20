@@ -1,37 +1,90 @@
 /**
- * AddressPicker — Uber/Ola-style address autocomplete
- * - 🎯 GPS "Use my location" button
- * - Live suggestions while typing (Mapbox primary, OpenStreetMap fallback)
- * - 📍 Static map pin preview after selection
- * - Touch-safe: onPointerDown prevents blur-before-select on mobile
+ * AddressPicker — Uber/Ola-style address autocomplete with postal validation
  *
- * onChange({ address, lat, lng }) — always called with full object
+ * Features:
+ *  - 🎯 GPS "Use my location" button with reverse geocoding
+ *  - Live suggestions while typing (Mapbox primary, OpenStreetMap fallback)
+ *  - Extracts postalCode / city / state from every suggestion
+ *  - ✅ Shows a "Verified" badge: pincode · city · state after selection
+ *  - ⚠️  Warns when user types free text without selecting from the list
+ *  - 📍 Static map pin preview after selection (Mapbox only)
+ *  - Mobile-safe: onPointerDown prevents blur-before-select race
+ *
+ * onChange({ address, lat, lng, postalCode, city, state }) — always an object
  */
 import { useState, useEffect, useRef } from "react";
 
 const MAPBOX = import.meta.env.VITE_MAPBOX_TOKEN;
 
+/* ── Extract structured fields from Mapbox context array ── */
+const fromMapbox = (f) => {
+  const ctx = f.context || [];
+  const get = (prefix) => ctx.find(c => c.id?.startsWith(prefix))?.text || "";
+  return {
+    id:         f.id,
+    short:      f.text,
+    full:       f.place_name,
+    lat:        f.center?.[1],
+    lng:        f.center?.[0],
+    postalCode: get("postcode"),
+    city:       get("place"),
+    state:      get("region"),
+    suburb:     get("locality") || get("neighborhood"),
+  };
+};
+
+/* ── Extract structured fields from Nominatim response ── */
+const fromNominatim = (f, i) => {
+  const addr  = f.address || {};
+  const parts = (f.display_name || "").split(", ");
+  return {
+    id:         f.place_id || i,
+    short:      parts[0] || f.display_name,
+    full:       f.display_name,
+    lat:        parseFloat(f.lat),
+    lng:        parseFloat(f.lon),
+    postalCode: addr.postcode || "",
+    city:       addr.city || addr.town || addr.village || addr.county || "",
+    state:      addr.state || "",
+    suburb:     addr.suburb || addr.neighbourhood || addr.quarter || "",
+  };
+};
+
 export function AddressPicker({ value, onChange, placeholder, countryCode = "in", className }) {
-  const [query,          setQuery]          = useState(value || "");
-  const [suggestions,    setSuggestions]    = useState([]);
-  const [searching,      setSearching]      = useState(false);
-  const [gpsLoading,     setGpsLoading]     = useState(false);
-  const [confirmedCoords,setConfirmedCoords]= useState(null);
-  const debounceRef = useRef(null);
+  const [query,           setQuery]           = useState(value || "");
+  const [suggestions,     setSuggestions]     = useState([]);
+  const [searching,       setSearching]       = useState(false);
+  const [gpsLoading,      setGpsLoading]      = useState(false);
+  const [confirmedCoords, setConfirmedCoords] = useState(null);
+  const [confirmedDetails,setConfirmedDetails]= useState(null); // { postalCode, city, state }
+  const [showUnverified,  setShowUnverified]  = useState(false);
+  const debounceRef  = useRef(null);
   const containerRef = useRef(null);
 
-  // Sync if parent clears the field
-  useEffect(() => { setQuery(value || ""); }, [value]);
+  /* Sync if parent clears the field */
+  useEffect(() => {
+    if (!value) {
+      setQuery("");
+      setConfirmedCoords(null);
+      setConfirmedDetails(null);
+      setShowUnverified(false);
+    } else {
+      setQuery(value);
+    }
+  }, [value]);
 
-  // Close dropdown on outside click / tap
+  /* Close dropdown on outside click */
   useEffect(() => {
     const close = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target))
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
         setSuggestions([]);
+        // If user has typed 3+ chars but never selected → show warning
+        if (query.length >= 3 && !confirmedCoords) setShowUnverified(true);
+      }
     };
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
-  }, []);
+  }, [query, confirmedCoords]);
 
   /* ── Geocoding ── */
   const geocode = async (q) => {
@@ -39,43 +92,25 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
     setSearching(true);
     try {
       let results = [];
-
       if (MAPBOX) {
-        /* Mapbox Geocoding (preferred — accurate, fast, India-optimised) */
         const url =
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json` +
           `?country=${countryCode.toUpperCase()}` +
           `&types=address,place,locality,neighborhood,poi,postcode` +
           `&access_token=${MAPBOX}&limit=7&language=en`;
         const d = await fetch(url).then(r => r.json());
-        results = (d.features || []).map(f => ({
-          id:    f.id,
-          short: f.text,
-          full:  f.place_name,
-          lat:   f.center?.[1],
-          lng:   f.center?.[0],
-        }));
+        results = (d.features || []).map(fromMapbox);
       } else {
-        /* OpenStreetMap Nominatim — free fallback, no key needed */
         const url =
           `https://nominatim.openstreetmap.org/search` +
           `?q=${encodeURIComponent(q)}&format=jsonv2&addressdetails=1` +
           `&countrycodes=${countryCode}&limit=7&accept-language=en`;
         const d = await fetch(url, { headers: { "Accept-Language": "en" } }).then(r => r.json());
-        results = (d || []).map((f, i) => {
-          const parts = (f.display_name || "").split(", ");
-          return {
-            id:    f.place_id || i,
-            short: parts[0] || f.display_name,
-            full:  f.display_name,
-            lat:   parseFloat(f.lat),
-            lng:   parseFloat(f.lon),
-          };
-        });
+        results = (d || []).map(fromNominatim);
       }
       setSuggestions(results);
     } catch { setSuggestions([]); }
-    finally   { setSearching(false); }
+    finally  { setSearching(false); }
   };
 
   /* ── Handlers ── */
@@ -83,17 +118,36 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
     const v = e.target.value;
     setQuery(v);
     setConfirmedCoords(null);
-    onChange({ address: v, lat: null, lng: null });
+    setConfirmedDetails(null);
+    setShowUnverified(false);
+    onChange({ address: v, lat: null, lng: null, postalCode: "", city: "", state: "" });
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => geocode(v), 300);
   };
 
-  // onPointerDown + preventDefault = stops blur before tap-select fires (mobile fix)
+  /* onPointerDown + preventDefault = stops blur before tap-select fires (mobile fix) */
   const select = (s) => {
     setQuery(s.full);
     setConfirmedCoords({ lat: s.lat, lng: s.lng });
-    onChange({ address: s.full, lat: s.lat, lng: s.lng });
+    setConfirmedDetails({ postalCode: s.postalCode, city: s.city, state: s.state });
+    setShowUnverified(false);
+    onChange({
+      address:    s.full,
+      lat:        s.lat,
+      lng:        s.lng,
+      postalCode: s.postalCode,
+      city:       s.city,
+      state:      s.state,
+    });
     setSuggestions([]);
+  };
+
+  const clearAddress = () => {
+    setConfirmedCoords(null);
+    setConfirmedDetails(null);
+    setQuery("");
+    setShowUnverified(false);
+    onChange({ address: "", lat: null, lng: null, postalCode: "", city: "", state: "" });
   };
 
   /* ── GPS ── */
@@ -106,21 +160,27 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
           let addr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          let postalCode = "", city = "", state = "";
           if (MAPBOX) {
             const d = await fetch(
               `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json` +
               `?access_token=${MAPBOX}&limit=1&language=en`
             ).then(r => r.json());
-            addr = d.features?.[0]?.place_name || addr;
+            if (d.features?.[0]) {
+              const r = fromMapbox(d.features[0]);
+              addr = r.full; postalCode = r.postalCode; city = r.city; state = r.state;
+            }
           } else {
             const d = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&accept-language=en`
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&addressdetails=1&accept-language=en`
             ).then(r => r.json());
-            addr = d.display_name || addr;
+            const r = fromNominatim(d, 0);
+            addr = r.full; postalCode = r.postalCode; city = r.city; state = r.state;
           }
           setQuery(addr);
           setConfirmedCoords({ lat, lng });
-          onChange({ address: addr, lat, lng });
+          setConfirmedDetails({ postalCode, city, state });
+          onChange({ address: addr, lat, lng, postalCode, city, state });
         } catch { /* silently use raw coords */ }
         setGpsLoading(false);
       },
@@ -170,7 +230,7 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
-            className={inputClass}
+            className={`${inputClass}${showUnverified ? " border-amber-300 focus:border-amber-400 focus:ring-amber-100" : ""}`}
           />
           {searching
             ? <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin pointer-events-none"/>
@@ -181,6 +241,16 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
         </div>
       </div>
 
+      {/* ── Unverified warning ── */}
+      {showUnverified && !confirmedCoords && query.length >= 3 && (
+        <div className="mt-1.5 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+          <span className="text-amber-500 text-sm shrink-0">⚠️</span>
+          <p className="text-xs text-amber-700 font-medium">
+            Please select an address from the dropdown to verify pincode &amp; city.
+          </p>
+        </div>
+      )}
+
       {/* ── Suggestions dropdown ── */}
       {suggestions.length > 0 && (
         <div
@@ -190,18 +260,35 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
             <button
               key={s.id}
               type="button"
-              // onPointerDown + e.preventDefault() is the mobile fix:
-              // it prevents the input's blur from firing BEFORE the tap completes,
-              // so the dropdown stays visible long enough for the selection to register.
               onPointerDown={e => { e.preventDefault(); select(s); }}
               className="w-full text-left px-4 py-3.5 flex items-start gap-3 hover:bg-orange-50 active:bg-orange-100 border-b border-gray-50 last:border-0 transition-colors">
               <span className="text-orange-400 shrink-0 mt-0.5 text-sm">📍</span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="text-sm font-bold text-gray-800 truncate">{s.short}</div>
                 <div className="text-xs text-gray-400 mt-0.5 leading-snug"
                   style={{ display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
                   {s.full}
                 </div>
+                {/* Show postal/city/state inline in suggestion */}
+                {(s.postalCode || s.city || s.state) && (
+                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                    {s.postalCode && (
+                      <span className="text-[10px] font-bold bg-orange-50 text-orange-600 border border-orange-200 px-1.5 py-0.5 rounded-md">
+                        📮 {s.postalCode}
+                      </span>
+                    )}
+                    {s.city && (
+                      <span className="text-[10px] font-semibold bg-gray-50 text-gray-600 border border-gray-200 px-1.5 py-0.5 rounded-md">
+                        {s.city}
+                      </span>
+                    )}
+                    {s.state && (
+                      <span className="text-[10px] text-gray-400 bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded-md">
+                        {s.state}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </button>
           ))}
@@ -213,24 +300,48 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
         </div>
       )}
 
-      {/* ── Map pin preview after confirmed selection ── */}
+      {/* ── Verified address badge after confirmed selection ── */}
+      {confirmedDetails && confirmedCoords && (
+        <div className="mt-2 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5">
+          <span className="text-emerald-500 text-sm shrink-0 font-bold">✓</span>
+          <div className="flex gap-1.5 flex-wrap flex-1 min-w-0">
+            {confirmedDetails.postalCode && (
+              <span className="text-[11px] font-extrabold bg-white border border-emerald-300 text-emerald-700 px-2 py-0.5 rounded-lg">
+                📮 {confirmedDetails.postalCode}
+              </span>
+            )}
+            {confirmedDetails.city && (
+              <span className="text-[11px] font-semibold bg-white border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-lg">
+                {confirmedDetails.city}
+              </span>
+            )}
+            {confirmedDetails.state && (
+              <span className="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-lg">
+                {confirmedDetails.state}
+              </span>
+            )}
+            {!confirmedDetails.postalCode && !confirmedDetails.city && (
+              <span className="text-xs text-emerald-700 font-medium">Address verified via GPS</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={clearAddress}
+            title="Clear address"
+            className="text-xs text-gray-400 hover:text-red-400 shrink-0 font-bold transition ml-1">✕</button>
+        </div>
+      )}
+
+      {/* ── Map pin preview after confirmed selection (Mapbox only) ── */}
       {mapUrl && (
         <div className="mt-2 rounded-xl overflow-hidden border-2 border-emerald-200 shadow-sm">
           <img
             src={mapUrl}
             alt="Selected location on map"
             className="w-full object-cover"
-            style={{ height: 130 }}
+            style={{ height: 120 }}
             onError={e => e.target.parentElement.style.display = "none"}
           />
-          <div className="bg-emerald-50 px-3 py-2 flex items-center gap-2">
-            <span className="text-emerald-500 shrink-0 text-sm">📍</span>
-            <p className="text-xs font-semibold text-emerald-800 truncate flex-1">{query}</p>
-            <button
-              type="button"
-              onClick={() => { setConfirmedCoords(null); setQuery(""); onChange({ address: "", lat: null, lng: null }); }}
-              className="text-xs text-gray-400 hover:text-red-400 shrink-0 font-bold transition">✕</button>
-          </div>
         </div>
       )}
     </div>

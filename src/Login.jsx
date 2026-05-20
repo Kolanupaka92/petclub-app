@@ -230,10 +230,12 @@ export default function Login({ onLogin }) {
     name:"", email:"", address:"",
     petName:"", petSpecies:"Dog", petBreed:"", petAge:"", petGender:"Male",
   });
+  const [custAddrMeta, setCustAddrMeta] = useState({ lat:null, lng:null, postalCode:"", city:"", state:"" });
   const [custId, setCustId] = useState({ type:"aadhar", number:"", photo:null, photoName:"", preview:null });
 
   /* ── Professional profile ── */
   const [pro, setPro]   = useState({ name:"", email:"", city:"", address:"" });
+  const [proAddrMeta, setProAddrMeta] = useState({ lat:null, lng:null, postalCode:"", city:"", state:"" });
   const [proId, setProId] = useState({ type:"aadhar", number:"", photo:null, photoName:"", preview:null });
   const [proCert, setProCert] = useState({ type:"", photo:null, photoName:"", preview:null });
 
@@ -372,6 +374,7 @@ export default function Login({ onLogin }) {
     if (isCust) {
       if (!cust.name.trim())    return showErr("Enter your name");
       if (!cust.address.trim()) return showErr("Enter your address — we need it for service delivery");
+      if (!custAddrMeta.lat)    return showErr("Please search and select your address from the dropdown — we need the correct pincode and city for service delivery");
       if (!cust.petName.trim()) return showErr("Enter your pet's name");
       // Email validation (optional field — only validate if filled)
       if (cust.email.trim()) {
@@ -392,6 +395,9 @@ export default function Login({ onLogin }) {
     } else {
       if (!pro.name.trim())     return showErr("Enter your full name");
       if (!pro.email.trim())    return showErr("Email is required for approval notification");
+      // Validate address confirmed from dropdown
+      if (!pro.address.trim())  return showErr("Enter your full address");
+      if (!proAddrMeta.lat)     return showErr("Please search and select your address from the dropdown — we need the correct pincode and city");
       // Validate professional email format + typos
       const pe = pro.email.trim();
       const peOk = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,24}$/.test(pe);
@@ -401,7 +407,6 @@ export default function Login({ onLogin }) {
       const peSugg = getEmailSuggestion(pe);
       if (peSugg) return showErr(`"${pe.split('@')[1]}" is not a valid domain. Did you mean ${peSugg}?`);
       if (!pro.city.trim())     return showErr("Enter your city");
-      if (!pro.address.trim())  return showErr("Enter your full address");
       // Government ID
       if (!proId.type)          return showErr("Select a government ID type");
       if (!proId.number.trim()) return showErr(`Enter your ${getIdTypes(cc).find(t=>t.value===proId.type)?.label || "ID"} number`);
@@ -742,7 +747,10 @@ export default function Login({ onLogin }) {
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Service Address <span className="text-red-400">*</span></label>
                   <AddressPicker
                     value={cust.address}
-                    onChange={({ address }) => setCust(f => ({...f, address}))}
+                    onChange={({ address, lat, lng, postalCode, city, state }) => {
+                      setCust(f => ({...f, address}));
+                      setCustAddrMeta({ lat, lng, postalCode, city, state });
+                    }}
                     placeholder={isIndia ? "e.g. 12 MG Road, Koramangala, Bengaluru" : "e.g. 123 Main St, San Francisco, CA"}
                     countryCode={cc === "91" ? "in" : "us"}
                   />
@@ -895,7 +903,10 @@ export default function Login({ onLogin }) {
                 <div>
                   <AddressPicker
                     value={pro.address}
-                    onChange={({ address }) => setPro(f => ({...f, address}))}
+                    onChange={({ address, lat, lng, postalCode, city, state }) => {
+                      setPro(f => ({...f, address}));
+                      setProAddrMeta({ lat, lng, postalCode, city, state });
+                    }}
                     placeholder={isIndia ? "Full address (house/flat, area, city)" : "Full street address"}
                     countryCode={cc === "91" ? "in" : "us"}
                   />
