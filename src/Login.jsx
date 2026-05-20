@@ -26,7 +26,7 @@ const ROLES = [
     perks: ["Get discovered by pet owners", "Manage bookings & schedule", "Build 5-star reviews"],
   },
   {
-    id: "Trainer", icon: "🎓", label: "Dog Trainer",
+    id: "Trainer", icon: "🐕‍🦺", label: "Dog Trainer",
     color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", textColor: "#1d4ed8",
     instant: false,
     tagline: "Provide training & coaching",
@@ -473,7 +473,7 @@ export default function Login({ onLogin }) {
           </div>
           <div>
             <div className="flex flex-wrap gap-2 mb-6">
-              {["✂️ Grooming","🎓 Training","🏥 Vet Care","🍖 Pet Food"].map(s => (
+              {["✂️ Grooming","🐕‍🦺 Training","🏥 Vet Care","🍖 Pet Food"].map(s => (
                 <span key={s} className="text-xs font-semibold text-white bg-white/15 border border-white/20 px-3 py-1.5 rounded-full backdrop-blur-sm">{s}</span>
               ))}
             </div>

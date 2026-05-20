@@ -24,14 +24,14 @@ const SVC_OPTS = {
 
 const TAB_META = {
   grooming: { icon:"✂️", label:"Grooming", color:"blue" },
-  training: { icon:"🎓", label:"Training", color:"purple" },
+  training: { icon:"🐕‍🦺", label:"Training", color:"purple" },
   food:     { icon:"🍖", label:"Food",     color:"green" },
   vet:      { icon:"🏥", label:"Vet",      color:"rose" },
 };
 
 const SERVICES = [
   { id:"grooming", icon:"✂️", label:"Grooming", bg:"bg-blue-50",   tc:"text-blue-600",   desc:"Doorstep grooming" },
-  { id:"training", icon:"🎓", label:"Training", bg:"bg-purple-50", tc:"text-purple-600", desc:"Certified trainers" },
+  { id:"training", icon:"🐕‍🦺", label:"Training", bg:"bg-purple-50", tc:"text-purple-600", desc:"Certified trainers" },
   { id:"vet",      icon:"🏥", label:"Vet Care",  bg:"bg-rose-50",   tc:"text-rose-600",   desc:"In-home vet visits" },
   { id:"food",     icon:"🍖", label:"Pet Food",  bg:"bg-green-50",  tc:"text-green-600",  desc:"Free delivery" },
 ];
@@ -402,7 +402,7 @@ export default function PetclubApp({ session, onLogout }) {
           <div className="space-y-3">
             {myBookings.map(b => {
               const s = statusMap[b.assignment_status] || statusMap.searching;
-              const svcIcon = ({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥" })[b.service_type] || "📋";
+              const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[b.service_type] || "📋";
               const svcAccent = ({ Groomer:"border-l-violet-500", Trainer:"border-l-blue-500", Vet:"border-l-emerald-500" })[b.service_type] || "border-l-orange-400";
               const svcBg = ({ Groomer:"bg-violet-50", Trainer:"bg-blue-50", Vet:"bg-emerald-50" })[b.service_type] || "bg-orange-50";
               return (
@@ -543,7 +543,7 @@ export default function PetclubApp({ session, onLogout }) {
             </div>
             <div className="space-y-2">
               {myBookings.slice(0, 2).map(b => {
-                const svcIcon = ({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥" })[b.service_type] || "📋";
+                const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[b.service_type] || "📋";
                 const svcColor = ({ Groomer:"bg-violet-100", Trainer:"bg-blue-100", Vet:"bg-emerald-100" })[b.service_type] || "bg-orange-100";
                 const st = b.assignment_status;
                 const stCls = st==="confirmed" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -1108,7 +1108,7 @@ export default function PetclubApp({ session, onLogout }) {
               <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 mb-5 space-y-2.5">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">
-                    {({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥" })[bookingForm.service_type] || "📋"}
+                    {({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[bookingForm.service_type] || "📋"}
                   </span>
                   <div>
                     <div className="font-bold text-gray-800">{bookingForm.service_name}</div>

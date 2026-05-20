@@ -4,7 +4,7 @@ import { api } from "./api.js";
 /* ── Helpers ── */
 const fmtDate = s => { try { return new Date(s).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }); } catch { return s || "—"; } };
 const fmtTime = s => { try { return new Date(s).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
-const rIcon  = r => ({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥", Admin:"🛡️", customer:"🐕" })[r] || "👤";
+const rIcon  = r => ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥", Admin:"🛡️", customer:"🐕" })[r] || "👤";
 const rColor = r => ({ Groomer:"from-violet-500 to-purple-600", Trainer:"from-blue-500 to-indigo-600", Vet:"from-emerald-500 to-teal-600", Admin:"from-gray-700 to-gray-900" })[r] || "from-orange-500 to-amber-500";
 const rAccent= r => ({ Groomer:"#7c3aed", Trainer:"#2563eb", Vet:"#059669" })[r] || "#f97316";
 const sColor = s => ({
@@ -388,7 +388,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
               <div className="mb-5">
                 <label className="block text-xs font-semibold text-gray-500 mb-2">I am a… *</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[{id:"Groomer",icon:"✂️"},{id:"Trainer",icon:"🎓"},{id:"Vet",icon:"🏥"}].map(r => (
+                  {[{id:"Groomer",icon:"✂️"},{id:"Trainer",icon:"🐕‍🦺"},{id:"Vet",icon:"🏥"}].map(r => (
                     <button key={r.id} type="button" onClick={() => setPickedRole(r.id)}
                       className={`flex flex-col items-center gap-1 py-3 rounded-xl border-2 text-sm font-bold transition-all ${pickedRole === r.id ? "border-orange-400 bg-orange-50 text-orange-600" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}>
                       <span className="text-xl">{r.icon}</span>{r.id}
@@ -871,7 +871,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
             ) : (
               <div className="space-y-4">
                 {activeRequests.map(bk => {
-                  const svcIcon = ({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥" })[bk.service_type] || "📋";
+                  const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[bk.service_type] || "📋";
                   const pet = bk.pets;
                   const customer = bk.users;
                   const custFirstName = (customer?.name || "Customer").split(" ")[0];
@@ -1365,7 +1365,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                       {[
                         { label:"🐕 Pet Owners", count:customers,  color:"bg-blue-400",   pct:Math.round(customers/total*100) },
                         { label:"✂️ Groomers",   count:groomers,   color:"bg-violet-400", pct:Math.round(groomers/total*100) },
-                        { label:"🎓 Trainers",   count:trainers,   color:"bg-indigo-400", pct:Math.round(trainers/total*100) },
+                        { label:"🐕‍🦺 Trainers",   count:trainers,   color:"bg-indigo-400", pct:Math.round(trainers/total*100) },
                         { label:"🏥 Vets",        count:vets,       color:"bg-emerald-400",pct:Math.round(vets/total*100) },
                       ].map(row => (
                         <div key={row.label} className="flex items-center gap-3">
@@ -1409,7 +1409,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                   return (
                     <div key={i} className="flex items-center gap-3 px-5 py-3 border-b border-gray-50 last:border-0">
                       <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center text-base shrink-0">
-                        {({ Groomer:"✂️", Trainer:"🎓", Vet:"🏥" })[b.service_type] || "🐕"}
+                        {({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[b.service_type] || "🐕"}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold text-gray-800 truncate">{b.service_name || b.service_type || "Service"}</div>
@@ -1584,7 +1584,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                             className="text-xs border border-orange-200 text-orange-600 rounded-full px-2 py-1 bg-orange-50 cursor-pointer">
                             <option value="">Set role…</option>
                             <option value="Groomer">✂️ Groomer</option>
-                            <option value="Trainer">🎓 Trainer</option>
+                            <option value="Trainer">🐕‍🦺 Trainer</option>
                             <option value="Vet">🏥 Vet</option>
                           </select>
                         )}
