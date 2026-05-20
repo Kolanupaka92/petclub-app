@@ -1470,7 +1470,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                 <h2 className="font-bold text-gray-700 text-sm mb-3">⚙️ Platform Status</h2>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {[
-                    { label:"Backend", val:"Railway ✅", color:"text-emerald-600" },
+                    { label:"Backend", val:"Cloud Run ✅", color:"text-emerald-600" },
                     { label:"Frontend", val:"Vercel ✅", color:"text-emerald-600" },
                     { label:"Database", val:"Supabase ✅", color:"text-emerald-600" },
                     { label:"Payments", val:"⏳ Pending LLC", color:"text-amber-600" },
