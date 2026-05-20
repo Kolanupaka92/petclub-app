@@ -1576,6 +1576,42 @@ const AdminDashboard = ({ session, onLogout }) => {
                           {pro.services.map(s => <span key={s} className="text-xs bg-orange-50 text-orange-600 border border-orange-100 px-2.5 py-0.5 rounded-full font-medium">{s}</span>)}
                         </div>
                       )}
+                      {/* ── ID Documents (signed URL — opens for 60s) ── */}
+                      {(() => {
+                        const doc = Array.isArray(pro.id_documents) ? pro.id_documents[0] : pro.id_documents;
+                        if (!doc) return (
+                          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-xs text-amber-700 font-medium">⚠️ No ID documents uploaded yet</div>
+                        );
+                        const openDoc = async (path) => {
+                          if (!path) return alert("No document uploaded for this field.");
+                          try {
+                            const r = await api.getSignedDocUrl(path);
+                            window.open(r.url, "_blank", "noopener,noreferrer");
+                          } catch { alert("Could not load document. Please try again."); }
+                        };
+                        return (
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 space-y-2">
+                            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">🪪 Submitted Documents</p>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-500">ID Type: <strong className="text-gray-800">{doc.doc_type || "—"}</strong></span>
+                              <span className="text-gray-500">No: <strong className="text-gray-800">{doc.doc_number || "—"}</strong></span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => openDoc(doc.photo_url)}
+                                className="flex-1 text-xs font-bold bg-blue-50 border border-blue-200 text-blue-700 py-2 rounded-lg hover:bg-blue-100 transition">
+                                🪪 View ID Photo
+                              </button>
+                              {doc.cert_photo_url && (
+                                <button onClick={() => openDoc(doc.cert_photo_url)}
+                                  className="flex-1 text-xs font-bold bg-violet-50 border border-violet-200 text-violet-700 py-2 rounded-lg hover:bg-violet-100 transition">
+                                  📄 View Certificate
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-gray-400">🔒 Links expire in 60 seconds · Admin access only</p>
+                          </div>
+                        );
+                      })()}
                       <div className="flex gap-2">
                         <button onClick={() => approve(pro.id)} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm transition">✅ Approve</button>
                         <button onClick={() => setRejectModal(pro.id)} className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl text-sm transition">❌ Reject</button>

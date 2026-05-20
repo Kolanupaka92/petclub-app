@@ -89,6 +89,7 @@ export const api = {
     req('POST', '/payments/verify', { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId }, true),
 
   // Admin
+  getSignedDocUrl: (path) => req('GET', `/admin/signed-url?path=${encodeURIComponent(path)}`, null, true),
   getAdminStats: () => req('GET', '/admin/stats', null, true),
   getAdminUsers: () => req('GET', '/admin/users', null, true),
   getPendingVerifications: () => req('GET', '/admin/pending-verifications', null, true),
