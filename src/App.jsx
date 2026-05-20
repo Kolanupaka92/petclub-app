@@ -408,7 +408,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
             <Inp label="Full Name *" placeholder="e.g. Arjun Kumar Mehta" value={form.name} onChange={sf("name")}/>
             <Inp label="Email Address" type="email" placeholder="you@gmail.com" value={form.email} onChange={sf("email")}/>
             <div className="grid grid-cols-2 gap-3">
-              <Inp label="Date of Birth" type="date" value={form.dob} onChange={sf("dob")}/>
+              <Inp label="Date of Birth" type="date" max={new Date().toISOString().split("T")[0]} value={form.dob} onChange={sf("dob")}/>
               <Sel label="Gender" opts={["Male","Female","Other"]} value={form.gender} onChange={sf("gender")}/>
             </div>
             <Txta label="Full Address" placeholder="House/Flat No., Street, Locality" value={form.address} onChange={sf("address")} rows={2}/>
@@ -1507,7 +1507,7 @@ const AdminDashboard = ({ session, onLogout }) => {
               {/* ── Platform Status — driven from /health API ── */}
               <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4 mb-4">
                 <h2 className="font-bold text-gray-700 text-sm mb-3">⚙️ Platform Status</h2>
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="space-y-2 text-xs">
                   {(() => {
                     const svc = health?.services || {};
                     const ok  = v => v?.startsWith("✅");
@@ -1518,13 +1518,11 @@ const AdminDashboard = ({ session, onLogout }) => {
                       { label:"Auth / Push",  val: svc.firebase_auth ? `Firebase ${svc.firebase_auth.replace(" live","").replace(" pending (set FIREBASE_SERVICE_ACCOUNT_JSON)","⚠️")}` : "Firebase —", color: ok(svc.firebase_auth) ? "text-emerald-600":"text-amber-600" },
                       { label:"Email (SMTP)", val: svc.zoho_smtp  ? `Zoho ${svc.zoho_smtp}`      : "Zoho —",                         color: ok(svc.zoho_smtp)   ? "text-emerald-600":"text-amber-600" },
                       { label:"Payments",     val: svc.razorpay   ? (ok(svc.razorpay) ? "Razorpay ✅" : "⏳ Pending LLC")            : "⏳ Pending LLC",          color: ok(svc.razorpay)    ? "text-emerald-600":"text-amber-600" },
-                      { label:"iOS App",      val: "📱 Coming soon",  color:"text-blue-600" },
-                      { label:"Android",      val: "📱 Coming soon",  color:"text-blue-600" },
                     ];
                     return rows.map(s => (
-                      <div key={s.label} className="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-gray-100">
-                        <span className="text-gray-500">{s.label}</span>
-                        <span className={`font-semibold ${s.color}`}>{s.val}</span>
+                      <div key={s.label} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5 border border-gray-100">
+                        <span className="text-gray-500 font-medium">{s.label}</span>
+                        <span className={`font-bold ${s.color}`}>{s.val}</span>
                       </div>
                     ));
                   })()}
@@ -1635,21 +1633,21 @@ const AdminDashboard = ({ session, onLogout }) => {
         )}
 
         {view === "users" && (
-          <div className="max-w-2xl mx-auto px-5 py-6">
-            <div className="flex items-center justify-between mb-5">
-              <h1 className="text-2xl font-extrabold text-gray-800">Users</h1>
-              <span className="text-sm text-gray-400">{users.length} total</span>
+          <div className="max-w-2xl mx-auto px-4 py-5">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-xl font-extrabold text-gray-800">Users</h1>
+              <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full font-semibold">{users.length} total</span>
             </div>
             <div className="relative mb-3">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or phone…"
                 className="w-full border border-gray-200 rounded-2xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition"/>
             </div>
-            <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1">
               {["All","customer","Groomer","Trainer","Vet"].map(r => (
                 <button key={r} onClick={() => setRoleFilter(r)}
-                  className={`text-xs font-semibold px-4 py-2 rounded-full whitespace-nowrap transition-all ${roleFilter === r ? "bg-orange-500 text-white shadow-sm" : "bg-white border border-gray-200 text-gray-600 hover:border-orange-300"}`}>
-                  {r === "customer" ? "🐕 Pet Owners" : r === "All" ? "All" : `${rIcon(r)} ${r}s`}
+                  className={`text-xs font-semibold px-3 py-2 rounded-full whitespace-nowrap transition-all shrink-0 ${roleFilter === r ? "bg-orange-500 text-white shadow-sm" : "bg-white border border-gray-200 text-gray-600"}`}>
+                  {r === "customer" ? "🐕 Owners" : r === "All" ? "All" : `${rIcon(r)} ${r}s`}
                 </button>
               ))}
             </div>
@@ -1658,30 +1656,58 @@ const AdminDashboard = ({ session, onLogout }) => {
                 {filteredUsers.map(u => {
                   const proRole = u.professional_profiles?.[0]?.sub_role;
                   const verStatus = u.professional_profiles?.[0]?.verification_status;
+                  const custDoc = u.customer_profiles?.[0];
+                  const hasCustDoc = custDoc?.id_photo_url;
+                  const openCustDoc = async () => {
+                    try { const r = await api.getSignedDocUrl(custDoc.id_photo_url); window.open(r.url, "_blank", "noopener,noreferrer"); }
+                    catch { showToast("❌ Could not load document", "error"); }
+                  };
                   return (
-                    <div key={u.id} className={`bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-3 ${!u.is_active ? "border-red-100 bg-red-50/30" : "border-gray-100"}`}>
-                      <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center text-xl shrink-0">{rIcon(proRole || u.role)}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm text-gray-800 truncate">{u.name || "—"}</div>
-                        <div className="text-xs text-gray-400 capitalize truncate">{proRole || u.role} · {u.phone}</div>
-                        {proRole && verStatus && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border mt-1 inline-block ${sColor(verStatus)}`}>{verStatus}</span>}
-                        {!u.is_active && u.suspended_at && (
-                          <div className="text-xs font-semibold text-red-500 mt-1">{deletionCountdown(u.suspended_at)}</div>
-                        )}
+                    <div key={u.id} className={`bg-white rounded-2xl border shadow-sm p-4 ${!u.is_active ? "border-red-100 bg-red-50/30" : "border-gray-100"}`}>
+                      {/* Top row: avatar + info + status */}
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-lg shrink-0 mt-0.5">{rIcon(proRole || u.role)}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-sm text-gray-800 truncate">{u.name || "—"}</div>
+                          <div className="text-xs text-gray-400 capitalize truncate">{proRole || u.role} · {u.phone}</div>
+                          {u.email && <div className="text-xs text-gray-400 truncate">{u.email}</div>}
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${sColor(u.is_active ? "active" : "suspended")}`}>
+                              {u.is_active ? "active" : "suspended"}
+                            </span>
+                            {proRole && verStatus && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${sColor(verStatus)}`}>{verStatus}</span>}
+                            {hasCustDoc && <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-600 border-blue-200">🪪 ID on file</span>}
+                          </div>
+                          {!u.is_active && u.suspended_at && (
+                            <div className="text-xs font-semibold text-red-500 mt-1">{deletionCountdown(u.suspended_at)}</div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2 shrink-0">
-                        <Bdg text={u.is_active ? "active" : "suspended"} cls={sColor(u.is_active ? "active" : "suspended")}/>
-                        <button onClick={() => suspend(u.id)}
-                          className={`text-xs font-semibold px-3 py-1 rounded-full border transition ${u.is_active ? "border-red-200 text-red-500 hover:bg-red-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>
-                          {u.is_active ? "Suspend" : "Restore"}
-                        </button>
-                        {!u.is_active && (
-                          <button onClick={() => deleteUser(u.id)}
-                            className="text-xs font-semibold px-3 py-1 rounded-full border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 transition">
-                            🗑️ Delete Now
+                      {/* Action row */}
+                      <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-50">
+                        {/* Customer document viewing */}
+                        {hasCustDoc && (
+                          <button onClick={openCustDoc}
+                            className="text-xs font-bold px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition flex items-center gap-1">
+                            🪪 View ID
                           </button>
                         )}
-                        {/* Role assignment for professionals with missing sub_role */}
+                        {custDoc && custDoc.id_doc_type && !hasCustDoc && (
+                          <span className="text-xs text-gray-400 px-2 py-1.5">{custDoc.id_doc_type}: {custDoc.id_doc_number || '—'} (no photo)</span>
+                        )}
+                        {/* Suspend / Restore */}
+                        <button onClick={() => suspend(u.id)}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${u.is_active ? "border-red-200 text-red-500 hover:bg-red-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>
+                          {u.is_active ? "Suspend" : "Restore"}
+                        </button>
+                        {/* Delete (suspended only) */}
+                        {!u.is_active && (
+                          <button onClick={() => deleteUser(u.id)}
+                            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 transition">
+                            🗑️ Delete
+                          </button>
+                        )}
+                        {/* Role assignment dropdown for professionals without sub_role */}
                         {u.role === "professional" && !proRole && (
                           <select
                             defaultValue=""
@@ -1693,9 +1719,9 @@ const AdminDashboard = ({ session, onLogout }) => {
                                   ? { ...x, professional_profiles: [{ ...(x.professional_profiles?.[0] || {}), sub_role: e.target.value }] }
                                   : x));
                                 showToast(`✅ Set as ${e.target.value}`);
-                              } catch { showToast("❌ Failed", "error"); }
+                              } catch (err) { showToast("❌ " + (err.message || "Failed"), "error"); }
                             }}
-                            className="text-xs border border-orange-200 text-orange-600 rounded-full px-2 py-1 bg-orange-50 cursor-pointer">
+                            className="text-xs border border-orange-200 text-orange-600 rounded-lg px-2 py-1.5 bg-orange-50 cursor-pointer font-semibold">
                             <option value="">Set role…</option>
                             <option value="Groomer">✂️ Groomer</option>
                             <option value="Trainer">🐕‍🦺 Trainer</option>
@@ -1717,7 +1743,7 @@ const AdminDashboard = ({ session, onLogout }) => {
               <h1 className="text-2xl font-extrabold text-gray-800">Bookings</h1>
               <span className="text-sm text-gray-400">{bookings.length} total</span>
             </div>
-            <div className="grid grid-cols-4 gap-2 mb-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
               {[
                 { l:"Upcoming",  v:bookings.filter(b=>b.status==="upcoming").length,                   c:"bg-blue-50 text-blue-700" },
                 { l:"Completed", v:bookings.filter(b=>b.status==="completed").length,                  c:"bg-emerald-50 text-emerald-700" },

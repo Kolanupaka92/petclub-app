@@ -218,6 +218,8 @@ const AddressInput = ({ value, onChange, placeholder, cc, className }) => {
   );
 };
 
+export { AddressInput };
+
 /* ── Document photo upload box ── */
 const DocUploadBox = ({ preview, onFile, onClear, accept = "image/*", label, hint }) => (
   preview ? (
@@ -306,8 +308,14 @@ export default function Login({ onLogin }) {
     setLoading(true); setErr("");
     try {
       if (loginMethod === "email") {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-          return showErr("Enter a valid email address");
+        const trimmedEmail = email.trim();
+        const emailOk = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,24}$/.test(trimmedEmail);
+        const tld = trimmedEmail.split('.').pop().toLowerCase();
+        const fakeTlds = ['coin','test','fake','invalid','example','localhost','local','internal'];
+        if (!emailOk || fakeTlds.includes(tld))
+          return showErr("Enter a valid email address (e.g. you@gmail.com)");
+        if (trimmedEmail.toLowerCase() !== trimmedEmail.replace(/\s/g, '').toLowerCase())
+          return showErr("Email cannot contain spaces");
         await api.sendEmailOTP(email.trim());
       } else {
         const digits = phone.replace(/\D/g, "");

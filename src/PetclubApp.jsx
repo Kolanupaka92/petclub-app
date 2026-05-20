@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { api } from "./api.js";
 import { loadPets, savePets } from "./utils/storage.js";
 import { TC, fmtDate } from "./data/mockData.js";
+import { AddressInput } from "./Login.jsx";
 
 // Lazy-load heavy map component (Mapbox GL is ~500 KB)
 const TrackingMap = lazy(() => import("./components/TrackingMap.jsx"));
@@ -924,7 +925,7 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
           <Fld label="Breed"><Inp placeholder="e.g. Labrador Retriever" value={form.breed||""} onChange={sf("breed")} /></Fld>
           <div className="grid grid-cols-2 gap-3">
-            <Fld label="Date of Birth"><Inp type="date" value={form.dob||""} onChange={sf("dob")} /></Fld>
+            <Fld label="Date of Birth"><Inp type="date" max={today()} value={form.dob||""} onChange={sf("dob")} /></Fld>
             <Fld label="Age"><Inp placeholder="e.g. 3 years" value={form.age||""} onChange={sf("age")} /></Fld>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -951,7 +952,7 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
           <Fld label="Breed"><Inp value={form.breed||""} onChange={sf("breed")} /></Fld>
           <div className="grid grid-cols-2 gap-3">
-            <Fld label="Date of Birth"><Inp type="date" value={form.dob||""} onChange={sf("dob")} /></Fld>
+            <Fld label="Date of Birth"><Inp type="date" max={today()} value={form.dob||""} onChange={sf("dob")} /></Fld>
             <Fld label="Age"><Inp placeholder="e.g. 3 years" value={form.age||""} onChange={sf("age")} /></Fld>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -976,7 +977,7 @@ export default function PetclubApp({ session, onLogout }) {
           {activeTab==="vet" && <Fld label="Clinic"><Inp placeholder="PetCare Clinic" value={form.clinic||""} onChange={sf("clinic")} /></Fld>}
           {activeTab==="food" && <Fld label="Quantity"><Inp placeholder="3 kg" value={form.qty||""} onChange={sf("qty")} /></Fld>}
           <div className="grid grid-cols-2 gap-3">
-            <Fld label="Date *"><Inp type="date" value={form.date||""} onChange={sf("date")} /></Fld>
+            <Fld label="Date *"><Inp type="date" max={today()} value={form.date||""} onChange={sf("date")} /></Fld>
             <Fld label="Cost (₹/$)"><Inp placeholder="₹999" value={form.cost||""} onChange={sf("cost")} /></Fld>
           </div>
           {activeTab==="vet" && <Fld label="Next Due Date"><Inp type="date" value={form.nextDue||""} onChange={sf("nextDue")} /></Fld>}
@@ -1085,7 +1086,13 @@ export default function PetclubApp({ session, onLogout }) {
               </div>
               {/* Address */}
               <Fld label="Address">
-                <Inp placeholder="House/flat, street, locality" value={bookingForm.address} onChange={bsf("address")}/>
+                <AddressInput
+                  value={bookingForm.address}
+                  onChange={v => setBookingForm(f => ({ ...f, address: v }))}
+                  placeholder="House/flat, street, locality"
+                  cc={session.phone?.startsWith("+91") ? "91" : "1"}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition placeholder-gray-400"
+                />
               </Fld>
               <Fld label="City *">
                 <Inp placeholder="e.g. Hyderabad" value={bookingForm.city || userInfo.city || ""} onChange={bsf("city")}/>
@@ -1160,8 +1167,14 @@ export default function PetclubApp({ session, onLogout }) {
             📱 Phone number cannot be changed. It&apos;s your unique identifier.
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 mt-1">Address</p>
-          <Fld label="Door / Building / Street">
-            <Inp placeholder="e.g. 12B, Sahara Complex, LB Nagar" value={form.address||""} onChange={sf("address")} />
+          <Fld label="Full Address">
+            <AddressInput
+              value={form.address||""}
+              onChange={v => setForm(f => ({ ...f, address: v }))}
+              placeholder="Start typing your address…"
+              cc={session.phone?.startsWith("+91") ? "91" : "1"}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition placeholder-gray-400"
+            />
           </Fld>
           <Fld label="Area / Locality">
             <Inp placeholder="e.g. LB Nagar, Sainikpuri" value={form.area||""} onChange={sf("area")} />
