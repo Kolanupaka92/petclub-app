@@ -277,6 +277,8 @@ export default function Login({ onLogin }) {
           return showErr("Enter a valid email address (e.g. you@gmail.com)");
         if (trimmedEmail.toLowerCase() !== trimmedEmail.replace(/\s/g, '').toLowerCase())
           return showErr("Email cannot contain spaces");
+        const otpSuggestion = getEmailSuggestion(trimmedEmail);
+        if (otpSuggestion) return showErr(`"${trimmedEmail.split('@')[1]}" is not a valid domain. Did you mean ${otpSuggestion}?`);
         await api.sendEmailOTP(email.trim());
       } else {
         const digits = phone.replace(/\D/g, "");
@@ -371,6 +373,16 @@ export default function Login({ onLogin }) {
       if (!cust.name.trim())    return showErr("Enter your name");
       if (!cust.address.trim()) return showErr("Enter your address — we need it for service delivery");
       if (!cust.petName.trim()) return showErr("Enter your pet's name");
+      // Email validation (optional field — only validate if filled)
+      if (cust.email.trim()) {
+        const ce = cust.email.trim();
+        const ceOk = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,24}$/.test(ce);
+        const ceTld = ce.split('.').pop().toLowerCase();
+        const fakeTlds = ['coin','test','fake','invalid','example','localhost','local','internal'];
+        if (!ceOk || fakeTlds.includes(ceTld)) return showErr("Enter a valid email address (e.g. you@gmail.com)");
+        const ceSugg = getEmailSuggestion(ce);
+        if (ceSugg) return showErr(`"${ce.split('@')[1]}" is not a valid domain. Did you mean ${ceSugg}?`);
+      }
       // ID verification
       if (!custId.type)         return showErr("Select an ID type for verification");
       if (!custId.number.trim()) return showErr(`Enter your ${getIdTypes(cc).find(t=>t.value===custId.type)?.label || "ID"} number`);
@@ -380,6 +392,14 @@ export default function Login({ onLogin }) {
     } else {
       if (!pro.name.trim())     return showErr("Enter your full name");
       if (!pro.email.trim())    return showErr("Email is required for approval notification");
+      // Validate professional email format + typos
+      const pe = pro.email.trim();
+      const peOk = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,24}$/.test(pe);
+      const peTld = pe.split('.').pop().toLowerCase();
+      const fakeTlds2 = ['coin','test','fake','invalid','example','localhost','local','internal'];
+      if (!peOk || fakeTlds2.includes(peTld)) return showErr("Enter a valid email address (e.g. you@gmail.com)");
+      const peSugg = getEmailSuggestion(pe);
+      if (peSugg) return showErr(`"${pe.split('@')[1]}" is not a valid domain. Did you mean ${peSugg}?`);
       if (!pro.city.trim())     return showErr("Enter your city");
       if (!pro.address.trim())  return showErr("Enter your full address");
       // Government ID
