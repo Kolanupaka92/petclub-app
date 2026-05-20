@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { api, saveToken } from "./api.js";
 import { initPhoneAuth, sendPhoneOtp, verifyPhoneOtp, clearPhoneAuth } from "./firebase.js";
+import { AddressPicker } from "./components/AddressPicker.jsx";
 
 /* ── Constants ── */
 const COUNTRIES = [
@@ -144,119 +145,40 @@ const CountryPicker = ({ value, onChange }) => {
   );
 };
 
-/* ── Mapbox Address Autocomplete (replaces Google Places — free 50k req/month) ── */
-const AddressInput = ({ value, onChange, placeholder, cc, className }) => {
-  const [inputVal, setInputVal]     = useState(value || "");
-  const [suggestions, setSuggestions] = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const timerRef  = useRef(null);
-  const MAPBOX    = import.meta.env.VITE_MAPBOX_TOKEN;
-
-  // Sync if parent resets value (e.g. form clear)
-  useEffect(() => { setInputVal(value || ""); }, [value]);
-
-  const search = async (q) => {
-    if (!q || q.length < 3) { setSuggestions([]); return; }
-    setLoading(true);
-    try {
-      const countryCode = cc === "91" ? "in" : "us";
-      let results = [];
-
-      if (MAPBOX) {
-        // Mapbox (if token configured in Vercel env)
-        const r = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json` +
-          `?country=${countryCode.toUpperCase()}&types=address,place,locality,neighborhood` +
-          `&access_token=${MAPBOX}&limit=6`
-        );
-        const d = await r.json();
-        results = (d.features || []).map(f => ({
-          id:    f.id,
-          short: f.text,
-          full:  f.place_name,
-        }));
-      } else {
-        // OpenStreetMap Nominatim — free, no key needed, works globally
-        const r = await fetch(
-          `https://nominatim.openstreetmap.org/search` +
-          `?q=${encodeURIComponent(q)}&format=jsonv2&addressdetails=1` +
-          `&countrycodes=${countryCode}&accept-language=en&limit=6`,
-          { headers: { "Accept-Language": "en" } }
-        );
-        const d = await r.json();
-        results = (d || []).map((f, i) => {
-          const parts = (f.display_name || "").split(", ");
-          // Show first part as "short" (building/street), rest as context
-          return {
-            id:    f.place_id || i,
-            short: parts[0] || f.display_name,
-            full:  f.display_name,
-          };
-        });
-      }
-      setSuggestions(results);
-    } catch { setSuggestions([]); }
-    finally { setLoading(false); }
-  };
-
-  const handleChange = (e) => {
-    const v = e.target.value;
-    setInputVal(v);
-    onChange(v);
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => search(v), 380);
-  };
-
-  const select = (full) => {
-    setInputVal(full);
-    onChange(full);
-    setSuggestions([]);
-  };
-
-  const defaultClass = "w-full h-12 border-2 border-gray-200 rounded-xl px-4 pr-10 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all";
-
-  return (
-    <div className="relative">
-      <input
-        type="text"
-        value={inputVal}
-        onChange={handleChange}
-        onBlur={() => setTimeout(() => setSuggestions([]), 200)}
-        placeholder={placeholder || "Start typing your address…"}
-        autoComplete="off"
-        className={className || defaultClass}
-      />
-      {/* Icon / spinner */}
-      {loading
-        ? <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin pointer-events-none"/>
-        : <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base pointer-events-none select-none">📍</span>
-      }
-      {/* Suggestions dropdown */}
-      {suggestions.length > 0 && (
-        <div className="absolute top-full mt-1 left-0 right-0 z-[9999] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          {suggestions.map(s => (
-            <button
-              key={s.id}
-              type="button"
-              onMouseDown={() => select(s.full)}
-              onTouchStart={() => select(s.full)}
-              className="w-full text-left px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-gray-50 last:border-0 flex items-start gap-2.5">
-              <span className="text-orange-400 mt-0.5 shrink-0 text-sm">📍</span>
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-gray-800 truncate">{s.short}</div>
-                <div className="text-xs text-gray-400 leading-snug mt-0.5" style={{ display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
-                  {s.full}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+/* ── Email typo detection ── */
+const EMAIL_TYPOS = {
+  'gamil.com':'gmail.com','gmai.com':'gmail.com','gmail.co':'gmail.com',
+  'gmail.con':'gmail.com','gmail.cim':'gmail.com','gmail.cm':'gmail.com',
+  'gmal.com':'gmail.com','gmial.com':'gmail.com','gnail.com':'gmail.com',
+  'yaho.com':'yahoo.com','yahooo.com':'yahoo.com','yahoo.co':'yahoo.com',
+  'yamil.com':'yahoo.com','ymail.com':'yahoo.com','yahool.com':'yahoo.com',
+  'yhoo.com':'yahoo.com','yaho.in':'yahoo.com','yahoo.con':'yahoo.com',
+  'hotmial.com':'hotmail.com','hotmai.com':'hotmail.com','hotmail.co':'hotmail.com',
+  'hotmil.com':'hotmail.com','hotmail.con':'hotmail.com',
+  'outlok.com':'outlook.com','outook.com':'outlook.com','outlook.co':'outlook.com',
+  'outllook.com':'outlook.com','outlook.con':'outlook.com',
+  'iclod.com':'icloud.com','icould.com':'icloud.com','icloud.co':'icloud.com',
+  'zoho.co':'zoho.com',
+};
+const getEmailSuggestion = (email) => {
+  if (!email?.includes('@')) return null;
+  const at = email.lastIndexOf('@');
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1).toLowerCase();
+  const fix = EMAIL_TYPOS[domain];
+  return fix ? `${local}@${fix}` : null;
 };
 
-export { AddressInput };
+/* ── Address Autocomplete (thin wrapper — keeps backward compat with App.jsx / PetclubApp.jsx) ── */
+export const AddressInput = ({ value, onChange, placeholder, cc, className }) => (
+  <AddressPicker
+    value={value}
+    onChange={({ address }) => onChange(address)}
+    placeholder={placeholder}
+    countryCode={cc === "91" ? "in" : "us"}
+    className={className}
+  />
+);
 
 /* ── Document photo upload box ── */
 const DocUploadBox = ({ preview, onFile, onClear, accept = "image/*", label, hint }) => (
@@ -292,6 +214,7 @@ export default function Login({ onLogin }) {
   const [err, setErr]       = useState("");
   const [shake, setShake]   = useState(false);
   const [timer, setTimer]   = useState(0);
+  const [emailSuggestion, setEmailSuggestion] = useState("");
   const otpRefs = useRef([]);
 
   /* ── Init Firebase Phone Auth when phone step mounts ── */
@@ -675,9 +598,17 @@ export default function Login({ onLogin }) {
                       Email <span className="text-gray-400 normal-case font-normal">(optional — booking confirmations)</span>
                     </label>
                     <input type="email" autoComplete="email" placeholder="you@example.com"
-                      value={email} onChange={e => { setEmail(e.target.value); setErr(""); }}
+                      value={email} onChange={e => { const v = e.target.value; setEmail(v); setErr(""); setEmailSuggestion(getEmailSuggestion(v) || ""); }}
                       onKeyDown={e => e.key === "Enter" && sendOtp()}
                       className="w-full h-12 border-2 border-gray-200 rounded-2xl px-4 text-sm font-medium focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
+                    {emailSuggestion && (
+                      <div className="flex items-center gap-2 mt-1.5 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                        <span className="text-amber-500 text-sm shrink-0">💡</span>
+                        <span className="text-xs text-amber-800 flex-1">Did you mean <strong>{emailSuggestion}</strong>?</span>
+                        <button type="button" onClick={() => { setEmail(emailSuggestion); setEmailSuggestion(""); }}
+                          className="text-xs font-bold text-amber-700 hover:text-amber-900 underline shrink-0">Use this</button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -688,9 +619,17 @@ export default function Login({ onLogin }) {
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
                   <input type="email" autoComplete="email" autoFocus
                     placeholder="your@email.com"
-                    value={email} onChange={e => { setEmail(e.target.value); setErr(""); }}
+                    value={email} onChange={e => { const v = e.target.value; setEmail(v); setErr(""); setEmailSuggestion(getEmailSuggestion(v) || ""); }}
                     onKeyDown={e => e.key === "Enter" && sendOtp()}
                     className="w-full h-14 border-2 border-gray-200 rounded-2xl px-4 text-base font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
+                  {emailSuggestion && (
+                    <div className="flex items-center gap-2 mt-1.5 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                      <span className="text-amber-500 text-sm shrink-0">💡</span>
+                      <span className="text-xs text-amber-800 flex-1">Did you mean <strong>{emailSuggestion}</strong>?</span>
+                      <button type="button" onClick={() => { setEmail(emailSuggestion); setEmailSuggestion(""); }}
+                        className="text-xs font-bold text-amber-700 hover:text-amber-900 underline shrink-0">Use this</button>
+                    </div>
+                  )}
                   <p className="text-xs text-gray-400 mt-2">📧 A 6-digit OTP will be sent to this email address.</p>
                 </div>
               )}
@@ -781,11 +720,11 @@ export default function Login({ onLogin }) {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Service Address <span className="text-red-400">*</span></label>
-                  <AddressInput
+                  <AddressPicker
                     value={cust.address}
-                    onChange={v => setCust(f => ({...f, address: v}))}
+                    onChange={({ address }) => setCust(f => ({...f, address}))}
                     placeholder={isIndia ? "e.g. 12 MG Road, Koramangala, Bengaluru" : "e.g. 123 Main St, San Francisco, CA"}
-                    cc={cc}
+                    countryCode={cc === "91" ? "in" : "us"}
                   />
                   <p className="text-xs text-gray-400 mt-1">📍 Where should professionals come to serve your pet?</p>
                 </div>
@@ -934,12 +873,11 @@ export default function Login({ onLogin }) {
                   value={pro.city} onChange={e => setPro(f => ({...f, city: e.target.value}))}
                   className={inp} />
                 <div>
-                  <AddressInput
+                  <AddressPicker
                     value={pro.address}
-                    onChange={v => setPro(f => ({...f, address: v}))}
+                    onChange={({ address }) => setPro(f => ({...f, address}))}
                     placeholder={isIndia ? "Full address (house/flat, area, city)" : "Full street address"}
-                    cc={cc}
-                    className={inp + " pr-10"}
+                    countryCode={cc === "91" ? "in" : "us"}
                   />
                   <p className="text-xs text-gray-400 mt-1">📍 Your base location shown to customers when searching</p>
                 </div>
