@@ -232,7 +232,6 @@ const PhotoUpload = ({ value, onChange, label = "Upload photo", hint = "JPG / PN
 ══════════════════════════════════════════════ */
 const ProfessionalOnboarding = ({ session, onComplete }) => {
   const subRole  = session.subRole || "Groomer";
-  const cfg      = ROLE_CONFIG[subRole] || ROLE_CONFIG.Groomer;
   const idTypes  = getIdTypes(session.phone);
   const isIndia  = session.phone?.startsWith("+91");
 
@@ -242,6 +241,9 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
   const [idPhoto, setIdPhoto] = useState(null);
   // If sub_role is missing (null in DB), let user pick it on Step 1
   const [pickedRole, setPickedRole] = useState(subRole !== "Groomer" || session.subRole ? subRole : null);
+  // Use pickedRole if the user changed it in step 1; fall back to session-derived subRole
+  const effectiveRole = pickedRole || subRole;
+  const cfg      = ROLE_CONFIG[effectiveRole] || ROLE_CONFIG.Groomer;
   const [addrMeta, setAddrMeta] = useState({ lat: null, lng: null, postalCode: "", city: "", state: "" });
 
   const [form, setForm] = useState({
@@ -442,7 +444,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
         {step === 2 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-lg font-extrabold text-gray-800 mb-1">
-              {subRole === "Groomer" ? "Grooming Profile" : subRole === "Trainer" ? "Training Profile" : "Veterinary Profile"}
+              {effectiveRole === "Groomer" ? "Grooming Profile" : effectiveRole === "Trainer" ? "Training Profile" : "Veterinary Profile"}
             </h2>
             <p className="text-sm text-gray-400 mb-5">Services, expertise & pricing</p>
 
@@ -450,7 +452,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
             <div className="mb-4">
               <label className="block text-xs font-semibold text-gray-500 mb-2">Services Offered * (select all that apply)</label>
               <div className="flex flex-wrap gap-2">
-                {(SVC_OPTS[subRole] || []).map(s => (
+                {(SVC_OPTS[effectiveRole] || []).map(s => (
                   <button key={s} type="button" onClick={() => toggleSvc(s)}
                     className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${form.services.includes(s) ? "text-white border-transparent shadow-sm" : "border-gray-200 text-gray-600 hover:border-gray-300"}`}
                     style={form.services.includes(s) ? { background: cfg.accent } : {}}>
@@ -464,7 +466,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
             <div className="mb-4">
               <label className="block text-xs font-semibold text-gray-500 mb-2">🐾 Animals You Work With (select all that apply)</label>
               <div className="flex flex-wrap gap-2">
-                {(subRole === "Vet"
+                {(effectiveRole === "Vet"
                   ? ["🐕 Dogs","🐈 Cats","🐦 Birds","🐇 Rabbits","🐹 Small Animals","🦎 Reptiles / Exotics","🐟 Fish / Aquatic"]
                   : ["🐕 Dogs","🐈 Cats","🐦 Birds","🐇 Small Animals (rabbits, guinea pigs…)","🦜 Exotic Pets"]
                 ).map(t => (
@@ -563,9 +565,9 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
 
             {/* Profile card preview */}
             <div className={`bg-gradient-to-br ${cfg.grad} rounded-2xl p-5 text-white text-center mb-5`}>
-              <div className="text-5xl mb-2">{rIcon(subRole)}</div>
+              <div className="text-5xl mb-2">{rIcon(effectiveRole)}</div>
               <div className="font-bold text-xl">{form.name || "—"}</div>
-              <div className="text-white/80 text-sm">{subRole} · {form.city || "—"}</div>
+              <div className="text-white/80 text-sm">{effectiveRole} · {form.city || "—"}</div>
               {form.experience && <div className="text-white/60 text-xs mt-1">{form.experience} experience</div>}
             </div>
 
@@ -1005,9 +1007,14 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                     <button
                       onClick={async () => {
                         const next = !available;
-                        setAvailable(next);
-                        await api.setAvailability(next).catch(() => {});
-                        showToast(next ? "🟢 You're now Online" : "⏸ You're now Offline");
+                        setAvailable(next); // optimistic
+                        try {
+                          await api.setAvailability(next);
+                          showToast(next ? "🟢 You're now Online" : "⏸ You're now Offline");
+                        } catch (e) {
+                          setAvailable(!next); // revert on failure
+                          showToast(e.message || "Failed to update availability", "error");
+                        }
                       }}
                       className={`relative w-14 h-7 rounded-full transition-colors duration-300 flex-shrink-0 focus:outline-none ${available ? "bg-emerald-500" : "bg-gray-300"}`}
                     >
@@ -1186,7 +1193,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                         </div>
                         <Bdg text={b.status} cls={sColor(b.status)}/>
                       </div>
-                      {b.amount && <div className="text-sm font-bold text-gray-700 mb-2">{b.amount}</div>}
+                      {b.amount && <div className="text-sm font-bold text-gray-700 mb-2">₹{b.amount}</div>}
                       {/* ⚕️ Pet health notes — shown to assigned professional */}
                       {b.pets?.health_notes && (
                         <div className="bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mb-2">
@@ -2271,7 +2278,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                       </div>
                       <Bdg text={b.status} cls={sColor(b.status)}/>
                     </div>
-                    {b.amount && <div className="text-xs font-bold text-gray-700">{b.amount}</div>}
+                    {b.amount && <div className="text-xs font-bold text-gray-700">₹{b.amount}</div>}
                   </div>
                   );
                 })}

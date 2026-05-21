@@ -210,11 +210,11 @@ export default function PetclubApp({ session, onLogout }) {
       health_notes: form.health_notes || "",
     };
     try {
-      if (apiMode) { await api.updatePet(activePetId, data).catch(() => {}); }
+      if (apiMode) { await api.updatePet(activePetId, data); }
       setPets(prev => prev.map(p => p.id === activePetId ? { ...p, ...data } : p));
       setModal(null); setForm({});
       showToast("Pet profile updated! 🐾");
-    } catch { showToast("Failed to update", "error"); }
+    } catch (e) { showToast(e.message || "Failed to update pet", "error"); }
   };
 
   const updateProfile = async () => {
@@ -255,7 +255,7 @@ export default function PetclubApp({ session, onLogout }) {
         addressPostalCode: editAddrMeta.postalCode || null,
         addressCity: editAddrMeta.city || null,
         addressState: editAddrMeta.state || null,
-      }).catch(() => {});
+      });
       setUserInfo(prev => ({
         ...prev,
         name: form.name.trim(),
@@ -298,12 +298,12 @@ export default function PetclubApp({ session, onLogout }) {
     try {
       if (apiMode) {
         const ap = { date, service: rec.service, session: rec.session, product: rec.product, detail: rec.detail, by: rec.by, brand: rec.brand, qty: rec.qty, vet: rec.vet, clinic: rec.clinic, cost: rec.cost, notes: rec.notes, rating: rec.rating, next_due: rec.nextDue };
-        await api.addRecord(activePetId, activeTab, ap).catch(() => {});
+        await api.addRecord(activePetId, activeTab, ap);
       }
-    } catch { }
-    setPets(prev => prev.map(p => p.id === activePetId ? { ...p, records: { ...p.records, [activeTab]: [rec, ...p.records[activeTab]] } } : p));
-    setModal(null); setForm({});
-    showToast("Record saved!");
+      setPets(prev => prev.map(p => p.id === activePetId ? { ...p, records: { ...p.records, [activeTab]: [rec, ...p.records[activeTab]] } } : p));
+      setModal(null); setForm({});
+      showToast("Record saved!");
+    } catch (e) { showToast(e.message || "Failed to save record", "error"); }
   };
 
   const createBooking = async () => {

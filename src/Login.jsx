@@ -335,6 +335,11 @@ export default function Login({ onLogin }) {
       }
       saveToken(res.token);
       if (mode === "signup" || res.isNew || res.user?.role === "pending_role") {
+        // Pre-fill email from the login-step email field (used when loginMethod==="email")
+        if (email.trim()) {
+          setCust(c => ({ ...c, email: c.email || email.trim() }));
+          setPro(p => ({ ...p, email: p.email || email.trim() }));
+        }
         setStep("profile");
       } else {
         onLogin({ ...res.user });
@@ -876,7 +881,7 @@ export default function Login({ onLogin }) {
                 className="w-full h-14 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] disabled:opacity-60 text-white font-bold text-base rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2">
                 {loading ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Creating account…</> : "Enter PETclub 🐾"}
               </button>
-              <button onClick={() => { setStep("start"); setErr(""); }} className="w-full text-xs text-gray-400 hover:text-gray-600 py-1.5 text-center transition-colors">← Back to start</button>
+              <button onClick={() => { setStep("otp"); setErr(""); }} className="w-full text-xs text-gray-400 hover:text-gray-600 py-1.5 text-center transition-colors">← Back</button>
             </div>
           )}
 
@@ -1041,7 +1046,7 @@ export default function Login({ onLogin }) {
                 style={{background: selRole.color}}>
                 {loading ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Submitting…</> : "Submit Application →"}
               </button>
-              <button onClick={() => { setStep("start"); setErr(""); }} className="w-full text-xs text-gray-400 hover:text-gray-600 py-1.5 text-center transition-colors">← Back to start</button>
+              <button onClick={() => { setStep("otp"); setErr(""); }} className="w-full text-xs text-gray-400 hover:text-gray-600 py-1.5 text-center transition-colors">← Back</button>
             </div>
           )}
 

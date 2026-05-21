@@ -1,4 +1,4 @@
-import { StrictMode, useState, useCallback, useEffect, useRef } from "react";
+import { StrictMode, useState, useCallback, useEffect, useRef, Component } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import LandingPage from "./LandingPage.jsx";
@@ -8,6 +8,37 @@ import ProApp from "./App.jsx";
 import { loadSession, saveSession, clearSession } from "./utils/storage.js";
 import { clearToken, api } from "./api.js";
 import { initPushNotifications } from "./firebase.js";
+
+/* ── Error Boundary ─────────────────────────────────────────────────────────
+ * Catches render errors in any child component and shows a friendly recovery
+ * screen instead of a blank white page. Class component required by React API.  */
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(err) { return { error: err }; }
+  componentDidCatch(err, info) { console.error('[ErrorBoundary]', err, info?.componentStack); }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#fff8f0", padding: "24px", fontFamily: "system-ui,-apple-system,sans-serif", textAlign: "center" }}>
+        <div style={{ fontSize: 52, marginBottom: 12 }}>🐾</div>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: "#c2410c", marginBottom: 8 }}>Something went wrong</h2>
+        <p style={{ fontSize: 14, color: "#7c2d12", maxWidth: 340, lineHeight: 1.6, marginBottom: 20 }}>
+          PETclub hit an unexpected error. Your data is safe — please reload to continue.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ background: "#f97316", color: "#fff", fontWeight: 700, fontSize: 14, padding: "12px 28px", borderRadius: 12, border: "none", cursor: "pointer" }}>
+          🔄 Reload App
+        </button>
+        {process.env.NODE_ENV !== "production" && (
+          <pre style={{ marginTop: 20, fontSize: 11, color: "#6b7280", textAlign: "left", maxWidth: 500, overflow: "auto", background: "#f3f4f6", padding: 12, borderRadius: 8 }}>
+            {this.state.error?.toString()}
+          </pre>
+        )}
+      </div>
+    );
+  }
+}
 
 /* ── Inactivity config ── */
 // Admin users often monitor passively (dashboard, live trips) so give them
@@ -292,6 +323,8 @@ function Root() {
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <Root />
+    <ErrorBoundary>
+      <Root />
+    </ErrorBoundary>
   </StrictMode>
 );
