@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fff7ed"/>
+      <stop offset="100%" style="stop-color:#ffedd5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Left orange accent bar -->
+  <rect width="16" height="630" fill="#f97316"/>
+
+  <!-- Decorative circles -->
+  <circle cx="1100" cy="80"  r="180" fill="#f97316" opacity="0.06"/>
+  <circle cx="1050" cy="580" r="140" fill="#f97316" opacity="0.05"/>
+
+  <!-- Paw icon (large) -->
+  <ellipse cx="200" cy="290" rx="88" ry="76" fill="#f97316"/>
+  <ellipse cx="108" cy="178" rx="48" ry="43" fill="#f97316"/>
+  <ellipse cx="200" cy="152" rx="48" ry="43" fill="#f97316"/>
+  <ellipse cx="292" cy="178" rx="48" ry="43" fill="#f97316"/>
+
+  <!-- PETclub wordmark -->
+  <text x="340" y="272" font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+        font-size="130" font-weight="900" fill="#f97316">PET</text>
+  <text x="668" y="272" font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+        font-size="130" font-weight="900" fill="#1f2937">club</text>
+
+  <!-- Tagline -->
+  <text x="340" y="332" font-family="Arial, Helvetica, sans-serif"
+        font-size="28" fill="#6b7280" letter-spacing="2">Paw Care at Your Doorstep</text>
+
+  <!-- Divider -->
+  <rect x="340" y="355" width="600" height="3" rx="2" fill="#f97316" opacity="0.3"/>
+
+  <!-- Services row -->
+  <text x="340" y="400" font-family="Arial, sans-serif" font-size="22" fill="#374151">
+    🩺 Vet  ✂️ Grooming  🦮 Training  🏠 Pet Sitting  🛁 Bathing
+  </text>
+
+  <!-- URL -->
+  <text x="340" y="460" font-family="Arial, sans-serif"
+        font-size="20" fill="#9ca3af" letter-spacing="1">www.mypetclub.app</text>
+
+  <!-- Bottom orange strip -->
+  <rect y="580" width="1200" height="50" fill="#f97316"/>
+  <text x="600" y="613" text-anchor="middle" font-family="Arial, sans-serif"
+        font-size="18" fill="white" letter-spacing="3">INDIA'S TRUSTED PET CARE PLATFORM</text>
+</svg>
