@@ -1,15 +1,19 @@
 {
+  "id": "app.mypetclub.petclub-pwa",
   "name": "PETclub",
   "short_name": "PETclub",
-  "description": "India's complete pet care app — grooming, training, vet & more",
-  "start_url": "/",
+  "description": "On-demand pet grooming, training, and vet care. Book certified professionals, track arrivals live, and manage custom pet health profiles.",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#f97316",
   "orientation": "portrait-primary",
-  "lang": "en-IN",
-  "categories": ["lifestyle", "health", "pets"],
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["lifestyle", "health", "medical"],
+  "handle_links": "preferred",
   "icons": [
     {
       "src": "/icon.svg",

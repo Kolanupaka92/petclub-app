@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { api } from "./api.js";
 import { AddressInput } from "./Login.jsx";
 import { AddressPicker } from "./components/AddressPicker.jsx";
+import { bufferPosition, saveTokenToGpsDb } from "./utils/gpsBuffer.js";
 
 /* ── Helpers ── */
 const fmtDate = s => { try { return new Date(s).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }); } catch { return s || "—"; } };
@@ -678,8 +679,44 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [responding,   setResponding]   = useState({});
   const [sharingLocId,    setSharingLocId]    = useState(null);  // bookingId being shared
   const [bgWarning,       setBgWarning]       = useState(false); // page-hidden warning
-  const watchIdRef        = useRef(null);  // watchPosition ID (replaces setInterval)
+  const watchIdRef        = useRef(null);  // watchPosition ID
   const lastSentRef       = useRef(0);     // throttle: min 10s between sends
+  const wakeLockRef       = useRef(null);  // Screen Wake Lock sentinel (keeps screen on during transit)
+  const visCleanupRef     = useRef(null);  // visibilitychange cleanup fn — stored here, NOT on the numeric watchPosition ID
+
+  // ── Screen Wake Lock helpers ────────────────────────────────────────────────
+  // Keeps the provider's screen on so watchPosition keeps firing normally.
+  // The Web Geolocation API runs in the main browser thread; when the screen
+  // locks the OS suspends the thread (especially on iOS Safari). Holding a
+  // wake lock is the only reliable PWA-based solution.
+  //
+  // Service workers CANNOT access navigator.geolocation — it is not in the SW
+  // spec. Background Sync in the SW handles offline *buffering* (network drops),
+  // not GPS suspension from screen lock.
+  const acquireWakeLock = async () => {
+    if (!('wakeLock' in navigator) || document.hidden) return; // API absent or screen already off
+    try {
+      if (wakeLockRef.current) return; // already held
+      wakeLockRef.current = await navigator.wakeLock.request('screen');
+      // If the OS releases the lock (battery saver, incoming call, etc.) auto-reacquire
+      wakeLockRef.current.addEventListener('release', () => {
+        wakeLockRef.current = null;
+        // Re-acquire only if we're still actively tracking
+        if (watchIdRef.current !== null) acquireWakeLock();
+      }, { once: true });
+    } catch (e) {
+      // NotAllowedError is expected when document is hidden; others are benign
+      console.warn('[WakeLock] Could not acquire:', e.message);
+    }
+  };
+
+  const releaseWakeLock = () => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(() => {});
+      wakeLockRef.current = null;
+    }
+  };
+  // ─────────────────────────────────────────────────────────────────────────
 
   // "On My Way" — notify customer + start continuous GPS watchPosition
   const startJourney = async (bookingId) => {
@@ -693,18 +730,40 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   };
 
   // watchPosition — fires continuously as device moves; throttled to max 1 send/10s
-  // More reliable than setInterval on mobile (browser-native, lower battery)
+  // More reliable than setInterval on mobile (browser-native, lower battery drain)
   const startLocationSharing = (bookingId) => {
     if (!navigator.geolocation) return;
-    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+
+    // ── Clean up any previous watch + visibility listener ──────────────────
+    if (visCleanupRef.current) {
+      document.removeEventListener('visibilitychange', visCleanupRef.current);
+      visCleanupRef.current = null;
+    }
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+
     setSharingLocId(bookingId);
     lastSentRef.current = 0;
+
+    // Save auth token to IndexedDB now so the SW can use it during Background Sync
+    saveTokenToGpsDb(localStorage.getItem('petclub_token')).catch(() => {});
+
+    // Acquire wake lock — keeps screen on so watchPosition isn't suspended
+    acquireWakeLock();
+
+    // ── GPS watch ───────────────────────────────────────────────────────────
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const now = Date.now();
         if (now - lastSentRef.current < 10000) return; // throttle: send max every 10s
         lastSentRef.current = now;
-        api.updateLocation(bookingId, pos.coords.latitude, pos.coords.longitude).catch(() => {});
+        api.updateLocation(bookingId, pos.coords.latitude, pos.coords.longitude)
+          .catch(() => {
+            // Network drop — buffer position in IndexedDB for SW Background Sync retry
+            bufferPosition(bookingId, pos.coords.latitude, pos.coords.longitude).catch(() => {});
+          });
       },
       (err) => {
         console.warn('[GPS watch error]', err.code, err.message);
@@ -712,41 +771,51 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
       },
       { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 }
     );
-    // Page-visibility warning: iOS Safari stops GPS when screen locks
+
+    // ── Visibility change handler ───────────────────────────────────────────
+    // When the screen wakes back up: re-acquire wake lock + re-attach watch
+    // (some browsers cancel watchPosition while the page is hidden)
+    // NOTE: stored in visCleanupRef — NOT on the numeric watchPosition ID
+    // (setting properties on primitives silently fails in JS non-strict mode)
     const onVisibility = () => {
       if (document.hidden) {
         setBgWarning(true);
       } else {
         setBgWarning(false);
-        // Re-attach watch in case browser killed it while hidden
-        if (watchIdRef.current !== null && sharingLocId) {
-          startLocationSharing(sharingLocId);
-        }
+        acquireWakeLock(); // re-acquire if OS released it while hidden
+        // Re-attach the watch if the browser suspended it
+        if (watchIdRef.current !== null) startLocationSharing(bookingId);
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
-    watchIdRef.current._visibilityCleanup = onVisibility; // store for removal
+    visCleanupRef.current = onVisibility;
   };
 
   const stopLocationSharing = () => {
+    // Remove visibility listener
+    if (visCleanupRef.current) {
+      document.removeEventListener('visibilitychange', visCleanupRef.current);
+      visCleanupRef.current = null;
+    }
+    // Stop GPS watch
     if (watchIdRef.current !== null) {
-      if (watchIdRef.current._visibilityCleanup)
-        document.removeEventListener('visibilitychange', watchIdRef.current._visibilityCleanup);
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
+    // Release wake lock — screen can sleep normally again
+    releaseWakeLock();
     setSharingLocId(null);
     setBgWarning(false);
     showToast("📍 Location sharing stopped.");
   };
 
-  // Clean up on unmount
+  // Clean up on unmount — runs when the pro navigates away mid-journey
   useEffect(() => () => {
-    if (watchIdRef.current !== null) {
-      if (watchIdRef.current._visibilityCleanup)
-        document.removeEventListener('visibilitychange', watchIdRef.current._visibilityCleanup);
+    if (visCleanupRef.current)
+      document.removeEventListener('visibilitychange', visCleanupRef.current);
+    if (watchIdRef.current !== null)
       navigator.geolocation.clearWatch(watchIdRef.current);
-    }
+    releaseWakeLock();
   }, []);
 
   const subRole  = session.subRole || "Groomer";

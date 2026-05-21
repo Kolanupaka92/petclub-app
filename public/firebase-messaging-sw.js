@@ -24,6 +24,102 @@ const firebaseConfig = {
   appId:             "1:326567194811:web:6680bef4b86e529e43b99e",
 };
 
+// ── Background Sync — GPS position queue ────────────────────────────────────
+// When the provider's connection drops during transit, the main thread writes
+// failed positions to IndexedDB and registers this sync tag.  The browser
+// fires the 'sync' event automatically the moment connectivity is restored —
+// even if the app tab has been closed.
+//
+// NOTE: Service workers cannot access navigator.geolocation. This handler
+// only retries positions that the main thread already captured and buffered.
+// Screen-lock GPS suspension is solved by the Screen Wake Lock API in App.jsx.
+
+const GPS_DB_NAME    = 'petclub-gps-v1';
+const GPS_DB_VERSION = 1;
+const API_BASE       = 'https://api.mypetclub.app/api';
+
+function swOpenGpsDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(GPS_DB_NAME, GPS_DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('positions'))
+        db.createObjectStore('positions', { keyPath: 'id', autoIncrement: true });
+      if (!db.objectStoreNames.contains('meta'))
+        db.createObjectStore('meta', { keyPath: 'key' });
+    };
+    req.onsuccess = (e) => resolve(e.target.result);
+    req.onerror   = ()  => reject(req.error);
+  });
+}
+
+function swGetAllPositions(db) {
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction('positions', 'readonly');
+    const req = tx.objectStore('positions').getAll();
+    req.onsuccess = (e) => resolve(e.target.result || []);
+    req.onerror   = ()  => reject(req.error);
+  });
+}
+
+function swDeletePosition(db, id) {
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction('positions', 'readwrite');
+    const req = tx.objectStore('positions').delete(id);
+    req.onsuccess = resolve;
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+async function swGetToken() {
+  try {
+    const db = await swOpenGpsDb();
+    return new Promise((resolve) => {
+      const tx  = db.transaction('meta', 'readonly');
+      const req = tx.objectStore('meta').get('token');
+      req.onsuccess = (e) => resolve(e.target.result?.value || null);
+      req.onerror   = ()  => resolve(null);
+    });
+  } catch { return null; }
+}
+
+async function flushGpsBuffer() {
+  const token = await swGetToken();
+  if (!token) return; // no token — nothing we can do, will retry on next sync
+
+  const db        = await swOpenGpsDb();
+  const positions = await swGetAllPositions(db);
+  if (!positions.length) return;
+
+  for (const pos of positions) {
+    try {
+      const res = await fetch(
+        `${API_BASE}/bookings/${pos.bookingId}/location`,
+        {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body:    JSON.stringify({ lat: pos.lat, lng: pos.lng }),
+        }
+      );
+      if (res.ok) {
+        await swDeletePosition(db, pos.id); // confirmed → remove from queue
+      } else if (res.status === 401) {
+        break; // token expired — stop flushing, user must re-auth
+      }
+      // 5xx or other errors: leave in queue, SW will retry on next sync opportunity
+    } catch {
+      break; // still offline — stop here, browser will re-fire sync when reconnected
+    }
+  }
+}
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'flush-gps-positions') {
+    event.waitUntil(flushGpsBuffer());
+  }
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
 if (firebaseConfig.apiKey) {
   firebase.initializeApp(firebaseConfig);
   const messaging = firebase.messaging();
