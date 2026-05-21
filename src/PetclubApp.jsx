@@ -399,10 +399,12 @@ export default function PetclubApp({ session, onLogout }) {
   /* ── BOOKINGS VIEW ── */
   const BookingsView = () => {
     const statusMap = {
-      searching:         { icon:"🔍", label:"Finding Pro…",   cls:"bg-blue-50 text-blue-700 border-blue-200" },
-      offered:           { icon:"⏳", label:"Pro Notified",   cls:"bg-amber-50 text-amber-700 border-amber-200" },
-      confirmed:         { icon:"✅", label:"Confirmed",      cls:"bg-emerald-50 text-emerald-700 border-emerald-200" },
-      no_pros_available: { icon:"😔", label:"No Pro Found",   cls:"bg-gray-100 text-gray-500 border-gray-200" },
+      searching:         { icon:"🔍", label:"Finding Pro…",      cls:"bg-blue-50 text-blue-700 border-blue-200" },
+      offered:           { icon:"⏳", label:"Pro Notified",       cls:"bg-amber-50 text-amber-700 border-amber-200" },
+      confirmed:         { icon:"✅", label:"Confirmed",          cls:"bg-emerald-50 text-emerald-700 border-emerald-200" },
+      on_the_way:        { icon:"🚗", label:"Pro On The Way!",    cls:"bg-orange-50 text-orange-700 border-orange-300" },
+      in_progress:       { icon:"⚙️", label:"In Progress",        cls:"bg-violet-50 text-violet-700 border-violet-200" },
+      no_pros_available: { icon:"😔", label:"No Pro Found",       cls:"bg-gray-100 text-gray-500 border-gray-200" },
     };
     const StarRow = ({ val, onSelect }) => (
       <div className="flex gap-2 justify-center my-3">
@@ -470,8 +472,8 @@ export default function PetclubApp({ session, onLogout }) {
                       <div className="text-xs text-gray-500 mb-1 flex items-center gap-1.5"><span>📅</span><span>{fmtDate(b.scheduled_at)} at {new Date(b.scheduled_at).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</span></div>
                     )}
                     {b.city && <div className="text-xs text-gray-500 flex items-center gap-1.5"><span>📍</span><span>{[b.address, b.city].filter(Boolean).join(", ")}</span></div>}
-                    {/* Pro name + Track button when confirmed */}
-                    {b.assignment_status === "confirmed" && b.professional_profiles?.users?.name && (
+                    {/* Pro name + Track button when confirmed or on the way */}
+                    {(b.assignment_status === "confirmed" || b.assignment_status === "on_the_way") && b.professional_profiles?.users?.name && (
                       <div className="mt-2 space-y-2">
                         <div className="flex items-center gap-2 bg-emerald-50 rounded-xl px-3 py-2">
                           <span className="text-base">👤</span>
@@ -480,12 +482,19 @@ export default function PetclubApp({ session, onLogout }) {
                             <div className="text-[10px] text-emerald-500">{b.service_type} · Confirmed</div>
                           </div>
                         </div>
+                        {/* 🚗 On the way banner */}
+                        {b.assignment_status === "on_the_way" && (
+                          <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2 mb-2">
+                            <span className="inline-block w-2 h-2 bg-orange-500 rounded-full animate-bounce"/>
+                            <span className="text-xs font-bold text-orange-700">Your professional is on the way!</span>
+                          </div>
+                        )}
                         {/* 🗺️ Live track button */}
                         <button
                           onClick={() => setTrackingBooking(b)}
-                          className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 active:scale-[0.97] text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-md">
+                          className={`w-full flex items-center justify-center gap-2 ${b.assignment_status === "on_the_way" ? "bg-orange-500 hover:bg-orange-600" : "bg-violet-600 hover:bg-violet-700"} active:scale-[0.97] text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-md`}>
                           <span className="text-sm">🗺️</span>
-                          Track Live
+                          {b.assignment_status === "on_the_way" ? "Track Live — On The Way!" : "Track Live"}
                           <span className="inline-block w-1.5 h-1.5 bg-green-400 rounded-full animate-bounce"/>
                         </button>
                       </div>

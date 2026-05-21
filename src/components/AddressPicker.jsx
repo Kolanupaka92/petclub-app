@@ -42,6 +42,7 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
   const [results,     setResults]     = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [gpsLoading,  setGpsLoading]  = useState(false);
+  const [gpsError,    setGpsError]    = useState("");      // inline GPS error (replaces alert)
   const [confirmed,   setConfirmed]   = useState(!!value); // true once selected from list
   const [dropStyle,   setDropStyle]   = useState(null);    // {top,left,width} for portal
 
@@ -114,8 +115,12 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
 
   /* ── GPS ── */
   const gps = () => {
-    if (!navigator.geolocation) return alert("GPS not available on this device");
+    if (!navigator.geolocation) {
+      setGpsError("GPS is not available on this device. Please type your address.");
+      return;
+    }
     setGpsLoading(true);
+    setGpsError("");
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const { latitude: lat, longitude: lng } = pos.coords;
       try {
@@ -132,14 +137,19 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
           const r = fromNominatim(d, 0); addr=r.full; postalCode=r.postalCode; city=r.city; state=r.state;
         }
         if (addr && !addr.match(/^-?\d+\.\d+/)) {   // reject raw coords
-          setQuery(addr); setConfirmed(true);
+          setQuery(addr); setConfirmed(true); setGpsError("");
           onChange({ address: addr, lat, lng, postalCode, city, state });
         } else {
-          alert("Couldn't get street address. Please type your address.");
+          setGpsError("Couldn't get your street address. Please type your address manually.");
         }
-      } catch { alert("Couldn't fetch address. Please type your address."); }
+      } catch { setGpsError("Couldn't fetch address. Check your connection and try again."); }
       setGpsLoading(false);
-    }, () => { setGpsLoading(false); alert("Location access denied. Please type your address."); },
+    }, (err) => {
+      setGpsLoading(false);
+      if (err.code === 1) setGpsError("Location access denied. Please allow location permission or type your address.");
+      else if (err.code === 3) setGpsError("Location request timed out. Please type your address.");
+      else setGpsError("Could not get your location. Please type your address.");
+    },
     { timeout: 12000, maximumAge: 30000 });
   };
 
@@ -184,6 +194,14 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
           </span>
         </div>
       </div>
+
+      {/* ── GPS error ── */}
+      {gpsError && (
+        <div className="mt-1.5 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+          <span className="text-red-500 shrink-0 text-sm">⚠️</span>
+          <p className="text-xs text-red-700 font-medium">{gpsError}</p>
+        </div>
+      )}
 
       {/* ── Verified pill ── */}
       {confirmed && query && (

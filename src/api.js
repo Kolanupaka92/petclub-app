@@ -62,6 +62,7 @@ export const api = {
   setAvailability: (is_available) => req('PUT', '/professionals/availability', { is_available }, true),
 
   // Live Tracking
+  startJourney:   (id)           => req('POST', `/bookings/${id}/on-my-way`, {}, true),
   updateLocation: (id, lat, lng) => req('POST', `/bookings/${id}/location`, { lat, lng }, true),
   getTracking:    (id)           => req('GET',  `/bookings/${id}/tracking`, null, true),
 

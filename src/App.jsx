@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { api } from "./api.js";
 import { AddressInput } from "./Login.jsx";
+import { AddressPicker } from "./components/AddressPicker.jsx";
 
 /* ── Helpers ── */
 const fmtDate = s => { try { return new Date(s).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }); } catch { return s || "—"; } };
@@ -251,6 +252,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
   const [idPhoto, setIdPhoto] = useState(null);
   // If sub_role is missing (null in DB), let user pick it on Step 1
   const [pickedRole, setPickedRole] = useState(subRole !== "Groomer" || session.subRole ? subRole : null);
+  const [addrMeta, setAddrMeta] = useState({ lat: null, lng: null, postalCode: "", city: "", state: "" });
 
   const [form, setForm] = useState({
     name: session.name || "", email: session.email || "", dob: "", gender: "Male",
@@ -330,8 +332,11 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
     try {
       await api.updateMyProProfile({
         sub_role: pickedRole || subRole,    // always save sub_role so DB stays correct
-        name: form.name, email: form.email, city: form.city, area: form.area,
-        address: form.address, bio: form.bio, experience: form.experience,
+        name: form.name, email: form.email, city: addrMeta.city || form.city, area: form.area,
+        address: form.address, pincode: addrMeta.postalCode || form.pincode,
+        address_lat: addrMeta.lat, address_lng: addrMeta.lng,
+        address_postal_code: addrMeta.postalCode, address_state: addrMeta.state,
+        bio: form.bio, experience: form.experience,
         services: form.services, service_areas: form.service_areas, langs: form.langs,
         certification: form.certification, license_number: form.license_number,
         clinic_name: form.clinic_name,
@@ -413,12 +418,20 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
               <Sel label="Gender" opts={["Male","Female","Other"]} value={form.gender} onChange={sf("gender")}/>
             </div>
             <div className="mb-3">
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Full Address</label>
-              <AddressInput
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Full Address *</label>
+              <AddressPicker
                 value={form.address}
-                onChange={v => setForm(f => ({ ...f, address: v }))}
+                onChange={({ address, lat, lng, postalCode, city, state }) => {
+                  setForm(f => ({
+                    ...f,
+                    address,
+                    pincode: postalCode || f.pincode,
+                    city: city || f.city,
+                  }));
+                  setAddrMeta({ lat: lat || null, lng: lng || null, postalCode: postalCode || "", city: city || "", state: state || "" });
+                }}
                 placeholder="Start typing your address…"
-                cc={session.phone?.startsWith("+91") ? "91" : "1"}
+                countryCode={session.phone?.startsWith("+91") ? "in" : "us"}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition placeholder-gray-400"
               />
             </div>
@@ -648,9 +661,20 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [sharingLocId, setSharingLocId] = useState(null);  // bookingId being shared
   const gpsIntervalRef = useRef(null);
 
-  // Start GPS sharing for a booking
+  // "On My Way" — notify customer + start live GPS sharing
+  const startJourney = async (bookingId) => {
+    if (!navigator.geolocation) { showToast("❌ GPS not available on this device."); return; }
+    try {
+      await api.startJourney(bookingId);
+      showToast("🚗 Journey started! Customer has been notified.");
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, assignment_status: 'on_the_way' } : b));
+    } catch (e) { showToast("❌ " + (e.message || "Failed to start journey")); return; }
+    startLocationSharing(bookingId);
+  };
+
+  // Start GPS sharing for a booking (15-sec interval)
   const startLocationSharing = (bookingId) => {
-    if (!navigator.geolocation) return alert("Geolocation not supported on this device.");
+    if (!navigator.geolocation) return;
     setSharingLocId(bookingId);
     const send = () => {
       navigator.geolocation.getCurrentPosition(
@@ -659,13 +683,14 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
       );
     };
     send(); // immediate first send
-    gpsIntervalRef.current = setInterval(send, 5000); // every 5s
+    gpsIntervalRef.current = setInterval(send, 15000); // every 15s
   };
 
   const stopLocationSharing = () => {
     clearInterval(gpsIntervalRef.current);
     gpsIntervalRef.current = null;
     setSharingLocId(null);
+    showToast("📍 Location sharing stopped.");
   };
 
   // Clean up on unmount
@@ -1044,15 +1069,38 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                           🗺️ Navigate to Customer
                         </a>
                       )}
-                      {/* 📍 Share Location — only on active/confirmed bookings */}
+                      {/* 🚗 On My Way + 📍 Location sharing */}
                       {isActive && (
                         isSharing ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                              <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"/>
+                              <span className="text-xs font-bold text-emerald-700">Live location sharing active</span>
+                            </div>
+                            <button
+                              onClick={stopLocationSharing}
+                              className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-600 font-bold text-xs py-2.5 rounded-xl transition-all hover:bg-red-100 active:scale-[0.97]">
+                              ⏹ Stop Sharing Location
+                            </button>
+                          </div>
+                        ) : b.assignment_status === 'confirmed' ? (
                           <button
-                            onClick={stopLocationSharing}
-                            className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-600 font-bold text-xs py-2.5 rounded-xl transition-all hover:bg-red-100 active:scale-[0.97]">
-                            <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
-                            Stop Sharing Location
+                            onClick={() => startJourney(b.id)}
+                            className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 active:scale-[0.97] text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md">
+                            🚗 I&apos;m On My Way — Start Journey
                           </button>
+                        ) : b.assignment_status === 'on_the_way' ? (
+                          <div className="space-y-2">
+                            <div className="bg-orange-50 border border-orange-200 rounded-xl px-3 py-2 text-xs font-bold text-orange-700 flex items-center gap-2">
+                              <span className="inline-block w-2 h-2 bg-orange-500 rounded-full animate-bounce"/>
+                              Journey in progress — customer is tracking you
+                            </div>
+                            <button
+                              onClick={() => startLocationSharing(b.id)}
+                              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.97] text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm">
+                              📍 Resume Location Sharing
+                            </button>
+                          </div>
                         ) : (
                           <button
                             onClick={() => startLocationSharing(b.id)}
