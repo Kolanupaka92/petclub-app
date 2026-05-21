@@ -1,0 +1,65 @@
+# ══════════════════════════════════════════════════════════════════
+#  PETclub Frontend — GitHub Actions CI gate + Vercel auto-deploy
+#  Triggered: every push to main and every PR
+#
+#  Vercel auto-deploys via its GitHub App integration (already connected).
+#  This workflow adds a build validation gate that must pass BEFORE Vercel
+#  picks up the commit — it also runs on PRs to catch errors early.
+#
+#  Required GitHub Secrets (Settings → Secrets → Actions):
+#    VITE_API_URL        — https://api.mypetclub.app/api  (build-time env)
+#    VITE_MAPBOX_TOKEN   — Mapbox public token (pk.*)
+#
+#  Optional (only needed if you want GitHub Actions to deploy to Vercel
+#  instead of Vercel's own GitHub integration):
+#    VERCEL_TOKEN        — Vercel personal access token
+#    VERCEL_ORG_ID       — from vercel.json / team settings
+#    VERCEL_PROJECT_ID   — from vercel.json / project settings
+# ══════════════════════════════════════════════════════════════════
+
+name: Build & Validate Frontend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Vite Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js setup ─────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # ── 3. Install dependencies ──────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. Build (Vite) ──────────────────────────────────────
+      #   We inject build-time env vars from GitHub Secrets.
+      #   Vercel uses the same vars configured in its project settings.
+      - name: Build
+        env:
+          VITE_API_URL:       ${{ secrets.VITE_API_URL }}
+          VITE_MAPBOX_TOKEN:  ${{ secrets.VITE_MAPBOX_TOKEN }}
+        run: npm run build
+
+      # ── 5. Report artifact size ──────────────────────────────
+      - name: Report build size
+        run: |
+          echo "── dist/ contents ──"
+          du -sh dist/
+          ls -lh dist/assets/ | sort -k5 -hr | head -20

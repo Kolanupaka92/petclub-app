@@ -676,10 +676,12 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [saving,    setSaving]    = useState(false);
   const [toast,     setToast]     = useState("");
   const [responding,   setResponding]   = useState({});
-  const [sharingLocId, setSharingLocId] = useState(null);  // bookingId being shared
-  const gpsIntervalRef = useRef(null);
+  const [sharingLocId,    setSharingLocId]    = useState(null);  // bookingId being shared
+  const [bgWarning,       setBgWarning]       = useState(false); // page-hidden warning
+  const watchIdRef        = useRef(null);  // watchPosition ID (replaces setInterval)
+  const lastSentRef       = useRef(0);     // throttle: min 10s between sends
 
-  // "On My Way" — notify customer + start live GPS sharing
+  // "On My Way" — notify customer + start continuous GPS watchPosition
   const startJourney = async (bookingId) => {
     if (!navigator.geolocation) { showToast("❌ GPS not available on this device."); return; }
     try {
@@ -690,29 +692,62 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
     startLocationSharing(bookingId);
   };
 
-  // Start GPS sharing for a booking (15-sec interval)
+  // watchPosition — fires continuously as device moves; throttled to max 1 send/10s
+  // More reliable than setInterval on mobile (browser-native, lower battery)
   const startLocationSharing = (bookingId) => {
     if (!navigator.geolocation) return;
+    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
     setSharingLocId(bookingId);
-    const send = () => {
-      navigator.geolocation.getCurrentPosition(
-        p => api.updateLocation(bookingId, p.coords.latitude, p.coords.longitude).catch(() => {}),
-        () => {}
-      );
+    lastSentRef.current = 0;
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const now = Date.now();
+        if (now - lastSentRef.current < 10000) return; // throttle: send max every 10s
+        lastSentRef.current = now;
+        api.updateLocation(bookingId, pos.coords.latitude, pos.coords.longitude).catch(() => {});
+      },
+      (err) => {
+        console.warn('[GPS watch error]', err.code, err.message);
+        if (err.code === 1) showToast("⚠️ GPS permission denied — location sharing paused.");
+      },
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 }
+    );
+    // Page-visibility warning: iOS Safari stops GPS when screen locks
+    const onVisibility = () => {
+      if (document.hidden) {
+        setBgWarning(true);
+      } else {
+        setBgWarning(false);
+        // Re-attach watch in case browser killed it while hidden
+        if (watchIdRef.current !== null && sharingLocId) {
+          startLocationSharing(sharingLocId);
+        }
+      }
     };
-    send(); // immediate first send
-    gpsIntervalRef.current = setInterval(send, 15000); // every 15s
+    document.addEventListener('visibilitychange', onVisibility);
+    watchIdRef.current._visibilityCleanup = onVisibility; // store for removal
   };
 
   const stopLocationSharing = () => {
-    clearInterval(gpsIntervalRef.current);
-    gpsIntervalRef.current = null;
+    if (watchIdRef.current !== null) {
+      if (watchIdRef.current._visibilityCleanup)
+        document.removeEventListener('visibilitychange', watchIdRef.current._visibilityCleanup);
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
     setSharingLocId(null);
+    setBgWarning(false);
     showToast("📍 Location sharing stopped.");
   };
 
   // Clean up on unmount
-  useEffect(() => () => clearInterval(gpsIntervalRef.current), []);
+  useEffect(() => () => {
+    if (watchIdRef.current !== null) {
+      if (watchIdRef.current._visibilityCleanup)
+        document.removeEventListener('visibilitychange', watchIdRef.current._visibilityCleanup);
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+  }, []);
 
   const subRole  = session.subRole || "Groomer";
   const cfg      = ROLE_CONFIG[subRole] || ROLE_CONFIG.Groomer;
@@ -1106,8 +1141,14 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                           <div className="space-y-2">
                             <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
                               <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"/>
-                              <span className="text-xs font-bold text-emerald-700">Live location sharing active</span>
+                              <span className="text-xs font-bold text-emerald-700">Live GPS streaming — customer is tracking you</span>
                             </div>
+                            {/* iOS / background warning */}
+                            {bgWarning && (
+                              <div className="bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 text-xs text-amber-800 font-semibold">
+                                ⚠️ App is in background — keep screen ON to maintain GPS accuracy. On iPhone, do not lock the screen.
+                              </div>
+                            )}
                             <button
                               onClick={stopLocationSharing}
                               className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-600 font-bold text-xs py-2.5 rounded-xl transition-all hover:bg-red-100 active:scale-[0.97]">

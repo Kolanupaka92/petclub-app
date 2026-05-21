@@ -43,6 +43,7 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
   const [loading,     setLoading]     = useState(false);
   const [gpsLoading,  setGpsLoading]  = useState(false);
   const [gpsError,    setGpsError]    = useState("");      // inline GPS error (replaces alert)
+  const [blurErr,     setBlurErr]     = useState(false);   // true when user typed but didn't pick
   const [confirmed,   setConfirmed]   = useState(!!value); // true once selected from list
   const [dropStyle,   setDropStyle]   = useState(null);    // {top,left,width} for portal
 
@@ -52,7 +53,7 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
 
   /* sync external clear */
   useEffect(() => {
-    if (!value) { setQuery(""); setConfirmed(false); setResults([]); }
+    if (!value) { setQuery(""); setConfirmed(false); setResults([]); setBlurErr(false); }
   }, [value]);
 
   /* ── compute dropdown position (fixed = viewport-relative, no scrollY needed) ── */
@@ -100,6 +101,7 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
     const v = e.target.value;
     setQuery(v);
     setConfirmed(false);
+    setBlurErr(false);
     onChange({ address: v, lat: null, lng: null, postalCode: "", city: "", state: "" });
     clearTimeout(debounce.current);
     debounce.current = setTimeout(() => search(v), 320);
@@ -108,6 +110,7 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
   const pick = (item) => {
     setQuery(item.full);
     setConfirmed(true);
+    setBlurErr(false);
     setResults([]);
     onChange({ address: item.full, lat: item.lat, lng: item.lng,
                postalCode: item.postalCode, city: item.city, state: item.state });
@@ -154,10 +157,16 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
   };
 
   const inputCls = (className ||
-    "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm " +
-    "focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 " +
+    "w-full border rounded-xl px-4 py-3 text-sm " +
+    "focus:outline-none focus:ring-2 " +
     "bg-white placeholder-gray-400 transition") +
-    (confirmed ? " border-emerald-400 pr-9" : results.length ? " border-orange-300 pr-9" : " pr-9");
+    (confirmed
+      ? " border-emerald-400 focus:border-emerald-400 focus:ring-emerald-100 pr-9"
+      : blurErr
+      ? " border-red-400 focus:border-red-400 focus:ring-red-100 pr-9"
+      : results.length
+      ? " border-orange-300 focus:border-orange-400 focus:ring-orange-100 pr-9"
+      : " border-gray-200 focus:border-orange-400 focus:ring-orange-100 pr-9");
 
   return (
     <div className="relative">
@@ -179,8 +188,15 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
             type="text"
             value={query}
             onChange={handleInput}
-            onFocus={() => { if (results.length) calcPos(); }}
-            onBlur={() => { if (skipBlur.current) { skipBlur.current = false; return; } setTimeout(() => setResults([]), 150); }}
+            onFocus={() => { setBlurErr(false); if (results.length) calcPos(); }}
+            onBlur={() => {
+              if (skipBlur.current) { skipBlur.current = false; return; }
+              setTimeout(() => {
+                setResults([]);
+                // Show error if user typed but didn't select from dropdown
+                if (query.trim() && !confirmed) setBlurErr(true);
+              }, 150);
+            }}
             placeholder={placeholder || "Type your address…"}
             autoComplete="off"
             autoCorrect="off"
@@ -189,8 +205,9 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
           />
           {/* Status icon */}
           <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm">
-            {loading    ? <span className="inline-block w-4 h-4 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin"/> :
-             confirmed  ? "✅" : "📍"}
+            {loading   ? <span className="inline-block w-4 h-4 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin"/> :
+             confirmed ? "✅" :
+             blurErr   ? "❌" : "📍"}
           </span>
         </div>
       </div>
@@ -200,6 +217,14 @@ export function AddressPicker({ value, onChange, placeholder, countryCode = "in"
         <div className="mt-1.5 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
           <span className="text-red-500 shrink-0 text-sm">⚠️</span>
           <p className="text-xs text-red-700 font-medium">{gpsError}</p>
+        </div>
+      )}
+
+      {/* ── Unverified address error (typed but no dropdown pick) ── */}
+      {blurErr && !gpsError && (
+        <div className="mt-1.5 flex items-start gap-2 bg-red-50 border border-red-400 rounded-xl px-3 py-2">
+          <span className="text-red-500 shrink-0 text-sm">📍</span>
+          <p className="text-xs text-red-700 font-bold">Select your address from the dropdown — free typing is not accepted. This verifies your exact location for dispatch.</p>
         </div>
       )}
 
