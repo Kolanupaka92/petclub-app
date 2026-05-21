@@ -103,6 +103,26 @@ function Root() {
   const [warnVisible, setWarnVisible] = useState(false);
   const [countdown, setCountdown]   = useState(60);
 
+  /* ── Wipe stale service workers when user is not logged in ──────────────────
+   * Service workers persist across sessions. A stale SW from a previous build
+   * can intercept auth API requests and return fabricated 405 errors before the
+   * request even leaves the browser. Because push notifications / background sync
+   * are only needed AFTER login (re-registered by initPushNotifications), it is
+   * always safe to unregister every SW on a fresh unauthenticated load.          */
+  useEffect(() => {
+    if (session) return; // already logged in — don't touch the active SW
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.getRegistrations()
+      .then(regs => {
+        if (regs.length) {
+          console.info(`[SW] Clearing ${regs.length} stale service worker(s) before auth`);
+          regs.forEach(r => r.unregister());
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount — before any API call can be made
+
   const logoutTimerRef   = useRef(null);
   const warnTimerRef     = useRef(null);
   const countdownRef     = useRef(null);
