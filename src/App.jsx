@@ -432,7 +432,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
                   setAddrMeta({ lat: lat || null, lng: lng || null, postalCode: postalCode || "", city: city || "", state: state || "" });
                 }}
                 placeholder="Start typing your address…"
-                countryCode={session.phone?.startsWith("+91") ? "in" : "us"}
+                token={session.token}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition placeholder-gray-400"
               />
             </div>
