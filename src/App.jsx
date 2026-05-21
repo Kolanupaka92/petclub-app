@@ -1476,6 +1476,15 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [toast,      setToast]      = useState({ msg:"", type:"success" });
   const [health,     setHealth]     = useState(null);
 
+  /* ── Admin UX additions ── */
+  const [confirmModal,   setConfirmModal]   = useState(null);   // { action, userId?, userName?, userIds?, count? }
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [selectedUsers,  setSelectedUsers]  = useState(new Set());
+  const PAGE_SIZE  = 25;
+  const [userPage,    setUserPage]    = useState(1);
+  const [now,         setNow]         = useState(() => Date.now()); // drives live deletion countdowns
+  const [rolePopover, setRolePopover] = useState(null);              // userId whose role dropdown is open
+
   useEffect(() => {
     Promise.all([
       api.getAdminStats().catch(() => null),
@@ -1501,6 +1510,18 @@ const AdminDashboard = ({ session, onLogout }) => {
     return () => clearInterval(t);
   }, [view]);
 
+  // Tick every 60s to keep deletion countdown timers accurate
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Reset pagination + selection when the user changes filters or search
+  useEffect(() => {
+    setUserPage(1);
+    setSelectedUsers(new Set());
+  }, [search, roleFilter]);
+
   const showToast = (msg, type="success") => { setToast({ msg, type }); setTimeout(() => setToast({ msg:"", type:"success" }), 3500); };
 
   const approve = async id => {
@@ -1518,23 +1539,75 @@ const AdminDashboard = ({ session, onLogout }) => {
       showToast("Application rejected and applicant notified.");
     } catch (e) { showToast("❌ " + e.message, "error"); }
   };
-  const suspend = async userId => {
-    try {
-      const res = await api.suspendUser(userId);
-      setUsers(l => l.map(u => u.id === userId
-        ? { ...u, is_active: res.is_active, suspended_at: res.suspended_at ?? u.suspended_at }
-        : u));
-      showToast(res.is_active ? "✅ User restored." : "⚠️ User suspended — will be deleted in 24 hrs.");
-    } catch { showToast("❌ Failed to update user.", "error"); }
+  // Suspend routes through confirm modal for active→suspended; restore is instant
+  const suspend = userId => {
+    const u = users.find(u => u.id === userId);
+    if (u?.is_active) {
+      setConfirmModal({ action: "suspend", userId, userName: u.name || "this user" });
+    } else {
+      api.suspendUser(userId)
+        .then(res => {
+          setUsers(l => l.map(u => u.id === userId
+            ? { ...u, is_active: res.is_active, suspended_at: res.suspended_at ?? u.suspended_at }
+            : u));
+          showToast("✅ User restored.");
+        })
+        .catch(() => showToast("❌ Failed to restore user.", "error"));
+    }
   };
 
-  const deleteUser = async userId => {
-    if (!window.confirm("Permanently delete this user? This cannot be undone.")) return;
+  // Delete always requires confirmation
+  const deleteUser = userId => {
+    const u = users.find(u => u.id === userId);
+    setConfirmModal({ action: "delete", userId, userName: u?.name || "this user" });
+  };
+
+  /* ── Execute the action confirmed in the modal ── */
+  const executeConfirm = async () => {
+    if (!confirmModal) return;
+    setConfirmLoading(true);
+    const { action, userId, userIds } = confirmModal;
     try {
-      await api.deleteUser(userId);
-      setUsers(l => l.filter(u => u.id !== userId));
-      showToast("🗑️ User deleted.");
-    } catch (e) { showToast("❌ " + e.message, "error"); }
+      if (action === "suspend") {
+        const res = await api.suspendUser(userId);
+        setUsers(l => l.map(u => u.id === userId
+          ? { ...u, is_active: res.is_active, suspended_at: res.suspended_at ?? u.suspended_at }
+          : u));
+        showToast("⚠️ User suspended — will be deleted in 24 hrs.");
+      } else if (action === "delete") {
+        await api.deleteUser(userId);
+        setUsers(l => l.filter(u => u.id !== userId));
+        showToast("🗑️ User permanently deleted.");
+      } else if (action === "bulk_suspend") {
+        const ids = [...userIds];
+        await Promise.allSettled(ids.map(id => api.suspendUser(id)));
+        setUsers(l => l.map(u => userIds.has(u.id)
+          ? { ...u, is_active: false, suspended_at: new Date().toISOString() } : u));
+        setSelectedUsers(new Set());
+        showToast(`⚠️ ${ids.length} user${ids.length !== 1 ? "s" : ""} suspended.`);
+      } else if (action === "bulk_delete") {
+        const ids = [...userIds];
+        const results = await Promise.allSettled(ids.map(id => api.deleteUser(id)));
+        const deleted  = ids.filter((_, i) => results[i].status === "fulfilled");
+        setUsers(l => l.filter(u => !deleted.includes(u.id)));
+        setSelectedUsers(new Set());
+        showToast(`🗑️ ${deleted.length} user${deleted.length !== 1 ? "s" : ""} deleted.`);
+      }
+    } catch (e) { showToast("❌ " + (e.message || "Action failed."), "error"); }
+    setConfirmLoading(false);
+    setConfirmModal(null);
+  };
+
+  /* ── Bulk action entry-points ── */
+  const handleBulkSuspend = () => {
+    if (!selectedUsers.size) return;
+    setConfirmModal({ action: "bulk_suspend", userIds: new Set(selectedUsers), count: selectedUsers.size });
+  };
+  const handleBulkDelete = () => {
+    if (!selectedUsers.size) return;
+    const hasActive = [...selectedUsers].some(id => users.find(u => u.id === id)?.is_active);
+    if (hasActive) { showToast("⚠️ Bulk delete only works on already-suspended users. Suspend them first.", "error"); return; }
+    setConfirmModal({ action: "bulk_delete", userIds: new Set(selectedUsers), count: selectedUsers.size });
   };
 
   const saveEditUser = async () => {
@@ -1558,22 +1631,30 @@ const AdminDashboard = ({ session, onLogout }) => {
     setEditUserSaving(false);
   };
 
-  // Returns a human-readable countdown for suspended_at timestamp
+  // Real-time deletion countdown — driven by the `now` ticker (updates every 60 s)
   const deletionCountdown = suspendedAt => {
     if (!suspendedAt) return null;
     const deletesAt = new Date(new Date(suspendedAt).getTime() + 24 * 60 * 60 * 1000);
-    const msLeft = deletesAt - Date.now();
-    if (msLeft <= 0) return "Deletes soon";
-    const h = Math.floor(msLeft / 3600000);
-    const m = Math.floor((msLeft % 3600000) / 60000);
-    if (h > 0) return `🗑️ Deletes in ${h}h ${m}m`;
-    return `🗑️ Deletes in ${m}m`;
+    const msLeft = deletesAt - now;
+    if (msLeft <= 0) return "🗑️ Deletes imminently";
+    const h   = Math.floor(msLeft / 3_600_000);
+    const m   = Math.floor((msLeft % 3_600_000) / 60_000);
+    const at  = deletesAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const day = deletesAt.toDateString() !== new Date().toDateString()
+      ? ` ${deletesAt.toLocaleDateString([], { month:"short", day:"numeric" })}` : "";
+    if (h >= 1) return `🗑️ Deletes in ${h}h ${m}m (at ${at}${day})`;
+    return `🗑️ Deletes in ${m}m (at ${at})`;
   };
 
   const filteredUsers = users.filter(u =>
     (roleFilter === "All" || u.role === roleFilter.toLowerCase() || u.professional_profiles?.[0]?.sub_role === roleFilter) &&
     (!search || u.name?.toLowerCase().includes(search.toLowerCase()) || u.phone?.includes(search))
   );
+  const pageCount      = Math.ceil(filteredUsers.length / PAGE_SIZE);
+  const paginatedUsers = filteredUsers.slice((userPage - 1) * PAGE_SIZE, userPage * PAGE_SIZE);
+
+  // Short date formatter used in user cards
+  const fmtShort = d => { try { return new Date(d).toLocaleDateString(undefined, { day:"numeric", month:"short", year:"numeric" }); } catch { return "—"; } };
 
   const NAV = [
     { id:"overview", icon:"📊", label:"Overview" },
@@ -1888,52 +1969,28 @@ const AdminDashboard = ({ session, onLogout }) => {
               </Modal>
             )}
 
-            {/* Edit User Modal — fix bad email / address */}
-            {editUserModal && (
-              <Modal title={`✏️ Edit User — ${editUserModal.name || editUserModal.id}`} onClose={() => { setEditUserModal(null); setEditUserForm({}); }}>
-                <p className="text-xs text-gray-400 mb-4">Correct bad data for this user. Leave a field unchanged to keep the current value.</p>
-                <Inp label="Full Name" defaultValue={editUserModal.name || ""} onChange={e => setEditUserForm(f => ({ ...f, name: e.target.value }))} placeholder="Full name" />
-                <div className="mb-3">
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
-                  <input
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all bg-white"
-                    defaultValue={editUserModal.email || ""}
-                    onChange={e => setEditUserForm(f => ({ ...f, email: e.target.value }))}
-                    placeholder="correct@email.com"
-                    type="email"
-                  />
-                  {editUserModal.email && (
-                    <p className="text-xs text-amber-600 mt-1">Current: <strong>{editUserModal.email}</strong> {editUserModal.email.endsWith('.conm') || editUserModal.email.endsWith('.con') ? '⚠️ Bad TLD' : ''}</p>
-                  )}
-                </div>
-                <Inp label="Address" defaultValue={editUserModal.address || ""} onChange={e => setEditUserForm(f => ({ ...f, address: e.target.value }))} placeholder="Full address" />
-                <div className="grid grid-cols-2 gap-3">
-                  <Inp label="City" defaultValue={editUserModal.city || ""} onChange={e => setEditUserForm(f => ({ ...f, city: e.target.value }))} placeholder="City" />
-                  <Inp label="Pincode" defaultValue={editUserModal.pincode || ""} onChange={e => setEditUserForm(f => ({ ...f, pincode: e.target.value }))} placeholder="Pincode" />
-                </div>
-                <Inp label="Area / Locality" defaultValue={editUserModal.area || ""} onChange={e => setEditUserForm(f => ({ ...f, area: e.target.value }))} placeholder="Area" />
-                <div className="flex gap-3 mt-2">
-                  <button onClick={() => { setEditUserModal(null); setEditUserForm({}); }} className="flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
-                  <button onClick={saveEditUser} disabled={editUserSaving} className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition">
-                    {editUserSaving ? "Saving…" : "💾 Save Changes"}
-                  </button>
-                </div>
-              </Modal>
-            )}
           </div>
         )}
 
         {view === "users" && (
           <div className="max-w-2xl mx-auto px-4 py-5">
+
+            {/* ── Header ── */}
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-xl font-extrabold text-gray-800">Users</h1>
-              <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full font-semibold">{users.length} total</span>
+              <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full font-semibold">
+                {filteredUsers.length} / {users.length} total
+              </span>
             </div>
+
+            {/* ── Search ── */}
             <div className="relative mb-3">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or phone…"
                 className="w-full border border-gray-200 rounded-2xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition"/>
             </div>
+
+            {/* ── Role filter chips ── */}
             <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1">
               {["All","customer","Groomer","Trainer","Vet"].map(r => (
                 <button key={r} onClick={() => setRoleFilter(r)}
@@ -1942,102 +1999,235 @@ const AdminDashboard = ({ session, onLogout }) => {
                 </button>
               ))}
             </div>
+
+            {/* ── Sticky bulk action bar (appears on selection) ── */}
+            {selectedUsers.size > 0 && (
+              <div className="bg-gray-900 text-white rounded-2xl px-4 py-3 mb-4 flex items-center justify-between gap-3 sticky top-4 z-30 shadow-2xl">
+                <span className="text-sm font-bold shrink-0">
+                  {selectedUsers.size} user{selectedUsers.size !== 1 ? "s" : ""} selected
+                </span>
+                <div className="flex gap-2 flex-wrap justify-end">
+                  <button onClick={handleBulkSuspend}
+                    className="text-xs font-bold px-3 py-2 bg-amber-500 hover:bg-amber-600 rounded-xl transition">
+                    ⏸ Suspend All
+                  </button>
+                  <button onClick={handleBulkDelete}
+                    className="text-xs font-bold px-3 py-2 bg-red-600 hover:bg-red-700 rounded-xl transition">
+                    🗑️ Delete All
+                  </button>
+                  <button onClick={() => setSelectedUsers(new Set())}
+                    className="text-xs font-semibold px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition">
+                    ✕ Clear
+                  </button>
+                </div>
+              </div>
+            )}
+
             {filteredUsers.length === 0 ? <EmptyState icon="👥" title="No users found" desc="Try a different search or filter."/> : (
-              <div className="space-y-2">
-                {filteredUsers.map(u => {
-                  const proRole = u.professional_profiles?.[0]?.sub_role;
-                  const verStatus = u.professional_profiles?.[0]?.verification_status;
-                  const custDoc = u.customer_profiles?.[0];
-                  const hasCustDoc = custDoc?.id_photo_url;
-                  const openCustDoc = async () => {
-                    try { const r = await api.getSignedDocUrl(custDoc.id_photo_url); window.open(r.url, "_blank", "noopener,noreferrer"); }
-                    catch { showToast("❌ Could not load document", "error"); }
-                  };
-                  return (
-                    <div key={u.id} className={`bg-white rounded-2xl border shadow-sm p-4 ${!u.is_active ? "border-red-100 bg-red-50/30" : "border-gray-100"}`}>
-                      {/* Top row: avatar + info + status */}
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-lg shrink-0 mt-0.5">{rIcon(proRole || u.role)}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-sm text-gray-800 truncate">{u.name || "—"}</div>
-                          <div className="text-xs text-gray-400 capitalize truncate">{proRole || u.role} · {u.phone}</div>
-                          {u.email && <div className="text-xs text-gray-400 truncate">{u.email}</div>}
-                          <div className="flex flex-wrap gap-1.5 mt-1.5">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${sColor(u.is_active ? "active" : "suspended")}`}>
-                              {u.is_active ? "active" : "suspended"}
-                            </span>
-                            {proRole && verStatus && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${sColor(verStatus)}`}>{verStatus}</span>}
-                            {hasCustDoc && <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-600 border-blue-200">🪪 ID on file</span>}
+              <>
+                {/* ── Select all on this page ── */}
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <input type="checkbox" className="w-4 h-4 accent-orange-500 cursor-pointer"
+                    checked={paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u.id))}
+                    onChange={e => {
+                      const next = new Set(selectedUsers);
+                      if (e.target.checked) paginatedUsers.forEach(u => next.add(u.id));
+                      else paginatedUsers.forEach(u => next.delete(u.id));
+                      setSelectedUsers(next);
+                    }}
+                  />
+                  <span className="text-xs text-gray-400 font-medium">
+                    Select all on page {userPage} ({paginatedUsers.length})
+                  </span>
+                </div>
+
+                {/* ── User cards ── */}
+                <div className="space-y-2">
+                  {paginatedUsers.map(u => {
+                    const proRole    = u.professional_profiles?.[0]?.sub_role;
+                    const verStatus  = u.professional_profiles?.[0]?.verification_status;
+                    const custDoc    = u.customer_profiles?.[0];
+                    const hasCustDoc = custDoc?.id_photo_url;
+                    const isSelected = selectedUsers.has(u.id);
+
+                    const openCustDoc = async () => {
+                      try { const r = await api.getSignedDocUrl(custDoc.id_photo_url); window.open(r.url, "_blank", "noopener,noreferrer"); }
+                      catch { showToast("❌ Could not load document", "error"); }
+                    };
+
+                    return (
+                      <div key={u.id} className={`bg-white rounded-2xl border shadow-sm p-4 transition-all ${
+                        isSelected ? "border-orange-300 ring-2 ring-orange-100 bg-orange-50/20" :
+                        !u.is_active ? "border-red-100 bg-red-50/30" : "border-gray-100"
+                      }`}>
+
+                        {/* Top row: checkbox + avatar + info */}
+                        <div className="flex items-start gap-3">
+                          {/* Checkbox */}
+                          <div className="pt-0.5 shrink-0">
+                            <input type="checkbox" className="w-4 h-4 accent-orange-500 cursor-pointer"
+                              checked={isSelected}
+                              onChange={e => {
+                                const next = new Set(selectedUsers);
+                                if (e.target.checked) next.add(u.id); else next.delete(u.id);
+                                setSelectedUsers(next);
+                              }}
+                            />
                           </div>
-                          {!u.is_active && u.suspended_at && (
-                            <div className="text-xs font-semibold text-red-500 mt-1">{deletionCountdown(u.suspended_at)}</div>
+                          {/* Avatar */}
+                          <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-lg shrink-0 mt-0.5">
+                            {rIcon(proRole || u.role)}
+                          </div>
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-sm text-gray-800 truncate">{u.name || "—"}</div>
+                            <div className="text-xs text-gray-400 capitalize truncate">{proRole || u.role} · {u.phone}</div>
+                            {u.email && <div className="text-xs text-gray-400 truncate">{u.email}</div>}
+
+                            {/* Date Registered + Last Active */}
+                            <div className="flex flex-wrap gap-x-3 mt-1 text-[11px] text-gray-400">
+                              {u.created_at && <span title="Date Registered">📅 Joined {fmtShort(u.created_at)}</span>}
+                              {(u.updated_at || u.last_active_at) &&
+                                <span title="Last Active">🕐 Active {fmtShort(u.last_active_at || u.updated_at)}</span>}
+                            </div>
+
+                            {/* Status badges */}
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${sColor(u.is_active ? "active" : "suspended")}`}>
+                                {u.is_active ? "active" : "suspended"}
+                              </span>
+                              {proRole && verStatus &&
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${sColor(verStatus)}`}>{verStatus}</span>}
+                              {hasCustDoc &&
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-600 border-blue-200">🪪 ID on file</span>}
+                            </div>
+
+                            {/* Real-time deletion countdown */}
+                            {!u.is_active && u.suspended_at && (
+                              <div className="text-xs font-semibold text-red-500 mt-1">
+                                {deletionCountdown(u.suspended_at)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action row */}
+                        <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-50">
+                          {hasCustDoc && (
+                            <button onClick={openCustDoc}
+                              className="text-xs font-bold px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition">
+                              🪪 View ID
+                            </button>
+                          )}
+                          {custDoc && custDoc.id_doc_type && !hasCustDoc && (
+                            <span className="text-xs text-gray-400 px-2 py-1.5">{custDoc.id_doc_type}: {custDoc.id_doc_number || "—"} (no photo)</span>
+                          )}
+
+                          {/* Edit */}
+                          <button onClick={() => {
+                            const cp = u.customer_profiles?.[0] || {};
+                            const pp = u.professional_profiles?.[0] || {};
+                            setEditUserModal({ id: u.id, name: u.name, email: u.email,
+                              address: cp.address || pp.address || "",
+                              city: cp.city || pp.city || "",
+                              area: cp.area || pp.area || "",
+                              pincode: cp.pincode || "" });
+                            setEditUserForm({});
+                          }}
+                            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                            ✏️ Edit
+                          </button>
+
+                          {/* Suspend / Restore */}
+                          <button onClick={() => suspend(u.id)}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${u.is_active ? "border-red-200 text-red-500 hover:bg-red-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>
+                            {u.is_active ? "⏸ Suspend" : "▶ Restore"}
+                          </button>
+
+                          {/* Delete (suspended only) */}
+                          {!u.is_active && (
+                            <button onClick={() => deleteUser(u.id)}
+                              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 transition">
+                              🗑️ Delete
+                            </button>
+                          )}
+
+                          {/* Clean role assignment popover — replaces the raw <select> */}
+                          {u.role === "professional" && !proRole && (
+                            <div className="relative">
+                              <button onClick={() => setRolePopover(rp => rp === u.id ? null : u.id)}
+                                className="text-xs font-bold px-3 py-1.5 rounded-lg border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 transition flex items-center gap-1">
+                                🏷 Assign Role <span className="text-[10px]">{rolePopover === u.id ? "▲" : "▼"}</span>
+                              </button>
+                              {rolePopover === u.id && (
+                                <>
+                                  <div className="fixed inset-0 z-30" onClick={() => setRolePopover(null)} />
+                                  <div className="absolute left-0 bottom-full mb-1 bg-white border border-gray-200 rounded-2xl shadow-2xl z-40 min-w-[168px] py-1.5 overflow-hidden">
+                                    {[["Groomer","✂️"],["Trainer","🐕‍🦺"],["Vet","🏥"]].map(([role, icon]) => (
+                                      <button key={role}
+                                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition text-left"
+                                        onClick={async () => {
+                                          setRolePopover(null);
+                                          try {
+                                            await api.setUserSubRole(u.id, role);
+                                            setUsers(l => l.map(x => x.id === u.id
+                                              ? { ...x, professional_profiles: [{ ...(x.professional_profiles?.[0] || {}), sub_role: role }] }
+                                              : x));
+                                            showToast(`✅ Set as ${role}`);
+                                          } catch (err) { showToast("❌ " + (err.message || "Failed"), "error"); }
+                                        }}>
+                                        <span>{icon}</span> {role}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
-                      {/* Action row */}
-                      <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-50">
-                        {/* Customer document viewing */}
-                        {hasCustDoc && (
-                          <button onClick={openCustDoc}
-                            className="text-xs font-bold px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition flex items-center gap-1">
-                            🪪 View ID
-                          </button>
-                        )}
-                        {custDoc && custDoc.id_doc_type && !hasCustDoc && (
-                          <span className="text-xs text-gray-400 px-2 py-1.5">{custDoc.id_doc_type}: {custDoc.id_doc_number || '—'} (no photo)</span>
-                        )}
-                        {/* Edit user profile (fix bad email / address) */}
-                        <button onClick={() => {
-                          const cp = u.customer_profiles?.[0] || {};
-                          const pp = u.professional_profiles?.[0] || {};
-                          setEditUserModal({ id: u.id, name: u.name, email: u.email,
-                            address: cp.address || pp.address || "",
-                            city: cp.city || pp.city || "",
-                            area: cp.area || pp.area || "",
-                            pincode: cp.pincode || "" });
-                          setEditUserForm({});
-                        }}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
-                          ✏️ Edit
-                        </button>
-                        {/* Suspend / Restore */}
-                        <button onClick={() => suspend(u.id)}
-                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${u.is_active ? "border-red-200 text-red-500 hover:bg-red-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>
-                          {u.is_active ? "Suspend" : "Restore"}
-                        </button>
-                        {/* Delete (suspended only) */}
-                        {!u.is_active && (
-                          <button onClick={() => deleteUser(u.id)}
-                            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 transition">
-                            🗑️ Delete
-                          </button>
-                        )}
-                        {/* Role assignment dropdown for professionals without sub_role */}
-                        {u.role === "professional" && !proRole && (
-                          <select
-                            defaultValue=""
-                            onChange={async e => {
-                              if (!e.target.value) return;
-                              try {
-                                await api.setUserSubRole(u.id, e.target.value);
-                                setUsers(l => l.map(x => x.id === u.id
-                                  ? { ...x, professional_profiles: [{ ...(x.professional_profiles?.[0] || {}), sub_role: e.target.value }] }
-                                  : x));
-                                showToast(`✅ Set as ${e.target.value}`);
-                              } catch (err) { showToast("❌ " + (err.message || "Failed"), "error"); }
-                            }}
-                            className="text-xs border border-orange-200 text-orange-600 rounded-lg px-2 py-1.5 bg-orange-50 cursor-pointer font-semibold">
-                            <option value="">Set role…</option>
-                            <option value="Groomer">✂️ Groomer</option>
-                            <option value="Trainer">🐕‍🦺 Trainer</option>
-                            <option value="Vet">🏥 Vet</option>
-                          </select>
-                        )}
-                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ── Pagination ── */}
+                {pageCount > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                    <button onClick={() => setUserPage(p => Math.max(1, p - 1))} disabled={userPage === 1}
+                      className="px-4 py-2 text-xs font-semibold rounded-xl border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition">
+                      ← Prev
+                    </button>
+                    <div className="flex gap-1">
+                      {(() => {
+                        // Show up to 7 page numbers, windowed around current page
+                        const total = pageCount;
+                        const pages = total <= 7
+                          ? Array.from({ length: total }, (_, i) => i + 1)
+                          : userPage <= 4
+                            ? [...Array.from({ length: 5 }, (_, i) => i + 1), "…", total]
+                            : userPage >= total - 3
+                              ? [1, "…", ...Array.from({ length: 5 }, (_, i) => total - 4 + i)]
+                              : [1, "…", userPage - 1, userPage, userPage + 1, "…", total];
+                        return pages.map((p, i) =>
+                          p === "…"
+                            ? <span key={`e${i}`} className="w-8 h-8 flex items-center justify-center text-xs text-gray-400">…</span>
+                            : <button key={p} onClick={() => setUserPage(p)}
+                                className={`w-8 h-8 text-xs font-bold rounded-xl transition ${userPage === p ? "bg-orange-500 text-white shadow-sm" : "border border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+                                {p}
+                              </button>
+                        );
+                      })()}
                     </div>
-                  );
-                })}
-              </div>
+                    <button onClick={() => setUserPage(p => Math.min(pageCount, p + 1))} disabled={userPage === pageCount}
+                      className="px-4 py-2 text-xs font-semibold rounded-xl border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition">
+                      Next →
+                    </button>
+                    <span className="w-full text-center text-xs text-gray-400 mt-1">
+                      Page {userPage} of {pageCount} · {filteredUsers.length} users
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -2241,6 +2431,122 @@ const AdminDashboard = ({ session, onLogout }) => {
           </button>
         ))}
       </nav>
+
+      {/* ══ GLOBAL CONFIRM MODAL ══════════════════════════════════════════════
+          Used for Suspend, Delete, Bulk Suspend, and Bulk Delete.
+          Rendered at the root level so it overlays all views correctly.     */}
+      {confirmModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99998] flex items-center justify-center p-4"
+          onClick={() => !confirmLoading && setConfirmModal(null)}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl p-7 max-w-sm w-full"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Icon */}
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 ${
+              confirmModal.action.includes("delete") ? "bg-red-100" : "bg-amber-100"
+            }`}>
+              {confirmModal.action.includes("delete") ? "🗑️" : "⏸"}
+            </div>
+
+            {/* Title */}
+            <h3 className="text-lg font-extrabold text-gray-900 text-center mb-2">
+              {confirmModal.action === "suspend"      && "Suspend User?"}
+              {confirmModal.action === "delete"       && "Delete User?"}
+              {confirmModal.action === "bulk_suspend" && `Suspend ${confirmModal.count} Users?`}
+              {confirmModal.action === "bulk_delete"  && `Delete ${confirmModal.count} Users?`}
+            </h3>
+
+            {/* Body */}
+            <p className="text-sm text-gray-500 text-center mb-6 leading-relaxed">
+              {confirmModal.action === "suspend" && (
+                <>Are you sure you want to suspend <strong className="text-gray-800">{confirmModal.userName}</strong>?
+                  They will be locked out and permanently deleted after 24 hours if not restored.</>
+              )}
+              {confirmModal.action === "delete" && (
+                <>Permanently delete <strong className="text-gray-800">{confirmModal.userName}</strong>?
+                  All data for this account will be removed. This cannot be undone.</>
+              )}
+              {confirmModal.action === "bulk_suspend" && (
+                <>Suspend all <strong className="text-gray-800">{confirmModal.count} selected users</strong>?
+                  They will be locked out and scheduled for deletion in 24 hours.</>
+              )}
+              {confirmModal.action === "bulk_delete" && (
+                <>Permanently delete all <strong className="text-gray-800">{confirmModal.count} selected users</strong>?
+                  This action cannot be undone.</>
+              )}
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal(null)}
+                disabled={confirmLoading}
+                className="flex-1 border-2 border-gray-200 text-gray-600 font-bold py-3 rounded-2xl text-sm hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeConfirm}
+                disabled={confirmLoading}
+                className={`flex-1 font-bold py-3 rounded-2xl text-sm text-white transition disabled:opacity-60 ${
+                  confirmModal.action.includes("delete")
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-amber-500 hover:bg-amber-600"
+                }`}
+              >
+                {confirmLoading
+                  ? "Processing…"
+                  : confirmModal.action.includes("delete") ? "🗑️ Delete" : "⏸ Suspend"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ GLOBAL EDIT USER MODAL ═══════════════════════════════════════════
+          Moved here from inside the verify view (where it was unreachable).
+          The Edit button lives in the users view, so the modal must be global. */}
+      {editUserModal && (
+        <Modal title={`✏️ Edit User — ${editUserModal.name || editUserModal.id}`} onClose={() => { setEditUserModal(null); setEditUserForm({}); }}>
+          <p className="text-xs text-gray-400 mb-4">Correct bad data for this user. Leave a field unchanged to keep the current value.</p>
+          <Inp label="Full Name" defaultValue={editUserModal.name || ""} onChange={e => setEditUserForm(f => ({ ...f, name: e.target.value }))} placeholder="Full name" />
+          <div className="mb-3">
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+            <input
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all bg-white"
+              defaultValue={editUserModal.email || ""}
+              onChange={e => setEditUserForm(f => ({ ...f, email: e.target.value }))}
+              placeholder="correct@email.com"
+              type="email"
+            />
+            {editUserModal.email && (
+              <p className="text-xs text-amber-600 mt-1">
+                Current: <strong>{editUserModal.email}</strong>
+                {(editUserModal.email.endsWith(".conm") || editUserModal.email.endsWith(".con")) && " ⚠️ Bad TLD"}
+              </p>
+            )}
+          </div>
+          <Inp label="Address" defaultValue={editUserModal.address || ""} onChange={e => setEditUserForm(f => ({ ...f, address: e.target.value }))} placeholder="Full address" />
+          <div className="grid grid-cols-2 gap-3">
+            <Inp label="City"    defaultValue={editUserModal.city    || ""} onChange={e => setEditUserForm(f => ({ ...f, city:    e.target.value }))} placeholder="City" />
+            <Inp label="Pincode" defaultValue={editUserModal.pincode || ""} onChange={e => setEditUserForm(f => ({ ...f, pincode: e.target.value }))} placeholder="Pincode" />
+          </div>
+          <Inp label="Area / Locality" defaultValue={editUserModal.area || ""} onChange={e => setEditUserForm(f => ({ ...f, area: e.target.value }))} placeholder="Area" />
+          <div className="flex gap-3 mt-2">
+            <button onClick={() => { setEditUserModal(null); setEditUserForm({}); }}
+              className="flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50">
+              Cancel
+            </button>
+            <button onClick={saveEditUser} disabled={editUserSaving}
+              className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition">
+              {editUserSaving ? "Saving…" : "💾 Save Changes"}
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

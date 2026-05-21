@@ -10,8 +10,14 @@ import { clearToken, api } from "./api.js";
 import { initPushNotifications } from "./firebase.js";
 
 /* ── Inactivity config ── */
-const LOGOUT_AFTER = 8 * 60 * 1000;  // 8 min total inactivity → logout
-const WARN_BEFORE  = 60 * 1000;       // show warning 60s before logout (at 7 min)
+// Admin users often monitor passively (dashboard, live trips) so give them
+// a longer window before auto-logout. Regular users keep the tighter 8-min limit.
+// PWA note: localStorage persists across home-screen launches, so the session
+// survives app close/reopen. The timer resets on the first touch/click after
+// relaunch, giving the full window from that point — no aggressive logout on refresh.
+const LOGOUT_AFTER_ADMIN = 60 * 60 * 1000; // 60 min for admin
+const LOGOUT_AFTER_USER  =  8 * 60 * 1000; //  8 min for customers / pros
+const WARN_BEFORE        = 60 * 1000;       // show warning 60s before logout
 
 // Pending approval screen for professionals
 function PendingApproval({ session, onLogout, onApproved }) {
@@ -103,6 +109,18 @@ function Root() {
   const [warnVisible, setWarnVisible] = useState(false);
   const [countdown, setCountdown]   = useState(60);
 
+  /* ── Dynamic robots meta tag ─────────────────────────────────────────────
+   * The public landing page (showLanding && !session) should be indexed by
+   * Google. Every authenticated route — including the admin portal — stays
+   * noindex. The <meta> tag in index.html defaults to "noindex, nofollow"
+   * so search engines are safe even before JS executes.                   */
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="robots"]');
+    if (!meta) return;
+    const isPublicLanding = !session && showLanding;
+    meta.setAttribute('content', isPublicLanding ? 'index, follow' : 'noindex, nofollow');
+  }, [session, showLanding]);
+
   /* ── Wipe stale service workers when user is not logged in ──────────────────
    * Service workers persist across sessions. A stale SW from a previous build
    * can intercept auth API requests and return fabricated 405 errors before the
@@ -149,6 +167,11 @@ function Root() {
     clearTimeout(warnTimerRef.current);
     clearInterval(countdownRef.current);
     setWarnVisible(false);
+
+    // Role-aware timeout: admin gets 60 min, everyone else 8 min
+    const LOGOUT_AFTER = sessionRef.current?.role === 'admin'
+      ? LOGOUT_AFTER_ADMIN
+      : LOGOUT_AFTER_USER;
 
     // Show "Still there?" warning 60 s before logout
     warnTimerRef.current = setTimeout(() => {

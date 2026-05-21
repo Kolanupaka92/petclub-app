@@ -4,12 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
-    <!-- Primary Meta -->
-    <title>PETclub Portal — On-Demand Pet Care Platform</title>
-    <meta name="description" content="Access your PETclub account. Book grooming, training, and vet services, track active appointments live, and manage your custom pet profiles." />
-    <meta name="keywords" content="pet care app, dog grooming at home, pet training, vet doctor home visit, live track groomer, professional pet services, PETclub" />
-    <meta name="author" content="PETclub" />
+    <!--
+      robots: "noindex, nofollow" is the safe default for this authenticated SPA.
+      The React app (src/main.jsx) dynamically switches this to "index, follow"
+      on the public landing page so search engines can crawl the marketing content.
+      Every authenticated route keeps noindex regardless of what React renders.
+    -->
     <meta name="robots" content="noindex, nofollow" />
+
+    <title>PETclub Portal — On-Demand Pet Care Platform</title>
+    <meta name="description" content="Access your PETclub account. Book grooming, training, and vet services, track active appointments live, and manage your pet profiles." />
+    <meta name="author" content="PETclub" />
+
+    <!--
+      Performance: preconnect to our API and Firebase CDN early so TLS handshakes
+      are complete before the first JS fetch fires.
+
+      JS + CSS bundle preloads are injected automatically by Vite at build time
+      (rel="modulepreload" for the entry chunk, rel="stylesheet" for CSS).
+      Hardcoding hashed filenames here (e.g. /assets/index-CuiMd8V-.js) would
+      break on every rebuild — Vite handles module preloading correctly already.
+    -->
+    <link rel="preconnect" href="https://api.mypetclub.app" crossorigin />
+    <link rel="dns-prefetch" href="https://api.mypetclub.app" />
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
@@ -21,46 +39,62 @@
 
     <!-- Icons -->
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
+    <!--
+      apple-touch-icon: iOS silently ignores SVGs for home-screen icons and falls
+      back to a screenshot. A 180×180 PNG is required for a proper icon.
+      Generate it once: npx sharp-cli -i public/icon.svg -o public/apple-touch-icon.png resize 180 180
+      Then commit /public/apple-touch-icon.png to the repo.
+    -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://mypetclub.app" />
-    <meta property="og:title" content="PETclub Portal — Complete On-Demand Pet Care" />
-    <meta property="og:description" content="Manage appointments, view medical special health notes, and track your provider live in real time." />
-    <meta property="og:image" content="https://mypetclub.app/og-image.svg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:locale:alternate" content="en_IN" />
-    <meta property="og:site_name" content="PETclub" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="PETclub — On-Demand Dog Grooming, Training &amp; Vet Care" />
-    <meta name="twitter:description" content="Book certified grooming, training, and vet care with real-time tracking and secure provider verification." />
-    <meta name="twitter:image" content="https://mypetclub.app/og-image.svg" />
-
-    <!-- Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "MobileApplication",
-      "name": "PETclub",
-      "url": "https://mypetclub.app",
-      "applicationCategory": "LifestyleApplication",
-      "operatingSystem": "Web, Android, iOS",
-      "description": "Global on-demand pet care platform supplying grooming, training, and vet care with live proximity tracking.",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-      "areaServed": [
-        { "@type": "AdministrativeArea", "name": "United States" },
-        { "@type": "AdministrativeArea", "name": "India" }
-      ]
-    }
-    </script>
+    <!--
+      Open Graph — kept even on a noindex page because messaging apps (WhatsApp,
+      iMessage, Slack) render OG previews without obeying robots meta.
+    -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://mypetclub.app" />
+    <meta property="og:title"       content="PETclub — On-Demand Pet Care" />
+    <meta property="og:description" content="Book certified grooming, training, and vet care with real-time provider tracking." />
+    <meta property="og:image"       content="https://mypetclub.app/og-image.png" />
+    <meta property="og:site_name"   content="PETclub" />
   </head>
+
   <body>
-    <div id="root"></div>
+
+    <!--
+      noscript: shown only when JS is disabled. Inline styles intentional — no
+      stylesheet is loaded at this point.
+    -->
+    <noscript>
+      <div style="font-family:system-ui,-apple-system,sans-serif;max-width:460px;margin:60px auto;padding:36px 32px;text-align:center;background:#fff8f0;border:1px solid #fed7aa;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,.07)">
+        <div style="font-size:52px;margin-bottom:16px">🐾</div>
+        <h2 style="margin:0 0 10px;color:#c2410c;font-size:20px;font-weight:800">JavaScript Required</h2>
+        <p style="margin:0;color:#7c2d12;font-size:14px;line-height:1.7">
+          PETclub is an interactive web app that requires JavaScript to run.<br />
+          Please enable JavaScript in your browser settings and reload this page.
+        </p>
+      </div>
+    </noscript>
+
+    <div id="root">
+      <!--
+        Inline loading shell — displayed while the React bundle parses and
+        renders for the first time. React replaces this entire div on mount,
+        so no cleanup is required. Inline styles are used to avoid a FOUC
+        dependency on an external stylesheet that hasn't loaded yet.
+      -->
+      <div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff8f0;gap:20px;font-family:system-ui,-apple-system,sans-serif">
+        <img src="/icon.svg" width="60" height="60" alt="PETclub"
+             style="border-radius:15px;box-shadow:0 4px 18px rgba(249,115,22,.28)" />
+        <div style="display:flex;gap:7px;align-items:center">
+          <span style="width:9px;height:9px;border-radius:50%;background:#f97316;display:inline-block;animation:_pcb 1.1s ease-in-out infinite;animation-delay:0s"></span>
+          <span style="width:9px;height:9px;border-radius:50%;background:#f97316;display:inline-block;animation:_pcb 1.1s ease-in-out infinite;animation-delay:.18s"></span>
+          <span style="width:9px;height:9px;border-radius:50%;background:#f97316;display:inline-block;animation:_pcb 1.1s ease-in-out infinite;animation-delay:.36s"></span>
+        </div>
+        <style>@keyframes _pcb{0%,100%{transform:translateY(0);opacity:.3}50%{transform:translateY(-9px);opacity:1}}</style>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
