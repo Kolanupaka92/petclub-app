@@ -22,7 +22,7 @@ const req = async (method, path, body, requireAuth = false) => {
     if (!res.ok) throw new Error(`Server error (${res.status}). Please try again.`);
     return {};
   }
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status}) [${res.url}]`);
   return data;
 };
 

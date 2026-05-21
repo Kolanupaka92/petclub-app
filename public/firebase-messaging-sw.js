@@ -6,6 +6,17 @@
  * It is auto-registered by src/firebase.js
  */
 
+// ── Self-update: skip the "waiting" phase so new SW versions activate immediately
+// on the next page load without requiring the user to close all tabs first.
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+// Claim all open clients immediately after activation so the new SW takes effect
+// in already-open tabs without a reload.
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 // Import Firebase scripts — these are loaded from Google's CDN in the service worker
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
