@@ -824,6 +824,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const cfg      = ROLE_CONFIG[subRole] || ROLE_CONFIG.Groomer;
   const idTypes  = getIdTypes(session.phone);
   const isIndia  = session.phone?.startsWith("+91");
+  const currencySymbol = isIndia ? "₹" : "$";
 
   const refreshRequests = () => api.getIncomingBookings().then(r => setRequests(r.bookings || [])).catch(() => {});
 
@@ -1105,7 +1106,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                           {bk.amount && (
                             <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-right">
                               <div className="text-xs text-emerald-600 font-medium">Earning</div>
-                              <div className="font-extrabold text-emerald-700 text-base">₹{bk.amount}</div>
+                              <div className="font-extrabold text-emerald-700 text-base">{currencySymbol}{bk.amount}</div>
                             </div>
                           )}
                         </div>
@@ -1193,7 +1194,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                         </div>
                         <Bdg text={b.status} cls={sColor(b.status)}/>
                       </div>
-                      {b.amount && <div className="text-sm font-bold text-gray-700 mb-2">₹{b.amount}</div>}
+                      {b.amount && <div className="text-sm font-bold text-gray-700 mb-2">{currencySymbol}{b.amount}</div>}
                       {/* ⚕️ Pet health notes — shown to assigned professional */}
                       {b.pets?.health_notes && (
                         <div className="bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mb-2">
@@ -1482,6 +1483,8 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [editUserSaving,setEditUserSaving]= useState(false);
   const [toast,      setToast]      = useState({ msg:"", type:"success" });
   const [health,     setHealth]     = useState(null);
+  const isIndia      = session.phone?.startsWith("+91");
+  const currencySymbol = isIndia ? "₹" : "$";
 
   /* ── Admin UX additions ── */
   const [confirmModal,   setConfirmModal]   = useState(null);   // { action, userId?, userName?, userIds?, count? }
@@ -1747,7 +1750,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                 <div>
                   <div className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">Total Revenue</div>
                   <div className="text-white text-3xl font-extrabold">
-                    ₹{(stats?.revenue ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.amount||0),0)).toLocaleString()}
+                    {currencySymbol}{(stats?.revenue ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.amount||0),0)).toLocaleString()}
                   </div>
                   <div className="text-gray-400 text-xs mt-1">{bookings.filter(b=>b.status==="completed").length} completed bookings</div>
                 </div>
@@ -2278,7 +2281,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                       </div>
                       <Bdg text={b.status} cls={sColor(b.status)}/>
                     </div>
-                    {b.amount && <div className="text-xs font-bold text-gray-700">₹{b.amount}</div>}
+                    {b.amount && <div className="text-xs font-bold text-gray-700">{currencySymbol}{b.amount}</div>}
                   </div>
                   );
                 })}
@@ -2411,7 +2414,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                           {/* Appointment details */}
                           <div className="mt-3 pt-3 border-t border-gray-50 flex items-center gap-4 text-xs text-gray-400">
                             {b.scheduled_at && <span>📅 {fmtDate(b.scheduled_at)} {fmtTime(b.scheduled_at)}</span>}
-                            {b.amount && <span>₹{b.amount}</span>}
+                            {b.amount && <span>{currencySymbol}{b.amount}</span>}
                             {b.ten_min_notified && <span className="text-amber-600 font-semibold">⏱ 10-min alert sent</span>}
                           </div>
                         </div>

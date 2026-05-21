@@ -94,6 +94,10 @@ function Toast({ msg, type, onDone }) {
 
 /* ══════════ MAIN APP ══════════ */
 export default function PetclubApp({ session, onLogout }) {
+  // Derive currency from phone prefix — instant, no API round-trip needed
+  // +91 → India (₹)  |  everything else → USA/international ($)
+  const currencySymbol = session?.phone?.startsWith("+91") ? "₹" : "$";
+
   const [pets, setPets] = useState(() => loadPets(INITIAL_PETS));
   const [apiMode, setApiMode] = useState(false);
   const [userInfo, setUserInfo] = useState({ name: session?.name, phone: session?.phone });
@@ -459,7 +463,7 @@ export default function PetclubApp({ session, onLogout }) {
                         <span className="inline-block w-1.5 h-1.5 bg-current rounded-full animate-bounce ml-1"/>
                       )}
                     </div>
-                    {b.amount && <div className="font-extrabold text-sm text-gray-700">₹{b.amount}</div>}
+                    {b.amount && <div className="font-extrabold text-sm text-gray-700">{currencySymbol}{b.amount}</div>}
                   </div>
 
                   <div className="p-4">
@@ -1040,7 +1044,7 @@ export default function PetclubApp({ session, onLogout }) {
           {activeTab==="food" && <Fld label="Quantity"><Inp placeholder="3 kg" value={form.qty||""} onChange={sf("qty")} /></Fld>}
           <div className="grid grid-cols-2 gap-3">
             <Fld label="Date *"><Inp type="date" max={today()} value={form.date||""} onChange={sf("date")} /></Fld>
-            <Fld label="Cost (₹/$)"><Inp placeholder="₹999" value={form.cost||""} onChange={sf("cost")} /></Fld>
+            <Fld label={`Cost (${currencySymbol})`}><Inp placeholder={`${currencySymbol}${currencySymbol === "₹" ? "999" : "29"}`} value={form.cost||""} onChange={sf("cost")} /></Fld>
           </div>
           {activeTab==="vet" && <Fld label="Next Due Date"><Inp type="date" value={form.nextDue||""} onChange={sf("nextDue")} /></Fld>}
           {(activeTab==="grooming"||activeTab==="training") && (
