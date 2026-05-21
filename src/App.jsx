@@ -587,6 +587,17 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
               ))}
             </div>
 
+            {/* Availability control highlight */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 mb-4">
+              <div className="flex items-start gap-2.5">
+                <span className="text-xl shrink-0">🟢</span>
+                <div>
+                  <strong className="block mb-1">Your schedule, your terms.</strong>
+                  Take total control of your schedule. Toggle your status to <strong>Active</strong> or <strong>Offline</strong> with a single tap to instantly manage your local 70 km radius booking broadcasts — no calls, no back-and-forth.
+                </div>
+              </div>
+            </div>
+
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 mb-5">
               <strong>⏳ What happens next?</strong><br/>
               Your profile will be reviewed within <strong>24–48 hours</strong>. We'll send you a confirmation by email and SMS once approved.

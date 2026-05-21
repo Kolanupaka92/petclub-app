@@ -1,6 +1,7 @@
 import { StrictMode, useState, useCallback, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
+import LandingPage from "./LandingPage.jsx";
 import Login from "./Login.jsx";
 import PetclubApp from "./PetclubApp.jsx";
 import ProApp from "./App.jsx";
@@ -98,6 +99,7 @@ function PendingApproval({ session, onLogout, onApproved }) {
 
 function Root() {
   const [session, setSession]       = useState(loadSession);
+  const [showLanding, setShowLanding] = useState(true); // public marketing page
   const [warnVisible, setWarnVisible] = useState(false);
   const [countdown, setCountdown]   = useState(60);
 
@@ -185,6 +187,7 @@ function Root() {
 
   const handleLogout = () => {
     doLogout();
+    setShowLanding(true); // return to public landing on sign-out
   };
 
   const handleApproved = useCallback((updatedSession) => {
@@ -194,7 +197,9 @@ function Root() {
   /* ── Route ── */
   let content;
   if (!session) {
-    content = <Login onLogin={handleLogin} />;
+    content = showLanding
+      ? <LandingPage onGetStarted={() => setShowLanding(false)} />
+      : <Login onLogin={handleLogin} />;
   } else {
     const { role, verificationStatus } = session;
     if (role === "customer") {
