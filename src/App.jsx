@@ -966,6 +966,12 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                             {pet && (
                               <div className="text-sm text-gray-500 mt-0.5">🐾 {pet.name} {pet.breed ? `· ${pet.breed}` : ""} {pet.species ? `(${pet.species})` : ""}</div>
                             )}
+                            {pet?.health_notes && (
+                              <div className="mt-1.5 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+                                <p className="text-xs font-bold text-rose-700 mb-0.5">⚕️ Health Notes</p>
+                                <p className="text-xs text-rose-800 leading-relaxed">{pet.health_notes}</p>
+                              </div>
+                            )}
                           </div>
                           {bk.amount && (
                             <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-right">
@@ -1059,6 +1065,13 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                         <Bdg text={b.status} cls={sColor(b.status)}/>
                       </div>
                       {b.amount && <div className="text-sm font-bold text-gray-700 mb-2">{b.amount}</div>}
+                      {/* ⚕️ Pet health notes — shown to assigned professional */}
+                      {b.pets?.health_notes && (
+                        <div className="bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mb-2">
+                          <p className="text-xs font-bold text-rose-700 mb-0.5">⚕️ {b.pets?.name || "Pet"} Health Notes</p>
+                          <p className="text-xs text-rose-800 leading-relaxed">{b.pets.health_notes}</p>
+                        </div>
+                      )}
                       {/* 🗺️ Navigate to customer — shown when coords available */}
                       {(b.address_lat && b.address_lng) && (
                         <a

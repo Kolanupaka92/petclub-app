@@ -178,6 +178,7 @@ export default function PetclubApp({ session, onLogout }) {
       color: form.color || "",
       chip: form.chip || "",
       insurance: form.insurance || "",
+      health_notes: form.health_notes || "",
     };
     try {
       let newPet;
@@ -206,6 +207,7 @@ export default function PetclubApp({ session, onLogout }) {
       color: form.color || "",
       chip: form.chip || "",
       insurance: form.insurance || "",
+      health_notes: form.health_notes || "",
     };
     try {
       if (apiMode) { await api.updatePet(activePetId, data).catch(() => {}); }
@@ -758,11 +760,17 @@ export default function PetclubApp({ session, onLogout }) {
               </div>
               {pet.chip && <p className="text-xs text-gray-500 mt-1.5">🔖 Chip: <span className="font-mono">{pet.chip}</span></p>}
               {pet.insurance && <p className="text-xs text-gray-500 mt-0.5">🛡️ {pet.insurance}</p>}
+              {pet.health_notes && (
+                <div className="mt-2 bg-rose-50/80 border border-rose-200 rounded-xl px-3 py-2">
+                  <p className="text-xs font-bold text-rose-700 mb-0.5">⚕️ Health Notes</p>
+                  <p className="text-xs text-rose-800 leading-relaxed">{pet.health_notes}</p>
+                </div>
+              )}
             </div>
           </div>
           <button
             onClick={() => {
-              setForm({ name: pet.name, species: pet.species, breed: pet.breed, age: pet.age, dob: pet.dob, weight: pet.weight, gender: pet.gender, color: pet.color, chip: pet.chip, insurance: pet.insurance });
+              setForm({ name: pet.name, species: pet.species, breed: pet.breed, age: pet.age, dob: pet.dob, weight: pet.weight, gender: pet.gender, color: pet.color, chip: pet.chip, insurance: pet.insurance, health_notes: pet.health_notes || "" });
               setModal("editPet");
             }}
             className="mt-3 w-full bg-white/60 hover:bg-white/80 text-gray-700 font-bold py-2 rounded-xl text-xs transition-all border border-white/40">
@@ -982,6 +990,9 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
           <Fld label="Microchip ID"><Inp placeholder="15-digit chip number" value={form.chip||""} onChange={sf("chip")} /></Fld>
           <Fld label="Insurance Provider"><Inp placeholder="e.g. PetSure (optional)" value={form.insurance||""} onChange={sf("insurance")} /></Fld>
+          <Fld label="Health Notes / Special Conditions">
+            <Txta placeholder="e.g. Allergic to chicken, arthritis in rear legs, on heart medication — this is shared with your assigned provider before appointments" value={form.health_notes||""} onChange={sf("health_notes")} rows={3} />
+          </Fld>
           <button onClick={addPet} disabled={!form.name?.trim()} className="btn-primary mt-2">Add Pet 🐾</button>
         </Modal>
       )}
@@ -1009,6 +1020,9 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
           <Fld label="Microchip ID"><Inp placeholder="15-digit chip number" value={form.chip||""} onChange={sf("chip")} /></Fld>
           <Fld label="Insurance Provider"><Inp value={form.insurance||""} onChange={sf("insurance")} /></Fld>
+          <Fld label="Health Notes / Special Conditions">
+            <Txta placeholder="e.g. Allergic to chicken, on heart medication… shared with your provider" value={form.health_notes||""} onChange={sf("health_notes")} rows={3} />
+          </Fld>
           <button onClick={updatePet} disabled={!form.name?.trim()} className="btn-primary mt-2">Save Changes</button>
         </Modal>
       )}
