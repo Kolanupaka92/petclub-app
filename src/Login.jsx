@@ -151,7 +151,7 @@ const EMAIL_TYPOS = {
   'gamil.com':'gmail.com','gmai.com':'gmail.com','gmail.co':'gmail.com',
   'gmail.con':'gmail.com','gmail.conm':'gmail.com','gmail.cpm':'gmail.com',
   'gmail.cim':'gmail.com','gmail.cm':'gmail.com','gmail.cmo':'gmail.com',
-  'gmail.ocm':'gmail.com','gmail.copm':'gmail.com','gmail.conm':'gmail.com',
+  'gmail.ocm':'gmail.com','gmail.copm':'gmail.com',
   'gmal.com':'gmail.com','gmial.com':'gmail.com','gnail.com':'gmail.com',
   'gmali.com':'gmail.com','gmil.com':'gmail.com','gmaill.com':'gmail.com',
   // yahoo
