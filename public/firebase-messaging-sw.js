@@ -17,6 +17,31 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+// ── API pass-through fetch guard ─────────────────────────────────────────────
+// The Firebase messaging compat SDK (loaded below) registers its own fetch
+// event listener to support notification click handling. In some cached SW
+// versions it has been observed to return 405 for unrecognised POST requests.
+//
+// Registering OUR fetch listener FIRST (before importScripts loads Firebase)
+// ensures we get first pick on every fetch event. For requests to our backend
+// API we respond immediately with a clean network fetch so Firebase's handler
+// never sees them. For everything else we fall through so Firebase can handle
+// push-notification-related requests normally.
+self.addEventListener('fetch', (event) => {
+  const url = event.request.url;
+  // Intercept only our own API — pass straight to the network, no caching
+  if (url.includes('api.mypetclub.app') || url.includes('mypetclub.app/api')) {
+    event.respondWith(
+      fetch(event.request.clone()).catch(() =>
+        new Response(JSON.stringify({ error: 'Network error — check your connection' }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } })
+      )
+    );
+    return;
+  }
+  // All other requests: don't call respondWith → browser + Firebase handle normally
+});
+
 // Import Firebase scripts — these are loaded from Google's CDN in the service worker
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');

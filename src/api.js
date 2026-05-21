@@ -5,7 +5,7 @@ const BASE = import.meta.env.VITE_API_URL || (() => {
 
 const getToken = () => localStorage.getItem('petclub_token');
 
-const req = async (method, path, body, requireAuth = false) => {
+const req = async (method, path, body, requireAuth = false, _swRetry = false) => {
   const headers = { 'Content-Type': 'application/json' };
   if (requireAuth) headers['Authorization'] = `Bearer ${getToken()}`;
   const res = await fetch(`${BASE}${path}`, {
@@ -13,6 +13,20 @@ const req = async (method, path, body, requireAuth = false) => {
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  // ── 405 auto-recovery ────────────────────────────────────────────────────
+  // A 405 that our backend never generates means a stale service worker is
+  // intercepting the request before it reaches the network. Unregister all
+  // SWs and retry the request exactly once.
+  if (res.status === 405 && !_swRetry && 'serviceWorker' in navigator) {
+    console.warn('[api] 405 detected — unregistering stale service worker and retrying');
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    } catch { /* ignore — proceed with retry regardless */ }
+    return req(method, path, body, requireAuth, true);
+  }
+
   // Safely parse JSON — handles empty bodies & rate-limit HTML responses
   let data = {};
   try {
