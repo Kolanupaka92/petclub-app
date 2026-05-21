@@ -124,18 +124,7 @@ const ROLE_CONFIG = {
 
 /* ── Shared UI ── */
 const PawLogo = ({ sz = 36 }) => (
-  <svg width={sz} height={sz} viewBox="0 0 64 64" fill="none">
-    <circle cx="32" cy="40" r="18" fill="#f97316"/>
-    <ellipse cx="20" cy="20" rx="6" ry="8" fill="#f97316" transform="rotate(-20 20 20)"/>
-    <ellipse cx="44" cy="20" rx="6" ry="8" fill="#f97316" transform="rotate(20 44 20)"/>
-    <ellipse cx="10" cy="34" rx="5" ry="7" fill="#f97316" transform="rotate(-30 10 34)"/>
-    <ellipse cx="54" cy="34" rx="5" ry="7" fill="#f97316" transform="rotate(30 54 34)"/>
-    <ellipse cx="24" cy="44" rx="4" ry="5" fill="white" opacity="0.9"/>
-    <ellipse cx="32" cy="47" rx="4" ry="5" fill="white" opacity="0.9"/>
-    <ellipse cx="40" cy="44" rx="4" ry="5" fill="white" opacity="0.9"/>
-    <ellipse cx="28" cy="38" rx="7" ry="8" fill="white" opacity="0.9"/>
-    <ellipse cx="36" cy="38" rx="7" ry="8" fill="white" opacity="0.9"/>
-  </svg>
+  <img src="/icon.svg" alt="PETclub" width={sz} height={sz} style={{ borderRadius: sz * 0.22 }} />
 );
 
 const Bdg = ({ text, cls = "" }) => (

@@ -485,7 +485,7 @@ export default function Login({ onLogin }) {
         <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/70" />
         <div className="relative z-10 flex flex-col justify-between p-10 w-full">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-xl font-black text-white">🐾</div>
+            <img src="/icon.svg" alt="PETclub" className="w-10 h-10 rounded-xl" />
             <span className="text-white font-extrabold text-2xl tracking-tight">PET<span className="text-orange-400">club</span></span>
           </div>
           <div>
@@ -506,7 +506,7 @@ export default function Login({ onLogin }) {
 
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-6 lg:hidden">
-            <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-base font-black text-white">🐾</div>
+            <img src="/icon.svg" alt="PETclub" className="w-9 h-9 rounded-xl" />
             <span className="font-extrabold text-gray-900 text-xl tracking-tight">PET<span className="text-orange-500">club</span></span>
           </div>
 
