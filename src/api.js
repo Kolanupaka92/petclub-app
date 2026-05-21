@@ -71,6 +71,7 @@ export const api = {
   getProfessionals: (city, role) =>
     req('GET', `/professionals?city=${city || ''}&sub_role=${role || ''}`),
   getMyProProfile: () => req('GET', '/professionals/me', null, true),
+  getEarnings: () => req('GET', '/professionals/earnings', null, true),
   updateMyProProfile: (data) => req('PUT', '/professionals/me', data, true),
   uploadIdPhoto: (data) => req('POST', '/professionals/upload-id-photo', data, true),
   setAvailability: (is_available) => req('PUT', '/professionals/availability', { is_available }, true),

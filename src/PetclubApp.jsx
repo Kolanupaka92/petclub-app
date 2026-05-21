@@ -463,7 +463,12 @@ export default function PetclubApp({ session, onLogout }) {
                         <span className="inline-block w-1.5 h-1.5 bg-current rounded-full animate-bounce ml-1"/>
                       )}
                     </div>
-                    {b.amount && <div className="font-extrabold text-sm text-gray-700">{currencySymbol}{b.amount}</div>}
+                    {(b.total_amount || b.amount) && (
+                      <div className="text-right">
+                        <div className="font-extrabold text-sm text-gray-800">{currencySymbol}{parseFloat(b.total_amount || b.amount).toFixed(2)}</div>
+                        <div className="text-[10px] text-gray-400">Total paid</div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-4">

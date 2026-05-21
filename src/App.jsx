@@ -679,6 +679,8 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [saving,    setSaving]    = useState(false);
   const [toast,     setToast]     = useState("");
   const [responding,   setResponding]   = useState({});
+  const [earnings,     setEarnings]     = useState(null);  // { total, paid, pending, bookings[] }
+  const [earningsLoad, setEarningsLoad] = useState(false);
   const [sharingLocId,    setSharingLocId]    = useState(null);  // bookingId being shared
   const [bgWarning,       setBgWarning]       = useState(false); // page-hidden warning
   const watchIdRef        = useRef(null);  // watchPosition ID
@@ -847,6 +849,15 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load earnings data lazily when the Earnings tab is first opened
+  useEffect(() => {
+    if (view !== 'earnings' || earnings !== null) return;
+    setEarningsLoad(true);
+    api.getEarnings().then(r => setEarnings(r.earnings || { total: 0, paid: 0, pending: 0, bookings: [] }))
+      .catch(() => setEarnings({ total: 0, paid: 0, pending: 0, bookings: [] }))
+      .finally(() => setEarningsLoad(false));
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(""), 3500); };
 
   const handleRespond = async (bookingId, action) => {
@@ -895,6 +906,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
     { id:"home",     icon:"🏠", label:"Home" },
     { id:"requests", icon:"🔔", label:"Requests",  badge: activeRequests.length || null },
     { id:"bookings", icon:"📅", label:"Bookings" },
+    { id:"earnings", icon:"💰", label:"Earnings" },
     { id:"profile",  icon:"👤", label:"Profile" },
   ];
 
@@ -1103,10 +1115,11 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                               </div>
                             )}
                           </div>
-                          {bk.amount && (
+                          {bk.provider_earnings && (
                             <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-right">
-                              <div className="text-xs text-emerald-600 font-medium">Earning</div>
-                              <div className="font-extrabold text-emerald-700 text-base">{currencySymbol}{bk.amount}</div>
+                              <div className="text-xs text-emerald-600 font-medium">Your Earning</div>
+                              <div className="font-extrabold text-emerald-700 text-base">{currencySymbol}{parseFloat(bk.provider_earnings).toFixed(2)}</div>
+                              <div className="text-[10px] text-emerald-500">70% of booking</div>
                             </div>
                           )}
                         </div>
@@ -1194,7 +1207,23 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                         </div>
                         <Bdg text={b.status} cls={sColor(b.status)}/>
                       </div>
-                      {b.amount && <div className="text-sm font-bold text-gray-700 mb-2">{currencySymbol}{b.amount}</div>}
+                      {(b.provider_earnings || b.amount) && (
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-gray-400 font-medium">
+                            {b.status === 'completed' ? 'Earned' : 'Expected earning'}
+                          </span>
+                          <div className="text-right">
+                            <span className="text-sm font-extrabold text-emerald-600">
+                              {currencySymbol}{parseFloat(b.provider_earnings || b.amount * 0.7 || 0).toFixed(2)}
+                            </span>
+                            {b.payout_status && (
+                              <span className={`ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${b.payout_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                {b.payout_status === 'paid' ? '✓ Paid' : '⏳ Pending'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       {/* ⚕️ Pet health notes — shown to assigned professional */}
                       {b.pets?.health_notes && (
                         <div className="bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mb-2">
@@ -1263,6 +1292,65 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── EARNINGS ── */}
+        {view === "earnings" && (
+          <div className="max-w-2xl mx-auto space-y-4">
+            <div className={`bg-gradient-to-br ${grad} rounded-2xl p-5 text-white`}>
+              <div className="text-sm font-semibold text-white/70 mb-1">My Earnings</div>
+              {earningsLoad ? (
+                <div className="flex items-center gap-2 text-white/60 text-sm"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Loading…</div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 mt-2">
+                  {[
+                    { label: "Total Earned",   val: earnings?.total   ?? 0, color: "bg-white/20" },
+                    { label: "Paid Out",        val: earnings?.paid    ?? 0, color: "bg-emerald-500/40" },
+                    { label: "Awaiting Payout", val: earnings?.pending ?? 0, color: "bg-amber-500/40" },
+                  ].map(({ label, val, color }) => (
+                    <div key={label} className={`${color} rounded-xl p-3 text-center`}>
+                      <div className="text-xs text-white/70 mb-1">{label}</div>
+                      <div className="text-lg font-extrabold">{currencySymbol}{parseFloat(val).toFixed(2)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-[11px] text-white/50 mt-3">Payouts are processed T+2 days after service completion.</p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+                <h2 className="font-bold text-gray-800">Job History</h2>
+                <span className="text-xs text-gray-400">{earnings?.bookings?.length ?? 0} bookings</span>
+              </div>
+              {earningsLoad ? (
+                <div className="p-6 flex justify-center"><span className="w-6 h-6 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin"/></div>
+              ) : !earnings?.bookings?.length ? (
+                <div className="p-8 text-center text-gray-400 text-sm">No completed bookings yet.</div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {earnings.bookings.map(b => (
+                    <div key={b.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-sm text-gray-800 truncate">{b.service_name || "Service"}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{b.scheduled_at ? fmtDate(b.scheduled_at) : "—"}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-extrabold text-sm text-emerald-600">{currencySymbol}{parseFloat(b.provider_earnings || 0).toFixed(2)}</div>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${b.payout_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {b.payout_status === 'paid' ? '✓ Paid' : '⏳ Pending'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 text-xs text-orange-700 leading-relaxed">
+              <strong>How it works:</strong> For every booking, PETclub facilitates payment and you receive <strong>70%</strong> of the service fee directly to your registered bank account. Payouts are processed T+2 business days after the service is marked complete.
+            </div>
           </div>
         )}
 
@@ -1746,15 +1834,31 @@ const AdminDashboard = ({ session, onLogout }) => {
                 <StatCard icon="📅" label="Total Bookings" value={bookings.length}                gradient="bg-gradient-to-br from-violet-500 to-purple-600"  onClick={() => setView("bookings")}/>
               </div>
               {/* Revenue card — full width */}
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-4 mb-5 flex items-center justify-between">
-                <div>
-                  <div className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">Total Revenue</div>
-                  <div className="text-white text-3xl font-extrabold">
-                    {currencySymbol}{(stats?.revenue ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.amount||0),0)).toLocaleString()}
+              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-4 mb-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">Gross Revenue (Customer Paid)</div>
+                    <div className="text-white text-3xl font-extrabold">
+                      {currencySymbol}{(stats?.revenue ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.total_amount||b.amount||0),0)).toLocaleString()}
+                    </div>
+                    <div className="text-gray-400 text-xs mt-1">{bookings.filter(b=>b.status==="completed").length} completed bookings</div>
                   </div>
-                  <div className="text-gray-400 text-xs mt-1">{bookings.filter(b=>b.status==="completed").length} completed bookings</div>
+                  <div className="text-5xl opacity-30">💰</div>
                 </div>
-                <div className="text-5xl opacity-30">💰</div>
+                <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/10">
+                  <div className="bg-white/5 rounded-xl p-2.5 text-center">
+                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">PETclub Net (30%)</div>
+                    <div className="text-orange-400 font-extrabold text-sm">
+                      {currencySymbol}{(stats?.platform_net ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.platform_fee||b.amount*0.3||0),0)).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-2.5 text-center">
+                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">Provider Payouts (70%)</div>
+                    <div className="text-emerald-400 font-extrabold text-sm">
+                      {currencySymbol}{(stats?.provider_total ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.provider_earnings||b.amount*0.7||0),0)).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* ── Role distribution ── */}
@@ -2281,7 +2385,30 @@ const AdminDashboard = ({ session, onLogout }) => {
                       </div>
                       <Bdg text={b.status} cls={sColor(b.status)}/>
                     </div>
-                    {b.amount && <div className="text-xs font-bold text-gray-700">{currencySymbol}{b.amount}</div>}
+                    {/* Financial breakdown — only visible to admin */}
+                    {(b.total_amount || b.amount) && (
+                      <div className="mt-2 pt-2 border-t border-gray-50">
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-blue-50 rounded-lg p-1.5">
+                            <div className="text-[10px] text-blue-500 font-semibold">Customer Paid</div>
+                            <div className="text-xs font-extrabold text-blue-700">{currencySymbol}{parseFloat(b.total_amount || b.amount || 0).toFixed(2)}</div>
+                          </div>
+                          <div className="bg-emerald-50 rounded-lg p-1.5">
+                            <div className="text-[10px] text-emerald-500 font-semibold">Provider (70%)</div>
+                            <div className="text-xs font-extrabold text-emerald-700">{currencySymbol}{parseFloat(b.provider_earnings || (b.amount * 0.7) || 0).toFixed(2)}</div>
+                          </div>
+                          <div className="bg-orange-50 rounded-lg p-1.5">
+                            <div className="text-[10px] text-orange-500 font-semibold">PETclub (30%)</div>
+                            <div className="text-xs font-extrabold text-orange-700">{currencySymbol}{parseFloat(b.platform_fee || (b.amount * 0.3) || 0).toFixed(2)}</div>
+                          </div>
+                        </div>
+                        {b.gateway_fee && (
+                          <div className="text-[10px] text-gray-400 mt-1 text-right">
+                            Gateway fee: −{currencySymbol}{parseFloat(b.gateway_fee).toFixed(2)} · Net platform: {currencySymbol}{(parseFloat(b.platform_fee || 0) - parseFloat(b.gateway_fee || 0)).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   );
                 })}
