@@ -257,7 +257,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
   const [form, setForm] = useState({
     name: session.name || "", email: session.email || "", dob: "", gender: "Male",
     address: "", area: "", city: session.city || "", pincode: "",
-    services: [], bio: "", langs: "", service_areas: "", experience: "",
+    services: [], pet_types: [], bio: "", langs: "", service_areas: "", experience: "",
     certification: "", license_number: "", clinic_name: "",
     has_salon: false, home_visit: false, mobile_van: false,
     group_classes: false, board_train: false, telemedicine: false, "24_7": false,
@@ -269,7 +269,8 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
 
   const sf  = k => e  => setForm(f => ({ ...f, [k]: e.target.value }));
   const stg = k => ()  => setForm(f => ({ ...f, [k]: !f[k] }));
-  const toggleSvc = s  => setForm(f => ({ ...f, services: f.services.includes(s) ? f.services.filter(x => x !== s) : [...f.services, s] }));
+  const toggleSvc     = s => setForm(f => ({ ...f, services:  f.services.includes(s)  ? f.services.filter(x => x !== s)  : [...f.services,  s] }));
+  const togglePetType = t => setForm(f => ({ ...f, pet_types: f.pet_types.includes(t) ? f.pet_types.filter(x => x !== t) : [...f.pet_types, t] }));
 
   // Auto-fill city/area from pincode or ZIP code
   useEffect(() => {
@@ -337,7 +338,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
         address_lat: addrMeta.lat, address_lng: addrMeta.lng,
         address_postal_code: addrMeta.postalCode, address_state: addrMeta.state,
         bio: form.bio, experience: form.experience,
-        services: form.services, service_areas: form.service_areas, langs: form.langs,
+        services: form.services, pet_types: form.pet_types, service_areas: form.service_areas, langs: form.langs,
         certification: form.certification, license_number: form.license_number,
         clinic_name: form.clinic_name,
         price_basic: form.priceA, price_full: form.priceB, price_custom: form.priceC,
@@ -464,6 +465,23 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
                     className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${form.services.includes(s) ? "text-white border-transparent shadow-sm" : "border-gray-200 text-gray-600 hover:border-gray-300"}`}
                     style={form.services.includes(s) ? { background: cfg.accent } : {}}>
                     {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Animals / Pet Types Served */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-500 mb-2">🐾 Animals You Work With (select all that apply)</label>
+              <div className="flex flex-wrap gap-2">
+                {(subRole === "Vet"
+                  ? ["🐕 Dogs","🐈 Cats","🐦 Birds","🐇 Rabbits","🐹 Small Animals","🦎 Reptiles / Exotics","🐟 Fish / Aquatic"]
+                  : ["🐕 Dogs","🐈 Cats","🐦 Birds","🐇 Small Animals (rabbits, guinea pigs…)","🦜 Exotic Pets"]
+                ).map(t => (
+                  <button key={t} type="button" onClick={() => togglePetType(t)}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${form.pet_types.includes(t) ? "text-white border-transparent shadow-sm" : "border-gray-200 text-gray-600 hover:border-gray-300"}`}
+                    style={form.pet_types.includes(t) ? { background: cfg.accent } : {}}>
+                    {t}
                   </button>
                 ))}
               </div>
@@ -1182,6 +1200,16 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                 </>}
                 {subRole === "Trainer" && <ProfileRow icon="🎖️" label="Certifications" value={profile?.certification}/>}
                 <ProfileRow icon="🌍" label="Service Areas" value={profile?.service_areas}/>
+                {Array.isArray(profile?.pet_types) && profile.pet_types.length > 0 && (
+                  <div className="px-5 py-3 border-b border-gray-50">
+                    <div className="text-xs text-gray-400 font-medium mb-2">🐾 Animals I Work With</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {profile.pet_types.map(t => (
+                        <span key={t} className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-600">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {Array.isArray(profile?.services) && profile.services.length > 0 && (
                   <div className="px-5 py-3 border-b border-gray-50 last:border-0">
                     <div className="text-xs text-gray-400 font-medium mb-2">Services Offered</div>
@@ -1674,6 +1702,11 @@ const AdminDashboard = ({ session, onLogout }) => {
                         </div>
                       </div>
                       {pro.bio && <div className="bg-gray-50 rounded-xl p-3 mb-4"><p className="text-xs text-gray-600 italic leading-relaxed">"{pro.bio}"</p></div>}
+                      {Array.isArray(pro.pet_types) && pro.pet_types.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {pro.pet_types.map(t => <span key={t} className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full font-semibold">{t}</span>)}
+                        </div>
+                      )}
                       {Array.isArray(pro.services) && pro.services.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-4">
                           {pro.services.map(s => <span key={s} className="text-xs bg-orange-50 text-orange-600 border border-orange-100 px-2.5 py-0.5 rounded-full font-medium">{s}</span>)}
