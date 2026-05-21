@@ -1382,6 +1382,15 @@ const AdminDashboard = ({ session, onLogout }) => {
     }).finally(() => setLoading(false));
   }, []);
 
+  // Live tracking auto-refresh — poll every 15s when "live" tab is active
+  useEffect(() => {
+    if (view !== "live") return;
+    const t = setInterval(() => {
+      api.getBookings().then(r => setBookings(r.bookings || [])).catch(() => {});
+    }, 15000);
+    return () => clearInterval(t);
+  }, [view]);
+
   const showToast = (msg, type="success") => { setToast({ msg, type }); setTimeout(() => setToast({ msg:"", type:"success" }), 3500); };
 
   const approve = async id => {
@@ -1458,6 +1467,7 @@ const AdminDashboard = ({ session, onLogout }) => {
 
   const NAV = [
     { id:"overview", icon:"📊", label:"Overview" },
+    { id:"live",     icon:"🗺️", label:"Live Trips", badge: bookings.filter(b=>["on_the_way","in_progress"].includes(b.assignment_status)).length || 0 },
     { id:"verify",   icon:"🔍", label:"Verify",   badge: pending.length },
     { id:"users",    icon:"👥", label:"Users" },
     { id:"bookings", icon:"📅", label:"Bookings" },
@@ -1934,6 +1944,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                 { l:"Completed", v:bookings.filter(b=>b.status==="completed").length,                  c:"bg-emerald-50 text-emerald-700" },
                 { l:"Searching", v:bookings.filter(b=>b.assignment_status==="searching").length,       c:"bg-orange-50 text-orange-700" },
                 { l:"Confirmed", v:bookings.filter(b=>b.assignment_status==="confirmed").length,       c:"bg-violet-50 text-violet-700" },
+                { l:"🚗 En Route",v:bookings.filter(b=>["on_the_way","in_progress"].includes(b.assignment_status)).length, c:"bg-amber-50 text-amber-700" },
               ].map(s => (
                 <div key={s.l} className={`rounded-xl p-3 text-center ${s.c}`}>
                   <div className="text-lg font-extrabold">{s.v}</div>
@@ -1968,6 +1979,143 @@ const AdminDashboard = ({ session, onLogout }) => {
             )}
           </div>
         )}
+
+        {/* ── 🗺️ LIVE TRIPS OVERVIEW ── */}
+        {view === "live" && (() => {
+          const liveTrips = bookings.filter(b => ["on_the_way","in_progress"].includes(b.assignment_status));
+          return (
+            <div className="max-w-2xl mx-auto px-5 py-6">
+              <div className="flex items-center justify-between mb-5">
+                <h1 className="text-2xl font-extrabold text-gray-800">🗺️ Live Trips</h1>
+                <div className="flex items-center gap-2">
+                  {liveTrips.length > 0 && (
+                    <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+                      <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse inline-block"/>
+                      <span className="text-xs font-bold text-emerald-700">{liveTrips.length} active</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => api.getBookings().then(r => setBookings(r.bookings || [])).catch(() => {})}
+                    className="text-xs bg-orange-50 border border-orange-200 text-orange-600 font-bold px-3 py-1.5 rounded-full hover:bg-orange-100 transition">
+                    🔄 Refresh
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 mb-5 text-xs text-blue-700 font-medium">
+                📡 Auto-refreshes every 15 seconds · GPS updated every 15s by professional's device
+              </div>
+
+              {liveTrips.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+                  <div className="text-5xl mb-4">🗺️</div>
+                  <div className="font-bold text-gray-700 text-lg mb-1">No active trips</div>
+                  <div className="text-sm text-gray-400">Trips appear here when a professional clicks "On My Way".</div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {liveTrips.map(b => {
+                    const hasPro = b.pro_lat && b.pro_lng;
+                    const hasCust = b.address_lat && b.address_lng;
+                    const proUpdated = b.pro_location_updated_at
+                      ? new Date(b.pro_location_updated_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' })
+                      : null;
+                    const statusColor = b.assignment_status === "in_progress" ? "bg-emerald-500" : "bg-orange-500";
+                    const custName = b.users?.name || "Customer";
+                    const petName = b.pets?.name || "";
+                    return (
+                      <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                        {/* Header */}
+                        <div className="px-5 py-3 bg-gradient-to-r from-gray-900 to-gray-800 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${statusColor} animate-pulse inline-block`}/>
+                            <span className="text-white font-bold text-sm">{b.service_name || b.service_type || "Service"}</span>
+                            {petName && <span className="text-gray-400 text-xs">· 🐾 {petName}</span>}
+                          </div>
+                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${b.assignment_status === "in_progress" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-orange-500/20 text-orange-300 border border-orange-500/30"}`}>
+                            {b.assignment_status === "in_progress" ? "🔧 In Progress" : "🚗 On The Way"}
+                          </span>
+                        </div>
+
+                        <div className="p-5">
+                          {/* Customer info */}
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center text-base shrink-0">👤</div>
+                            <div>
+                              <div className="font-bold text-gray-800 text-sm">{custName}</div>
+                              <div className="text-xs text-gray-400">{b.users?.phone || "—"}</div>
+                            </div>
+                          </div>
+
+                          {/* GPS info grid */}
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className={`rounded-xl p-3 border ${hasPro ? "bg-emerald-50 border-emerald-200" : "bg-gray-50 border-gray-200"}`}>
+                              <div className="text-xs font-semibold text-gray-500 mb-1">🚗 Professional GPS</div>
+                              {hasPro ? (
+                                <>
+                                  <div className="text-xs font-bold text-emerald-700 font-mono">{b.pro_lat?.toFixed(5)}, {b.pro_lng?.toFixed(5)}</div>
+                                  {proUpdated && <div className="text-xs text-gray-400 mt-1">Updated {proUpdated}</div>}
+                                </>
+                              ) : (
+                                <div className="text-xs text-gray-400">Awaiting GPS…</div>
+                              )}
+                            </div>
+                            <div className={`rounded-xl p-3 border ${hasCust ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-200"}`}>
+                              <div className="text-xs font-semibold text-gray-500 mb-1">📍 Customer Location</div>
+                              {hasCust ? (
+                                <div className="text-xs font-bold text-blue-700 font-mono">{b.address_lat?.toFixed(5)}, {b.address_lng?.toFixed(5)}</div>
+                              ) : (
+                                <div className="text-xs text-gray-400">{b.city || b.address || "—"}</div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex gap-2">
+                            {hasPro && (
+                              <a
+                                href={`https://www.google.com/maps?q=${b.pro_lat},${b.pro_lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold py-2.5 rounded-xl hover:bg-emerald-100 transition">
+                                🗺️ Track Pro
+                              </a>
+                            )}
+                            {hasCust && (
+                              <a
+                                href={`https://www.google.com/maps?q=${b.address_lat},${b.address_lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold py-2.5 rounded-xl hover:bg-blue-100 transition">
+                                📍 Customer
+                              </a>
+                            )}
+                            {hasPro && hasCust && (
+                              <a
+                                href={`https://www.google.com/maps/dir/${b.pro_lat},${b.pro_lng}/${b.address_lat},${b.address_lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 flex items-center justify-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold py-2.5 rounded-xl hover:bg-orange-100 transition">
+                                🧭 Route
+                              </a>
+                            )}
+                          </div>
+
+                          {/* Appointment details */}
+                          <div className="mt-3 pt-3 border-t border-gray-50 flex items-center gap-4 text-xs text-gray-400">
+                            {b.scheduled_at && <span>📅 {fmtDate(b.scheduled_at)} {fmtTime(b.scheduled_at)}</span>}
+                            {b.amount && <span>₹{b.amount}</span>}
+                            {b.ten_min_notified && <span className="text-amber-600 font-semibold">⏱ 10-min alert sent</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </main>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 flex shadow-nav">
