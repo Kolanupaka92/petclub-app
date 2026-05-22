@@ -7,19 +7,32 @@
 
 import { api } from './api.js';
 
+// Strip BOM (﻿) and surrounding whitespace — Vercel sometimes injects a UTF-8 BOM
+// when env vars are uploaded via the dashboard, which makes values look non-empty but invalid.
+const stripBom = (v) => (v || '').replace(/^﻿/, '').trim();
+
 const FIREBASE_CONFIG = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey:            stripBom(import.meta.env.VITE_FIREBASE_API_KEY),
+  authDomain:        stripBom(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
+  projectId:         stripBom(import.meta.env.VITE_FIREBASE_PROJECT_ID),
+  storageBucket:     stripBom(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
+  messagingSenderId: stripBom(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+  appId:             stripBom(import.meta.env.VITE_FIREBASE_APP_ID),
 };
 
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+const VAPID_KEY = stripBom(import.meta.env.VITE_FIREBASE_VAPID_KEY);
 // Phone auth only needs FIREBASE_CONFIG — VAPID_KEY is for FCM push notifications only
 const phoneConfigured = Object.values(FIREBASE_CONFIG).every(Boolean);
 const isConfigured = phoneConfigured; // kept for backward compat
+
+// Debug: log which keys are present/missing (values never logged for security)
+if (!phoneConfigured) {
+  const missing = Object.entries(FIREBASE_CONFIG).filter(([, v]) => !v).map(([k]) => k);
+  console.warn('[Firebase] Missing/empty config keys:', missing,
+    '— set VITE_FIREBASE_* env vars in Vercel Production without BOM characters');
+} else {
+  console.info('[Firebase] Config loaded for project:', FIREBASE_CONFIG.projectId);
+}
 
 // ─── Shared Firebase app init ────────────────────────────────────────────────
 let _app = null;
