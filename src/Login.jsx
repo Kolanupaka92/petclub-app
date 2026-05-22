@@ -94,26 +94,30 @@ const firebaseMsg = (e) => {
   const codeMatch = (e.message || '').match(/\(auth\/([^)]+)\)/);
   const code = e.code || (codeMatch ? `auth/${codeMatch[1]}` : '');
   const codeMap = {
-    'auth/invalid-phone-number':   'Invalid phone number. Check the country code and digits.',
-    'auth/too-many-requests':      'Too many attempts. Wait a few minutes and try again.',
-    'auth/quota-exceeded':         'SMS quota reached for today. Try again tomorrow or use Email OTP.',
-    'auth/captcha-check-failed':   'Security check failed. Refresh the page and try again.',
-    'auth/missing-phone-number':   'Enter a phone number first.',
-    'auth/user-disabled':          'This account has been disabled. Contact support.',
-    'auth/operation-not-allowed':  'Phone sign-in is not enabled. Contact support.',
-    'auth/network-request-failed': 'Network error. Check your connection and try again.',
-    'auth/internal-error':         'Firebase internal error. Refresh and try again.',
+    'auth/invalid-phone-number':      'Invalid phone number. Check the country code and digits.',
+    'auth/too-many-requests':         'Too many attempts. Wait a few minutes and try again.',
+    'auth/quota-exceeded':            'SMS quota reached for today. Please use Email OTP instead.',
+    'auth/captcha-check-failed':      'Security check failed. Please refresh and try again.',
+    'auth/missing-phone-number':      'Enter a phone number first.',
+    'auth/user-disabled':             'This account has been disabled. Contact support.',
+    'auth/operation-not-allowed':     'Phone SMS is not enabled for this app. Please use Email OTP.',
+    'auth/unauthorized-domain':       'This domain is not authorized for SMS OTP. Please use Email OTP.',
+    'auth/network-request-failed':    'Network error. Check your connection and try again.',
+    'auth/internal-error':            'Verification failed. Please use Email OTP instead.',
     'auth/invalid-verification-code': 'Wrong OTP code. Check the SMS and try again.',
-    'auth/code-expired':           'OTP expired. Request a new one.',
-    'auth/session-expired':        'Session expired. Request a new OTP.',
+    'auth/code-expired':              'OTP expired. Request a new one.',
+    'auth/session-expired':           'Session expired. Request a new OTP.',
+    'auth/app-not-authorized':        'App not authorized for SMS. Please use Email OTP.',
   };
   if (codeMap[code]) return codeMap[code];
-  // Fallback: clean up the raw Firebase message but preserve the code
+  // Fallback: clean up the raw Firebase message
   const cleaned = (e.message || '')
     .replace('Firebase: ', '')
     .replace(/ \(auth\/[^)]+\)\.?$/, '')
     .trim();
-  return (cleaned && cleaned !== 'Error') ? cleaned : (code || 'Unknown error. Please try again.');
+  // Don't surface internal "Phone auth not initialized" — it's confusing to users
+  if (!cleaned || cleaned === 'Error' || cleaned === 'Phone auth not initialized') return null;
+  return cleaned;
 };
 
 /* ── OTP single digit box ── */
@@ -366,13 +370,20 @@ export default function Login({ onLogin }) {
         try {
           await sendPhoneOtp(e164);
         } catch (e) {
-          // reCAPTCHA token expired or failed — re-init and retry once
-          if (e.code === "auth/captcha-check-failed" || e.code === "auth/internal-error" ||
-              (e.message || '').includes('reCAPTCHA')) {
-            // Re-init clears and re-renders the reCAPTCHA widget (innerHTML wiped in initPhoneAuth)
+          const msg = e.message || '';
+          const code = e.code || '';
+          // reCAPTCHA token expired — re-init and retry once
+          if (code === "auth/captcha-check-failed" || code === "auth/internal-error" ||
+              msg.includes('reCAPTCHA') || msg === 'Phone auth not initialized') {
             const ok = await initPhoneAuth("recaptcha-container").catch(() => false);
-            if (!ok) throw new Error("Could not reinitialize phone verification. Please try again.");
-            await sendPhoneOtp(e164);
+            if (ok) {
+              await sendPhoneOtp(e164);
+            } else {
+              // Phone auth unrecoverable — silently fall back to Email OTP
+              setLoginMethod("email");
+              setPhoneAuthReady(false);
+              throw new Error("Phone SMS is unavailable. Please enter your email below to receive an OTP instead.");
+            }
           } else throw e;
         }
       }
