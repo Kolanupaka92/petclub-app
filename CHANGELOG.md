@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.0.1...v1.1.0) (2026-05-22)
+
+
+### Features
+
+* pro booking flow — Start Service, Mark Complete, accurate status badges ([060761a](https://github.com/Kolanupaka92/petclub-app/commit/060761a220145ff4dfb284a33b0cfb7345d1a667))
+
 ## [1.0.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.0.0...v1.0.1) (2026-05-22)
 
 
