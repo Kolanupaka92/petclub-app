@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.3.0...v1.3.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **auth:** strip accidental country-code prefix from pasted phone numbers ([ef18abd](https://github.com/Kolanupaka92/petclub-app/commit/ef18abd39dd71141a7bc9d8c062476a4263f13e4))
+
 # [1.3.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.2.0...v1.3.0) (2026-05-22)
 
 
