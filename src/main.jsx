@@ -136,7 +136,16 @@ function PendingApproval({ session, onLogout, onApproved }) {
 
 function Root() {
   const [session, setSession]       = useState(loadSession);
-  const [showLanding, setShowLanding] = useState(true); // public marketing page
+  // Skip landing page if URL contains ?signin=1 (deep-link from www.mypetclub.app)
+  const [showLanding, setShowLanding] = useState(() => {
+    const skip = new URLSearchParams(window.location.search).get('signin') === '1';
+    if (skip) {
+      // Clean the param from the address bar without a page reload
+      const clean = window.location.pathname + window.location.hash;
+      window.history.replaceState(null, '', clean);
+    }
+    return !skip;
+  });
   const [warnVisible, setWarnVisible] = useState(false);
   const [countdown, setCountdown]   = useState(60);
 

@@ -121,8 +121,11 @@ export default function PetclubApp({ session, onLogout }) {
   const [ratingVal, setRatingVal] = useState(0);
   const [ratingReview, setRatingReview] = useState("");
   const [ratingLoading, setRatingLoading] = useState(false);
-  const [ratedBookings, setRatedBookings] = useState(new Set());
+  const [ratedBookings, setRatedBookings] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("petclub_rated") || "[]")); } catch { return new Set(); }
+  });
   const [trackingBooking, setTrackingBooking] = useState(null); // booking object → open TrackingMap
+  const [loadedPetRecs, setLoadedPetRecs] = useState(new Set()); // tracks which pet IDs have had API records fetched
 
   const sf = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const bsf = k => e => setBookingForm(f => ({ ...f, [k]: typeof e === "string" ? e : e.target.value }));
@@ -164,6 +167,22 @@ export default function PetclubApp({ session, onLogout }) {
   }, [myBookings]);
 
   useEffect(() => { if (!apiMode) savePets(pets); }, [pets, apiMode]);
+  useEffect(() => { localStorage.setItem("petclub_rated", JSON.stringify([...ratedBookings])); }, [ratedBookings]);
+
+  // Lazy-load pet records from API when a pet detail view is opened
+  useEffect(() => {
+    if (!activePetId || !apiMode || loadedPetRecs.has(activePetId)) return;
+    const types = ["grooming", "training", "food", "vet"];
+    Promise.allSettled(types.map(t => api.getRecords(activePetId, t)))
+      .then(results => {
+        const recs = {};
+        types.forEach((t, i) => {
+          recs[t] = results[i].status === "fulfilled" ? (results[i].value?.records || []) : [];
+        });
+        setPets(prev => prev.map(p => p.id === activePetId ? { ...p, records: recs } : p));
+        setLoadedPetRecs(prev => new Set([...prev, activePetId]));
+      });
+  }, [activePetId, apiMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goTo = v => { setView(v); if (v !== "petDetail") setActivePetId(null); };
   const openPet = id => { setActivePetId(id); setActiveTab("grooming"); setView("petDetail"); };
@@ -301,7 +320,7 @@ export default function PetclubApp({ session, onLogout }) {
     else                               rec = { ...base, detail: form.service || "Vet Visit", vet: form.by || "", clinic: form.clinic || "", vtype: form.vtype || "General Check-up", nextDue: form.nextDue || undefined, cost: form.cost || "", notes: form.notes || "" };
     try {
       if (apiMode) {
-        const ap = { date, service: rec.service, session: rec.session, product: rec.product, detail: rec.detail, by: rec.by, brand: rec.brand, qty: rec.qty, vet: rec.vet, clinic: rec.clinic, cost: rec.cost, notes: rec.notes, rating: rec.rating, next_due: rec.nextDue };
+        const ap = { date, service: rec.service, session: rec.session, product: rec.product, detail: rec.detail, by: rec.by, brand: rec.brand, qty: rec.qty, vet: rec.vet, clinic: rec.clinic, vtype: rec.vtype, cost: rec.cost, notes: rec.notes, rating: rec.rating, next_due: rec.nextDue };
         await api.addRecord(activePetId, activeTab, ap);
       }
       setPets(prev => prev.map(p => p.id === activePetId ? { ...p, records: { ...p.records, [activeTab]: [rec, ...p.records[activeTab]] } } : p));
@@ -1160,7 +1179,7 @@ export default function PetclubApp({ session, onLogout }) {
                 <AddressPicker
                   value={bookingForm.address}
                   onChange={({ address, lat, lng, postalCode, city, state }) => {
-                    setBookingForm(f => ({ ...f, address }));
+                    setBookingForm(f => ({ ...f, address, ...(city ? { city } : {}) }));
                     setBookingAddrMeta({ lat: lat || null, lng: lng || null, postalCode: postalCode || "", city: city || "", state: state || "" });
                     setBookingAddrErr("");
                   }}

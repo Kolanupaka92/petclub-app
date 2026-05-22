@@ -17,7 +17,9 @@ const FIREBASE_CONFIG = {
 };
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-const isConfigured = Object.values(FIREBASE_CONFIG).every(Boolean) && VAPID_KEY;
+// Phone auth only needs FIREBASE_CONFIG — VAPID_KEY is for FCM push notifications only
+const phoneConfigured = Object.values(FIREBASE_CONFIG).every(Boolean);
+const isConfigured = phoneConfigured; // kept for backward compat
 
 // ─── Shared Firebase app init ────────────────────────────────────────────────
 let _app = null;
@@ -42,34 +44,60 @@ let _confirmationResult = null;
  * @param {string} containerId — id of a <div> in the DOM for the reCAPTCHA widget
  */
 export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
-  if (!isConfigured) {
-    console.warn('[PhoneAuth] Firebase not configured — set VITE_FIREBASE_* env vars');
+  if (!phoneConfigured) {
+    console.warn('[PhoneAuth] Firebase config incomplete — check VITE_FIREBASE_* env vars');
     return false;
   }
   try {
     const app = await getApp();
-    const { getAuth } = await import('firebase/auth');
-    const { RecaptchaVerifier } = await import('firebase/auth');
+    const { getAuth, RecaptchaVerifier } = await import('firebase/auth');
 
     _auth = getAuth(app);
 
-    // Clear any stale verifier
+    // Clear any stale verifier before creating a new one
     if (_recaptchaVerifier) {
       try { _recaptchaVerifier.clear(); } catch {}
       _recaptchaVerifier = null;
     }
 
-    _recaptchaVerifier = new RecaptchaVerifier(_auth, containerId, {
+    // Resolve element — always prefer actual DOM element
+    const el = typeof containerId === 'string'
+      ? document.getElementById(containerId)
+      : containerId;
+
+    if (!el) {
+      console.error('[PhoneAuth] recaptcha-container element not found in DOM');
+      return false;
+    }
+
+    _recaptchaVerifier = new RecaptchaVerifier(_auth, el, {
       size: 'invisible',
-      callback: () => {},          // reCAPTCHA solved automatically
-      'expired-callback': () => { // Token expired — will auto-retry
-        _recaptchaVerifier = null;
+      callback: () => {},
+      'expired-callback': () => {
+        if (_recaptchaVerifier) {
+          try { _recaptchaVerifier.clear(); } catch {}
+          _recaptchaVerifier = null;
+        }
       },
     });
-    await _recaptchaVerifier.render();
+
+    // 8-second timeout so we never hang forever on slow/blocked reCAPTCHA
+    await Promise.race([
+      _recaptchaVerifier.render(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('reCAPTCHA render timeout')), 8000)
+      ),
+    ]);
+
+    console.info('[PhoneAuth] ✅ Initialized successfully');
     return true;
   } catch (e) {
-    console.error('[PhoneAuth] Init failed:', e.message);
+    console.error('[PhoneAuth] Init failed:', e.message, e.code || '');
+    if (e.code === 'auth/operation-not-allowed') {
+      console.error('[PhoneAuth] ⚠️  Enable Phone sign-in: Firebase Console → Authentication → Sign-in method → Phone → Enable');
+    }
+    _auth = null;
+    _recaptchaVerifier = null;
     return false;
   }
 };
@@ -80,6 +108,11 @@ export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
  * @returns {boolean} true if sent successfully
  */
 export const sendPhoneOtp = async (e164Phone) => {
+  // Auto-recover if reCAPTCHA token expired between init and send
+  if (_auth && !_recaptchaVerifier) {
+    const ok = await initPhoneAuth('recaptcha-container');
+    if (!ok) throw new Error('Phone auth not initialized');
+  }
   if (!_auth || !_recaptchaVerifier) throw new Error('Phone auth not initialized');
   const { signInWithPhoneNumber } = await import('firebase/auth');
   _confirmationResult = await signInWithPhoneNumber(_auth, e164Phone, _recaptchaVerifier);

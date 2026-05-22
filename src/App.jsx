@@ -1297,7 +1297,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
 
         {/* ── EARNINGS ── */}
         {view === "earnings" && (
-          <div className="max-w-2xl mx-auto space-y-4">
+          <div className="max-w-2xl mx-auto px-5 py-6 space-y-4">
             <div className={`bg-gradient-to-br ${grad} rounded-2xl p-5 text-white`}>
               <div className="text-sm font-semibold text-white/70 mb-1">My Earnings</div>
               {earningsLoad ? (
@@ -1382,7 +1382,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
                   <h3 className="font-bold text-gray-800">Personal Info</h3>
                   <button onClick={() => {
-                    setEditForm({ name: profile?.name || session.name, email: profile?.email || "", city: profile?.city || "", langs: profile?.langs || "", service_areas: profile?.service_areas || "", bio: profile?.bio || "", experience: profile?.experience || "", certification: profile?.certification || "", license_number: profile?.license_number || "", clinic_name: profile?.clinic_name || "" });
+                    setEditForm({ name: profile?.name || session.name, email: profile?.email || "", city: profile?.city || "", langs: profile?.langs || "", service_areas: profile?.service_areas || "", bio: profile?.bio || "", experience: profile?.experience || "", certification: profile?.certification || "", license_number: profile?.license_number || "", clinic_name: profile?.clinic_name || "", price_basic: profile?.price_basic || "", price_full: profile?.price_full || "", price_custom: profile?.price_custom || "" });
                     setEditModal(true);
                   }} className="flex items-center gap-1 text-xs font-semibold text-orange-500 border border-orange-200 px-3 py-1.5 rounded-full hover:bg-orange-50 transition">
                     ✏️ Edit
@@ -1523,6 +1523,14 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
           </>}
           {subRole === "Trainer" && <Inp label="Certifications" value={editForm.certification||""} onChange={e => setEditForm(f => ({...f, certification:e.target.value}))}/>}
           <Txta label="Bio / About Me" value={editForm.bio||""} onChange={e => setEditForm(f => ({...f, bio:e.target.value}))} rows={4}/>
+          <div className="mt-4 mb-1">
+            <label className="block text-xs font-semibold text-gray-500 mb-2">Pricing ({isIndia ? "₹" : "$"} per session)</label>
+            <div className="grid grid-cols-3 gap-2">
+              <Inp label={cfg.pricing.a} type="number" placeholder={isIndia?"599":"29"}  value={editForm.price_basic||""}  onChange={e => setEditForm(f => ({...f, price_basic:e.target.value}))}/>
+              <Inp label={cfg.pricing.b} type="number" placeholder={isIndia?"999":"59"}  value={editForm.price_full||""}   onChange={e => setEditForm(f => ({...f, price_full:e.target.value}))}/>
+              <Inp label={cfg.pricing.c} type="number" placeholder={isIndia?"1499":"99"} value={editForm.price_custom||""} onChange={e => setEditForm(f => ({...f, price_custom:e.target.value}))}/>
+            </div>
+          </div>
           <button onClick={saveProfile} disabled={saving} className="w-full bg-orange-500 text-white font-bold py-3.5 rounded-2xl hover:bg-orange-600 disabled:opacity-60 transition mt-2">
             {saving ? "Saving…" : "Save Changes"}
           </button>
@@ -2352,7 +2360,7 @@ const AdminDashboard = ({ session, onLogout }) => {
               <h1 className="text-2xl font-extrabold text-gray-800">Bookings</h1>
               <span className="text-sm text-gray-400">{bookings.length} total</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
               {[
                 { l:"Upcoming",  v:bookings.filter(b=>b.status==="upcoming").length,                   c:"bg-blue-50 text-blue-700" },
                 { l:"Completed", v:bookings.filter(b=>b.status==="completed").length,                  c:"bg-emerald-50 text-emerald-700" },
@@ -2541,7 +2549,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                           {/* Appointment details */}
                           <div className="mt-3 pt-3 border-t border-gray-50 flex items-center gap-4 text-xs text-gray-400">
                             {b.scheduled_at && <span>📅 {fmtDate(b.scheduled_at)} {fmtTime(b.scheduled_at)}</span>}
-                            {b.amount && <span>{currencySymbol}{b.amount}</span>}
+                            {(b.total_amount || b.amount) && <span>{currencySymbol}{parseFloat(b.total_amount || b.amount || 0).toFixed(2)}</span>}
                             {b.ten_min_notified && <span className="text-amber-600 font-semibold">⏱ 10-min alert sent</span>}
                           </div>
                         </div>

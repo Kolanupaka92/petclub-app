@@ -232,14 +232,39 @@ export default function Login({ onLogin }) {
   const [shake, setShake]   = useState(false);
   const [timer, setTimer]   = useState(0);
   const [emailSuggestion, setEmailSuggestion] = useState("");
+  // null = initializing (blocks Send OTP) | true = ready | false = unavailable (auto Email OTP)
+  const [phoneAuthReady, setPhoneAuthReady] = useState(null);
   const otpRefs = useRef([]);
 
   /* ── Init Firebase Phone Auth when phone step mounts ── */
   useEffect(() => {
-    if (step === "phone") {
-      initPhoneAuth("recaptcha-container").catch(() => {});
+    if (step !== "phone") {
+      clearPhoneAuth();
+      return;
     }
-    return () => { if (step !== "phone") clearPhoneAuth(); };
+    // Reset to "initializing" state — blocks Send OTP until we know Firebase status
+    setPhoneAuthReady(null);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const ok = await initPhoneAuth("recaptcha-container");
+        if (cancelled) return;
+        if (!ok) {
+          setPhoneAuthReady(false);
+          setLoginMethod("email");
+        } else {
+          setPhoneAuthReady(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setPhoneAuthReady(false);
+          setLoginMethod("email");
+        }
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [step]);
 
   /* ── Customer profile ── */
@@ -620,10 +645,23 @@ export default function Login({ onLogin }) {
               )}
 
               {/* ── Login method toggle ── */}
+              {phoneAuthReady === null && loginMethod === "phone" && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-xs px-3 py-2.5 rounded-2xl">
+                  <span className="w-3.5 h-3.5 border-2 border-blue-400 border-t-blue-700 rounded-full animate-spin shrink-0"/>
+                  <span>Setting up phone verification…</span>
+                </div>
+              )}
+              {phoneAuthReady === false && (
+                <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2.5 rounded-2xl">
+                  <span className="shrink-0">📧</span>
+                  <span>Phone SMS is temporarily unavailable. Sign in with <strong>Email OTP</strong> below.</span>
+                </div>
+              )}
               <div className="flex rounded-2xl border-2 border-gray-200 overflow-hidden bg-gray-50 p-1 gap-1">
                 <button type="button"
-                  onClick={() => { setLoginMethod("phone"); setErr(""); }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${loginMethod === "phone" ? "bg-white text-orange-600 shadow-sm border border-orange-200" : "text-gray-400 hover:text-gray-600"}`}>
+                  disabled={phoneAuthReady !== true}
+                  onClick={() => { if (phoneAuthReady === true) { setLoginMethod("phone"); setErr(""); } }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${loginMethod === "phone" ? "bg-white text-orange-600 shadow-sm border border-orange-200" : "text-gray-400 hover:text-gray-600"} ${phoneAuthReady !== true ? "opacity-40 cursor-not-allowed" : ""}`}>
                   📱 Phone SMS
                 </button>
                 <button type="button"
@@ -687,14 +725,16 @@ export default function Login({ onLogin }) {
                 </div>
               )}
 
-              {/* Hidden reCAPTCHA container — Firebase invisible reCAPTCHA renders here */}
-              <div id="recaptcha-container" />
-
               {err && <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
 
-              <button onClick={sendOtp} disabled={loading}
+              <button onClick={sendOtp}
+                disabled={loading || (loginMethod === "phone" && phoneAuthReady !== true)}
                 className="w-full h-14 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] disabled:opacity-60 text-white font-bold text-base rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2">
-                {loading ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Sending…</> : <>Send OTP →</>}
+                {loading
+                  ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Sending…</>
+                  : (loginMethod === "phone" && phoneAuthReady === null)
+                    ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Initializing…</>
+                    : <>Send OTP →</>}
               </button>
 
               <button onClick={() => { setStep("start"); setErr(""); setPhone(""); setEmail(""); setRole(null); setMode(null); }}
@@ -1058,6 +1098,9 @@ export default function Login({ onLogin }) {
           </p>
         </div>
       </div>
+
+      {/* reCAPTCHA container — MUST stay outside conditional blocks so Firebase always finds it */}
+      <div id="recaptcha-container" style={{ position: 'fixed', bottom: 0, left: 0, zIndex: -1, opacity: 0, pointerEvents: 'none' }} />
     </div>
   );
 }
