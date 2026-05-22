@@ -8,6 +8,7 @@ import ProApp from "./App.jsx";
 import { loadSession, saveSession, clearSession } from "./utils/storage.js";
 import { clearToken, api } from "./api.js";
 import { initPushNotifications } from "./firebase.js";
+import { clearGpsDb } from "./utils/gpsBuffer.js";
 
 /* ── Error Boundary ─────────────────────────────────────────────────────────
  * Catches render errors in any child component and shows a friendly recovery
@@ -196,6 +197,7 @@ function Root() {
     clearInterval(countdownRef.current);
     clearSession();
     clearToken();
+    clearGpsDb(); // clear buffered GPS positions + auth token from IDB on logout
     setSession(null);
     setWarnVisible(false);
   }, []);

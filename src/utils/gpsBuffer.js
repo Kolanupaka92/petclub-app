@@ -82,3 +82,23 @@ export async function saveTokenToGpsDb(token) {
     console.warn('[gpsBuffer] Failed to write token to IDB:', e);
   }
 }
+
+/**
+ * Clear all buffered GPS positions and the stored auth token from IDB.
+ * Call this on logout so the service worker cannot replay requests
+ * using a revoked/stale JWT token.
+ */
+export async function clearGpsDb() {
+  try {
+    const db = await openGpsDb();
+    await new Promise((resolve) => {
+      const tx = db.transaction(['positions', 'meta'], 'readwrite');
+      tx.objectStore('positions').clear();
+      tx.objectStore('meta').clear();
+      tx.oncomplete = resolve;
+      tx.onerror    = resolve; // non-critical
+    });
+  } catch (e) {
+    console.warn('[gpsBuffer] Failed to clear IDB on logout:', e);
+  }
+}

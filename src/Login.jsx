@@ -1156,9 +1156,9 @@ export default function Login({ onLogin }) {
 
           <p className="text-center text-[11px] text-gray-400 mt-6">
             By continuing you agree to our{" "}
-            <a href="https://mypetclub.app/terms.html" target="_blank" rel="noopener noreferrer" className="underline">Terms</a>
+            <a href={import.meta.env.VITE_TERMS_URL || "https://mypetclub.app/terms.html"} target="_blank" rel="noopener noreferrer" className="underline">Terms</a>
             {" "}&amp;{" "}
-            <a href="https://mypetclub.app/privacy.html" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>
+            <a href={import.meta.env.VITE_PRIVACY_URL || "https://mypetclub.app/privacy.html"} target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>
           </p>
         </div>
       </div>
