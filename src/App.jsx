@@ -1698,10 +1698,26 @@ const AdminDashboard = ({ session, onLogout }) => {
         setUsers(l => l.filter(u => !deleted.includes(u.id)));
         setSelectedUsers(new Set());
         showToast(`🗑️ ${deleted.length} user${deleted.length !== 1 ? "s" : ""} deleted.`);
+      } else if (action === "purge_all_suspended") {
+        await handlePurgeAllSuspended();
+        return; // handlePurgeAllSuspended closes modal + shows toast itself
       }
     } catch (e) { showToast("❌ " + (e.message || "Action failed."), "error"); }
     setConfirmLoading(false);
     setConfirmModal(null);
+  };
+
+  /* ── Purge all suspended ── */
+  const handlePurgeAllSuspended = async () => {
+    try {
+      const res = await api.purgeAllSuspended();
+      setUsers(u => u.filter(x => x.is_active || x.role === 'admin'));
+      setConfirmModal(null);
+      showToast(`🗑️ Deleted ${res.deleted} suspended account${res.deleted !== 1 ? 's' : ''}.`);
+    } catch (e) {
+      showToast("❌ " + e.message, "error");
+      setConfirmModal(null);
+    }
   };
 
   /* ── Bulk action entry-points ── */
@@ -2098,11 +2114,23 @@ const AdminDashboard = ({ session, onLogout }) => {
           <div className="max-w-2xl mx-auto px-4 py-5">
 
             {/* ── Header ── */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
               <h1 className="text-xl font-extrabold text-gray-800">Users</h1>
-              <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full font-semibold">
-                {filteredUsers.length} / {users.length} total
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full font-semibold">
+                  {filteredUsers.length} / {users.length} total
+                </span>
+                {users.some(u => !u.is_active && u.role !== 'admin') && (
+                  <button
+                    onClick={() => {
+                      const count = users.filter(u => !u.is_active && u.role !== 'admin').length;
+                      setConfirmModal({ action: "purge_all_suspended", count });
+                    }}
+                    className="text-xs font-bold px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition flex items-center gap-1">
+                    🗑️ Purge All Suspended ({users.filter(u => !u.is_active && u.role !== 'admin').length})
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* ── Search ── */}
@@ -2598,14 +2626,19 @@ const AdminDashboard = ({ session, onLogout }) => {
 
             {/* Title */}
             <h3 className="text-lg font-extrabold text-gray-900 text-center mb-2">
-              {confirmModal.action === "suspend"      && "Suspend User?"}
-              {confirmModal.action === "delete"       && "Delete User?"}
-              {confirmModal.action === "bulk_suspend" && `Suspend ${confirmModal.count} Users?`}
-              {confirmModal.action === "bulk_delete"  && `Delete ${confirmModal.count} Users?`}
+              {confirmModal.action === "suspend"             && "Suspend User?"}
+              {confirmModal.action === "delete"              && "Delete User?"}
+              {confirmModal.action === "bulk_suspend"        && `Suspend ${confirmModal.count} Users?`}
+              {confirmModal.action === "bulk_delete"         && `Delete ${confirmModal.count} Users?`}
+              {confirmModal.action === "purge_all_suspended" && `Purge All ${confirmModal.count} Suspended Accounts?`}
             </h3>
 
             {/* Body */}
             <p className="text-sm text-gray-500 text-center mb-6 leading-relaxed">
+              {confirmModal.action === "purge_all_suspended" && (
+                <>Permanently delete all <strong className="text-gray-800">{confirmModal.count} suspended account{confirmModal.count !== 1 ? "s" : ""}</strong>?
+                  All their data, profiles, and logs will be removed. This cannot be undone.</>
+              )}
               {confirmModal.action === "suspend" && (
                 <>Are you sure you want to suspend <strong className="text-gray-800">{confirmModal.userName}</strong>?
                   They will be locked out and permanently deleted after 24 hours if not restored.</>
@@ -2644,6 +2677,7 @@ const AdminDashboard = ({ session, onLogout }) => {
               >
                 {confirmLoading
                   ? "Processing…"
+                  : confirmModal.action === "purge_all_suspended" ? "🗑️ Purge All"
                   : confirmModal.action.includes("delete") ? "🗑️ Delete" : "⏸ Suspend"}
               </button>
             </div>

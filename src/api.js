@@ -115,6 +115,7 @@ export const api = {
   verifyProfessional: (id, action, reason) => req('PUT', `/admin/verify/${id}`, { action, reason }, true),
   suspendUser: (id) => req('PUT', `/admin/users/${id}/suspend`, {}, true),
   deleteUser: (id) => req('DELETE', `/admin/users/${id}`, null, true),
+  purgeAllSuspended: () => req('DELETE', '/admin/users/suspended/purge-all', null, true),
   setUserSubRole: (id, subRole) => req('PUT', `/admin/users/${id}/set-role`, { subRole }, true),
   adminEditUser: (id, data) => req('POST', `/admin/users/${id}/edit`, data, true),
   // Admin testing tools
