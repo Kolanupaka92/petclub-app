@@ -328,7 +328,11 @@ export default function Login({ onLogin }) {
         if (otpSuggestion) return showErr(`"${trimmedEmail.split('@')[1]}" is not a valid domain. Did you mean ${otpSuggestion}?`);
         await api.sendEmailOTP(email.trim());
       } else {
-        const digits = phone.replace(/\D/g, "");
+        // Strip all non-digits, then remove a leading country-code prefix if the user
+        // accidentally pasted the full international number (e.g. "+91 98765 43210").
+        // Without this, e164 would double-prefix: +91919876543210 instead of +919876543210.
+        let digits = phone.replace(/\D/g, "");
+        if (digits.startsWith(cc)) digits = digits.slice(cc.length);
         if (digits.length < 6) return showErr("Enter a valid phone number");
         const e164 = `+${cc}${digits}`;
 
