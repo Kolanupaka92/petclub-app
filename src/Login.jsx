@@ -234,6 +234,7 @@ export default function Login({ onLogin }) {
   const [emailSuggestion, setEmailSuggestion] = useState("");
   // null = initializing (blocks Send OTP) | true = ready | false = unavailable (auto Email OTP)
   const [phoneAuthReady, setPhoneAuthReady] = useState(null);
+  const [phoneAuthError, setPhoneAuthError] = useState(null); // error code/message for debugging
   const otpRefs = useRef([]);
 
   /* ── Init Firebase Phone Auth when phone step mounts ── */
@@ -244,6 +245,7 @@ export default function Login({ onLogin }) {
     }
     // Reset to "initializing" state — blocks Send OTP until we know Firebase status
     setPhoneAuthReady(null);
+    setPhoneAuthError(null);
 
     let cancelled = false;
     (async () => {
@@ -256,8 +258,10 @@ export default function Login({ onLogin }) {
         } else {
           setPhoneAuthReady(true);
         }
-      } catch {
+      } catch (e) {
         if (!cancelled) {
+          const code = e.code || '';
+          setPhoneAuthError(code || e.message || 'unknown');
           setPhoneAuthReady(false);
           setLoginMethod("email");
         }
@@ -653,24 +657,34 @@ export default function Login({ onLogin }) {
               )}
               {phoneAuthReady === false && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2.5 rounded-2xl">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="shrink-0">📧</span>
-                    <span>Phone SMS unavailable right now. Use <strong>Email OTP</strong> or</span>
+                    <span>Phone SMS unavailable. Use <strong>Email OTP</strong> or</span>
                     <button type="button"
                       onClick={() => {
                         setPhoneAuthReady(null);
+                        setPhoneAuthError(null);
                         setLoginMethod("phone");
                         initPhoneAuth("recaptcha-container")
                           .then(ok => {
                             setPhoneAuthReady(ok ? true : false);
                             if (!ok) setLoginMethod("email");
                           })
-                          .catch(() => { setPhoneAuthReady(false); setLoginMethod("email"); });
+                          .catch(e => {
+                            setPhoneAuthError(e.code || e.message || 'unknown');
+                            setPhoneAuthReady(false);
+                            setLoginMethod("email");
+                          });
                       }}
                       className="font-bold underline text-amber-700 hover:text-amber-900 shrink-0">
                       retry →
                     </button>
                   </div>
+                  {phoneAuthError && (
+                    <div className="mt-1.5 font-mono text-[10px] text-amber-600 bg-amber-100 rounded px-2 py-1 break-all">
+                      Error: {phoneAuthError}
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex rounded-2xl border-2 border-gray-200 overflow-hidden bg-gray-50 p-1 gap-1">

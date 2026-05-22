@@ -103,13 +103,17 @@ export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
     console.info('[PhoneAuth] ✅ Initialized successfully');
     return true;
   } catch (e) {
-    console.error('[PhoneAuth] Init failed:', e.message, e.code || '');
-    if (e.code === 'auth/operation-not-allowed') {
+    const code = e.code || '';
+    console.error('[PhoneAuth] Init failed:', e.message, code);
+    if (code === 'auth/operation-not-allowed') {
       console.error('[PhoneAuth] ⚠️  Enable Phone sign-in: Firebase Console → Authentication → Sign-in method → Phone → Enable');
     }
     _auth = null;
     _recaptchaVerifier = null;
-    return false;
+    // Surface the error so the UI can show it — the code tells us exactly what to fix
+    const err = new Error(e.message || 'Firebase phone auth failed');
+    err.code = code;
+    throw err;
   }
 };
 
