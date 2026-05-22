@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { api, saveToken } from "./api.js";
-// Firebase phone auth removed — using backend Twilio SMS OTP instead
+// Dual-route SMS auth:
+//   India (+91) → Firebase Phone Auth (Blaze plan, cost-effective for IN carrier rates)
+//   USA   (+1)  → Backend Twilio SMS OTP (no reCAPTCHA, any domain)
+import { initPhoneAuth, sendPhoneOtp, verifyPhoneOtp, clearPhoneAuth } from "./firebase.js";
 import { AddressPicker } from "./components/AddressPicker.jsx";
 
 /* ── Constants ── */
@@ -233,8 +236,35 @@ export default function Login({ onLogin }) {
   const [shake, setShake]   = useState(false);
   const [timer, setTimer]   = useState(0);
   const [emailSuggestion, setEmailSuggestion] = useState("");
-  const [pendingPhone, setPendingPhone] = useState(""); // E.164 phone used when OTP was sent
+  const [pendingPhone, setPendingPhone] = useState(""); // E.164 used for Twilio (US) route
+  const [phoneRoute, setPhoneRoute] = useState("twilio"); // "twilio" (US) | "firebase" (India)
+  const [fbReady, setFbReady] = useState(null); // null=initializing, true=ok, false=failed — India only
   const otpRefs = useRef([]);
+
+  /* ── Firebase init — India (+91) phone SMS only ── */
+  useEffect(() => {
+    const needsFirebase = step === "phone" && loginMethod === "phone" && cc === "91";
+    if (!needsFirebase) {
+      setFbReady(null); // reset so next India visit starts fresh
+      return;
+    }
+    setFbReady(null);
+    let cancelled = false;
+    (async () => {
+      try {
+        const ok = await initPhoneAuth("recaptcha-container");
+        if (!cancelled) setFbReady(ok ? true : false);
+      } catch {
+        if (!cancelled) setFbReady(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [step, cc, loginMethod]);
+
+  /* ── Cleanup Firebase on unmount ── */
+  useEffect(() => {
+    return () => { clearPhoneAuth(); };
+  }, []);
 
   /* ── Customer profile ── */
   const [cust, setCust] = useState({
@@ -277,7 +307,11 @@ export default function Login({ onLogin }) {
   const flowSteps   = mode === "signup" ? signupSteps : signinSteps;
   const stepIdx     = flowSteps.indexOf(step);
 
-  /* ── Send OTP — phone (backend Twilio SMS) or email (backend) ── */
+  /* ── Send OTP — country-code routed ──
+       India (+91) → Firebase Phone Auth (Blaze plan, cheap IN carrier rates)
+       USA   (+1)  → Backend Twilio SMS (no reCAPTCHA required)
+       Email       → Backend email OTP (always available)
+  ── */
   const sendOtp = async () => {
     setLoading(true); setErr("");
     try {
@@ -297,8 +331,17 @@ export default function Login({ onLogin }) {
         const digits = phone.replace(/\D/g, "");
         if (digits.length < 6) return showErr("Enter a valid phone number");
         const e164 = `+${cc}${digits}`;
-        await api.sendPhoneOTP(e164);
-        setPendingPhone(e164);
+
+        if (cc === "91") {
+          // India → Firebase Phone Auth (reCAPTCHA handled invisibly)
+          await sendPhoneOtp(e164);
+          setPhoneRoute("firebase");
+        } else {
+          // US (and any other country) → Backend Twilio SMS
+          await api.sendPhoneOTP(e164);
+          setPendingPhone(e164);
+          setPhoneRoute("twilio");
+        }
       }
       setStep("otp"); setOtp(["","","","","",""]); setTimer(60);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
@@ -307,7 +350,7 @@ export default function Login({ onLogin }) {
     } finally { setLoading(false); }
   };
 
-  /* ── Verify OTP — phone (backend Twilio) or email (backend) ── */
+  /* ── Verify OTP — routes by phoneRoute set at send time ── */
   const verifyOtp = async (code) => {
     if (loading) return;
     const c = code ?? otp.join("");
@@ -317,14 +360,18 @@ export default function Login({ onLogin }) {
       let res;
       if (loginMethod === "email") {
         res = await api.verifyEmailOTP(email.trim(), c);
+      } else if (phoneRoute === "firebase") {
+        // India (+91): confirm via Firebase → firebase.js exchanges ID token for PETclub JWT
+        res = await verifyPhoneOtp(c);
       } else {
+        // US (+1): backend Twilio OTP
         res = await api.verifyPhoneOTP(pendingPhone, c);
       }
       saveToken(res.token);
       if (mode === "signup" || res.isNew || res.user?.role === "pending_role") {
         // Pre-fill email from the login-step email field (used when loginMethod==="email")
         if (email.trim()) {
-          setCust(c => ({ ...c, email: c.email || email.trim() }));
+          setCust(cv => ({ ...cv, email: cv.email || email.trim() }));
           setPro(p => ({ ...p, email: p.email || email.trim() }));
         }
         setStep("profile");
@@ -620,6 +667,32 @@ export default function Login({ onLogin }) {
                 </button>
               </div>
 
+              {/* ── India Firebase status — only shown for +91 phone route ── */}
+              {loginMethod === "phone" && cc === "91" && fbReady === null && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-xs px-3 py-2.5 rounded-2xl">
+                  <span className="w-3.5 h-3.5 border-2 border-blue-400 border-t-blue-700 rounded-full animate-spin shrink-0"/>
+                  <span>Setting up SMS verification for India…</span>
+                </div>
+              )}
+              {loginMethod === "phone" && cc === "91" && fbReady === false && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2.5 rounded-2xl">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="shrink-0">📧</span>
+                    <span>SMS verification unavailable. Use <strong>Email OTP</strong> or</span>
+                    <button type="button"
+                      onClick={() => {
+                        setFbReady(null);
+                        initPhoneAuth("recaptcha-container")
+                          .then(ok => setFbReady(ok ? true : false))
+                          .catch(() => setFbReady(false));
+                      }}
+                      className="font-bold underline text-amber-700 hover:text-amber-900 shrink-0">
+                      retry →
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* ── Phone input ── */}
               {loginMethod === "phone" && (
                 <div>
@@ -676,13 +749,24 @@ export default function Login({ onLogin }) {
 
               {err && <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
 
-              <button onClick={sendOtp}
-                disabled={loading}
-                className="w-full h-14 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] disabled:opacity-60 text-white font-bold text-base rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2">
-                {loading
-                  ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Sending…</>
-                  : <>Send OTP →</>}
-              </button>
+              {/* India Firebase not ready → block send and prompt email switch */}
+              {loginMethod === "phone" && cc === "91" && fbReady === false && (
+                <button type="button" onClick={() => { setLoginMethod("email"); setErr(""); }}
+                  className="w-full h-14 bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white font-bold text-base rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2">
+                  📧 Switch to Email OTP →
+                </button>
+              )}
+              {!(loginMethod === "phone" && cc === "91" && fbReady === false) && (
+                <button onClick={sendOtp}
+                  disabled={loading || (loginMethod === "phone" && cc === "91" && fbReady !== true)}
+                  className="w-full h-14 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] disabled:opacity-60 text-white font-bold text-base rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2">
+                  {loading
+                    ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Sending…</>
+                    : (loginMethod === "phone" && cc === "91" && fbReady === null)
+                      ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Initializing…</>
+                      : <>Send OTP →</>}
+                </button>
+              )}
 
               <button onClick={() => { setStep("start"); setErr(""); setPhone(""); setEmail(""); setRole(null); setMode(null); }}
                 className="w-full text-xs text-gray-400 hover:text-gray-600 py-1.5 text-center transition-colors">
@@ -1046,6 +1130,9 @@ export default function Login({ onLogin }) {
         </div>
       </div>
 
+      {/* reCAPTCHA container — required by Firebase for India (+91) phone auth.
+          Stays outside conditional blocks so Firebase always finds it in the DOM. */}
+      <div id="recaptcha-container" style={{ position: 'fixed', bottom: 0, left: 0, zIndex: -1, opacity: 0, pointerEvents: 'none' }} />
     </div>
   );
 }
