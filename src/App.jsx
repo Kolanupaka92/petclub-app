@@ -2705,7 +2705,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                       className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl transition disabled:opacity-60 flex items-center justify-center gap-2">
                       {dbCleanLoading
                         ? <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Cleaning…</>
-                        : `🧹 Clean Up All Issues (${cleanTargets.length} category${cleanTargets.length !== 1 ? 'ies' : 'y'})`}
+                        : `🧹 Clean Up All Issues (${cleanTargets.length} ${cleanTargets.length !== 1 ? 'categories' : 'category'})`}
                     </button>
                   )}
                 </>
