@@ -1097,7 +1097,7 @@ export default function PetclubApp({ session, onLogout }) {
 
       {/* BOOK SERVICE — Multi-step */}
       {modal === "bookService" && (
-        <Modal title={bookingStep === 1 ? "Select Service 📅" : bookingStep === 2 ? "Booking Details" : "Confirm Booking"} onClose={() => { setModal(null); setBookingStep(1); }}>
+        <Modal title={bookingStep === 1 ? "Select Service 📅" : bookingStep === 2 ? "Booking Details" : "Confirm Booking"} onClose={() => { setModal(null); setBookingStep(1); setBookingForm({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" }); setBookingAddrMeta({ lat: null, lng: null }); setBookingAddrErr(""); }}>
 
           {/* Step indicators */}
           <div className="flex items-center mb-5">

@@ -15,7 +15,20 @@ const sColor = s => ({
   ongoing:"bg-orange-50 text-orange-700 border-orange-200", pending:"bg-amber-50 text-amber-700 border-amber-200",
   approved:"bg-emerald-50 text-emerald-700 border-emerald-200", rejected:"bg-red-50 text-red-600 border-red-200",
   active:"bg-emerald-50 text-emerald-700 border-emerald-200", suspended:"bg-red-50 text-red-600 border-red-200",
+  // assignment_status values
+  confirmed:"bg-emerald-50 text-emerald-700 border-emerald-200",
+  on_the_way:"bg-orange-50 text-orange-700 border-orange-200",
+  in_progress:"bg-blue-50 text-blue-700 border-blue-200",
+  searching:"bg-amber-50 text-amber-700 border-amber-200",
+  offered:"bg-violet-50 text-violet-700 border-violet-200",
+  no_pros_available:"bg-red-50 text-red-600 border-red-200",
 })[s] || "bg-gray-50 text-gray-600 border-gray-200";
+
+const aStatusLabel = s => ({
+  confirmed: "✅ Confirmed", on_the_way: "🚗 On My Way", in_progress: "🔧 In Progress",
+  searching: "🔍 Searching", completed: "✅ Completed", cancelled: "❌ Cancelled",
+  no_pros_available: "⚠️ No Pros", offered: "📤 Offered",
+})[s] || s?.replace(/_/g, ' ');
 
 // Detect country from phone and return appropriate ID types
 const getIdTypes = phone => {
@@ -733,6 +746,25 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
     startLocationSharing(bookingId);
   };
 
+  // "Start Service" — transition on_the_way → in_progress when pro arrives
+  const startService = async (bookingId) => {
+    try {
+      await api.updateBookingStatus(bookingId, 'in_progress');
+      showToast("🔧 Service started! Good luck!");
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'in_progress', assignment_status: 'in_progress' } : b));
+    } catch (e) { showToast("❌ " + (e.message || "Failed to start service")); }
+  };
+
+  // "Mark Complete" — mark service done by professional
+  const markComplete = async (bookingId) => {
+    try {
+      await api.updateBookingStatus(bookingId, 'completed');
+      showToast("✅ Service marked as complete!");
+      stopLocationSharing();
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'completed', assignment_status: 'completed' } : b));
+    } catch (e) { showToast("❌ " + (e.message || "Failed to mark complete")); }
+  };
+
   // watchPosition — fires continuously as device moves; throttled to max 1 send/10s
   // More reliable than setInterval on mobile (browser-native, lower battery drain)
   const startLocationSharing = (bookingId) => {
@@ -874,8 +906,8 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   };
 
   const todayBk     = bookings.filter(b => { try { return new Date(b.scheduled_at).toDateString() === new Date().toDateString(); } catch { return false; } });
-  const upcomingBk  = bookings.filter(b => b.status === "upcoming");
-  const completedBk = bookings.filter(b => b.status === "completed");
+  const upcomingBk  = bookings.filter(b => ["upcoming","confirmed","on_the_way","in_progress"].includes(b.assignment_status || b.status));
+  const completedBk = bookings.filter(b => b.status === "completed" || b.assignment_status === "completed");
   const activeRequests = requests.filter(r => new Date(r.response_deadline) > new Date());
 
   const isVerified  = profile?.verification_status === "approved";
@@ -1060,7 +1092,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                       <div className="font-semibold text-sm text-gray-800 truncate">{b.service_name || b.service_type || "Service"}</div>
                       <div className="text-xs text-gray-400">{fmtTime(b.scheduled_at)}</div>
                     </div>
-                    <Bdg text={b.status} cls={sColor(b.status)}/>
+                    <Bdg text={aStatusLabel(b.assignment_status || b.status)} cls={sColor(b.assignment_status || b.status)}/>
                   </div>
                 ))}
               </div>
@@ -1205,12 +1237,12 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                           <div className="font-bold text-sm text-gray-800">{b.service_name || b.service_type || "Service"}</div>
                           <div className="text-xs text-gray-400 mt-0.5">{b.scheduled_at ? `${fmtDate(b.scheduled_at)} at ${fmtTime(b.scheduled_at)}` : "Date TBD"}</div>
                         </div>
-                        <Bdg text={b.status} cls={sColor(b.status)}/>
+                        <Bdg text={aStatusLabel(b.assignment_status || b.status)} cls={sColor(b.assignment_status || b.status)}/>
                       </div>
                       {(b.provider_earnings || b.amount) && (
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs text-gray-400 font-medium">
-                            {b.status === 'completed' ? 'Earned' : 'Expected earning'}
+                            {(b.status === 'completed' || b.assignment_status === 'completed') ? 'Earned' : 'Expected earning'}
                           </span>
                           <div className="text-right">
                             <span className="text-sm font-extrabold text-emerald-600">
@@ -1243,25 +1275,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                       )}
                       {/* 🚗 On My Way + 📍 Location sharing */}
                       {isActive && (
-                        isSharing ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-                              <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"/>
-                              <span className="text-xs font-bold text-emerald-700">Live GPS streaming — customer is tracking you</span>
-                            </div>
-                            {/* iOS / background warning */}
-                            {bgWarning && (
-                              <div className="bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 text-xs text-amber-800 font-semibold">
-                                ⚠️ App is in background — keep screen ON to maintain GPS accuracy. On iPhone, do not lock the screen.
-                              </div>
-                            )}
-                            <button
-                              onClick={stopLocationSharing}
-                              className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-600 font-bold text-xs py-2.5 rounded-xl transition-all hover:bg-red-100 active:scale-[0.97]">
-                              ⏹ Stop Sharing Location
-                            </button>
-                          </div>
-                        ) : b.assignment_status === 'confirmed' ? (
+                        b.assignment_status === 'confirmed' ? (
                           <button
                             onClick={() => startJourney(b.id)}
                             className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 active:scale-[0.97] text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md">
@@ -1269,14 +1283,71 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                           </button>
                         ) : b.assignment_status === 'on_the_way' ? (
                           <div className="space-y-2">
-                            <div className="bg-orange-50 border border-orange-200 rounded-xl px-3 py-2 text-xs font-bold text-orange-700 flex items-center gap-2">
-                              <span className="inline-block w-2 h-2 bg-orange-500 rounded-full animate-bounce"/>
-                              Journey in progress — customer is tracking you
-                            </div>
+                            {isSharing ? (
+                              <>
+                                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                                  <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"/>
+                                  <span className="text-xs font-bold text-emerald-700">Live GPS — customer is tracking you</span>
+                                </div>
+                                {bgWarning && (
+                                  <div className="bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 text-xs text-amber-800 font-semibold">
+                                    ⚠️ App is in background — keep screen ON for GPS accuracy.
+                                  </div>
+                                )}
+                                <button
+                                  onClick={stopLocationSharing}
+                                  className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-600 font-bold text-xs py-2.5 rounded-xl transition-all hover:bg-red-100 active:scale-[0.97]">
+                                  ⏹ Stop Sharing Location
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <div className="bg-orange-50 border border-orange-200 rounded-xl px-3 py-2 text-xs font-bold text-orange-700 flex items-center gap-2">
+                                  <span className="inline-block w-2 h-2 bg-orange-500 rounded-full animate-bounce"/>
+                                  On my way — tap Resume to share GPS
+                                </div>
+                                <button
+                                  onClick={() => startLocationSharing(b.id)}
+                                  className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.97] text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm">
+                                  📍 Resume Location Sharing
+                                </button>
+                              </>
+                            )}
                             <button
-                              onClick={() => startLocationSharing(b.id)}
-                              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.97] text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm">
-                              📍 Resume Location Sharing
+                              onClick={() => startService(b.id)}
+                              className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 active:scale-[0.97] text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md">
+                              🔧 I&apos;ve Arrived — Start Service
+                            </button>
+                          </div>
+                        ) : b.assignment_status === 'in_progress' ? (
+                          <div className="space-y-2">
+                            {isSharing ? (
+                              <>
+                                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
+                                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"/>
+                                  <span className="text-xs font-bold text-blue-700">Service in progress — GPS live</span>
+                                </div>
+                                {bgWarning && (
+                                  <div className="bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 text-xs text-amber-800 font-semibold">
+                                    ⚠️ Keep screen ON for GPS accuracy.
+                                  </div>
+                                )}
+                                <button
+                                  onClick={stopLocationSharing}
+                                  className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-600 font-bold text-xs py-2.5 rounded-xl transition-all hover:bg-red-100 active:scale-[0.97]">
+                                  ⏹ Stop Sharing Location
+                                </button>
+                              </>
+                            ) : (
+                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-xs font-bold text-blue-700 flex items-center gap-2">
+                                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-bounce"/>
+                                Service in progress
+                              </div>
+                            )}
+                            <button
+                              onClick={() => markComplete(b.id)}
+                              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.97] text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md">
+                              ✅ Mark Service Complete
                             </button>
                           </div>
                         ) : (
