@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.1.0...v1.1.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **auth:** graceful phone OTP fallback when Firebase domain not authorized ([5bd3f0c](https://github.com/Kolanupaka92/petclub-app/commit/5bd3f0c0d50d2be7f5630544b48f3e1fb1ce20b7))
+
 # [1.1.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.0.1...v1.1.0) (2026-05-22)
 
 
