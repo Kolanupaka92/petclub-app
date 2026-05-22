@@ -330,6 +330,13 @@ function Root() {
   );
 }
 
+// ── Version banner ────────────────────────────────────────────────────────
+console.info(
+  `%c🐾 PETclub%c v${__APP_VERSION__}`,
+  'color:#f97316;font-weight:900;font-size:14px',
+  'color:#94a3b8;font-size:12px'
+);
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ErrorBoundary>

@@ -627,6 +627,7 @@ export default function LandingPage({ onGetStarted }) {
         </div>
         <div style={{ fontSize: 11, color: "#374151" }}>
           © {new Date().getFullYear()} PETclub · United States &amp; India · All rights reserved
+          <span style={{ marginLeft: 8, color: "#1f2937", fontFamily: "monospace" }}>v{__APP_VERSION__}</span>
         </div>
         <div style={{ display: "flex", gap: 16 }}>
           {["Terms of Service", "Privacy Policy"].map(l => (

@@ -1,0 +1,78 @@
+# ══════════════════════════════════════════════════════════════════
+#  PETclub Frontend — Semantic Release
+#  Triggered: every push to main that isn't a release commit itself
+#
+#  What it does:
+#    1. Analyses conventional commits since the last release tag
+#    2. Bumps version in package.json (feat → minor, fix → patch)
+#    3. Generates / updates CHANGELOG.md
+#    4. Commits package.json + CHANGELOG.md back to main with [skip ci]
+#    5. Creates a GitHub Release with auto-generated release notes
+#
+#  Conventional commit cheat-sheet:
+#    feat: <msg>       → minor bump  (1.x.0)
+#    fix: <msg>        → patch bump  (1.0.x)
+#    perf: / refactor: → patch bump
+#    chore: / docs:    → no release
+#    BREAKING CHANGE:  → major bump  (x.0.0)
+#
+#  Required GitHub Secrets — none extra (GITHUB_TOKEN is auto-provided)
+#  Required GitHub repo permission: Settings → Actions → Workflow permissions
+#    → "Read and write permissions"  (or set via the permissions block below)
+# ══════════════════════════════════════════════════════════════════
+
+name: Release Frontend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Prevent this workflow from running on its own release commit
+# GitHub also skips all workflows when the commit message contains [skip ci]
+concurrency:
+  group: release-frontend
+  cancel-in-progress: false
+
+permissions:
+  contents: write        # push version commit + create GitHub Release
+  issues: write          # allow semantic-release to comment on issues
+  pull-requests: write   # allow semantic-release to comment on PRs
+  id-token: write        # needed by some publish plugins (harmless otherwise)
+
+jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Skip if this push is the release commit itself (extra safety net)
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    steps:
+      # ── 1. Full history checkout ─────────────────────────────────
+      # semantic-release needs the complete git log to determine which
+      # commits have been released and what the next version should be.
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Use a token that can push back to protected branches
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 2. Node.js ───────────────────────────────────────────────
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      # ── 3. Install deps (includes semantic-release devDependencies) ─
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. Run semantic-release ──────────────────────────────────
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release

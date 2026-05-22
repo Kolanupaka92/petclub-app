@@ -1823,6 +1823,9 @@ const AdminDashboard = ({ session, onLogout }) => {
           <button onClick={onLogout} className="w-full text-xs text-gray-500 hover:text-red-400 flex items-center justify-center gap-2 py-2 rounded-xl hover:bg-white/5 transition">
             🚪 Sign Out
           </button>
+          <div className="text-center mt-1">
+            <span className="text-[10px] text-gray-700 font-mono tracking-wider">v{__APP_VERSION__}</span>
+          </div>
         </div>
       </aside>
 
