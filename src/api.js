@@ -96,8 +96,12 @@ export const api = {
   // ID Documents
   uploadUserIdPhoto: (data) => req('POST', '/users/upload-id-photo', data, true),
 
-  // Auth — Firebase Phone Auth token exchange
+  // Auth — Firebase Phone Auth token exchange (kept for backwards compat)
   firebaseVerify: (idToken) => req('POST', '/auth/firebase-verify', { idToken }),
+
+  // Auth — Backend Phone OTP via Twilio SMS (primary, no reCAPTCHA required)
+  sendPhoneOTP: (phone) => req('POST', '/auth/send-phone-otp', { phone }),
+  verifyPhoneOTP: (phone, otp) => req('POST', '/auth/verify-phone-otp', { phone, otp }),
 
   // Auth — Email OTP fallback (for users without phone access)
   sendEmailOTP: (email) => req('POST', '/auth/send-email-otp', { email }),
