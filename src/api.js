@@ -116,6 +116,8 @@ export const api = {
   suspendUser: (id) => req('PUT', `/admin/users/${id}/suspend`, {}, true),
   deleteUser: (id) => req('DELETE', `/admin/users/${id}`, null, true),
   purgeAllSuspended: () => req('DELETE', '/admin/users/suspended/purge-all', null, true),
+  dbAudit:   ()          => req('GET',    '/admin/db-audit',   null, true),
+  dbCleanup: (targets)   => req('DELETE', '/admin/db-cleanup', { targets }, true),
   setUserSubRole: (id, subRole) => req('PUT', `/admin/users/${id}/set-role`, { subRole }, true),
   adminEditUser: (id, data) => req('POST', `/admin/users/${id}/edit`, data, true),
   // Admin testing tools

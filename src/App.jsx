@@ -1579,6 +1579,9 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [editUserSaving,setEditUserSaving]= useState(false);
   const [toast,      setToast]      = useState({ msg:"", type:"success" });
   const [health,     setHealth]     = useState(null);
+  const [dbAudit,    setDbAudit]    = useState(null);
+  const [dbAuditLoading, setDbAuditLoading] = useState(false);
+  const [dbCleanLoading, setDbCleanLoading] = useState(false);
   const isIndia      = session.phone?.startsWith("+91");
   const currencySymbol = isIndia ? "₹" : "$";
 
@@ -1784,6 +1787,7 @@ const AdminDashboard = ({ session, onLogout }) => {
     { id:"verify",   icon:"🔍", label:"Verify",   badge: pending.length },
     { id:"users",    icon:"👥", label:"Users" },
     { id:"bookings", icon:"📅", label:"Bookings" },
+    { id:"dbhealth", icon:"🗄️", label:"DB Health" },
   ];
 
   if (loading) return <Spinner full/>;
@@ -2589,6 +2593,124 @@ const AdminDashboard = ({ session, onLogout }) => {
             </div>
           );
         })()}
+
+        {/* ══ 🗄️ DB HEALTH ══════════════════════════════════════════════════ */}
+        {view === "dbhealth" && (
+          <div className="max-w-2xl mx-auto px-5 py-6 space-y-5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h1 className="text-xl font-extrabold text-gray-800">🗄️ DB Health</h1>
+              <button
+                onClick={async () => {
+                  setDbAuditLoading(true);
+                  try { const r = await api.dbAudit(); setDbAudit(r.audit); }
+                  catch (e) { showToast("❌ " + e.message, "error"); }
+                  finally { setDbAuditLoading(false); }
+                }}
+                disabled={dbAuditLoading}
+                className="text-sm font-bold px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 disabled:opacity-60 transition flex items-center gap-2">
+                {dbAuditLoading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Scanning…</> : "🔍 Run Audit"}
+              </button>
+            </div>
+
+            {!dbAudit && !dbAuditLoading && (
+              <div className="text-center py-16 text-gray-400">
+                <div className="text-5xl mb-3">🗄️</div>
+                <p className="font-semibold text-gray-500">Click "Run Audit" to scan all tables</p>
+                <p className="text-xs mt-1">Checks for orphaned rows, stale records, and expired tokens</p>
+              </div>
+            )}
+
+            {dbAudit && (() => {
+              const a = dbAudit;
+              const issues = [];
+              if (a.users?.suspended > 0)              issues.push({ key: "purge_suspended",     label: `${a.users.suspended} suspended account${a.users.suspended !== 1 ? "s" : ""}`, severity: "red" });
+              if (a.users?.pending_role > 0)            issues.push({ key: "stale_pending_users", label: `${a.stale_pending_users?.count || 0} incomplete signups (>7 days old)`, severity: a.stale_pending_users?.count > 0 ? "amber" : "green" });
+              if (a.orphans?.professional_profiles > 0) issues.push({ key: "orphan_profiles",     label: `${a.orphans.professional_profiles} orphaned professional profiles`, severity: "red" });
+              if (a.orphans?.customer_profiles > 0)    issues.push({ key: "orphan_profiles",     label: `${a.orphans.customer_profiles} orphaned customer profiles`, severity: "red" });
+              if (a.orphans?.pets > 0)                  issues.push({ key: "orphan_profiles",     label: `${a.orphans.pets} orphaned pet records`, severity: "red" });
+              if (a.otp_tokens?.expired > 0)            issues.push({ key: "expired_otps",        label: `${a.otp_tokens.expired} expired OTP tokens`, severity: "amber" });
+              if (a.bookings?.cancelled > 0)            issues.push({ key: "cancelled_bookings",  label: `${a.bookings.cancelled} cancelled bookings`, severity: "amber" });
+              if (a.bookings?.stale_upcoming > 0)       issues.push({ key: "cancelled_bookings",  label: `${a.bookings.stale_upcoming} stale upcoming bookings (>30d)`, severity: "amber" });
+              if (a.website_leads?.older_than_30d > 0)  issues.push({ key: "stale_leads",         label: `${a.website_leads.older_than_30d} website leads older than 30 days`, severity: "amber" });
+              const cleanTargets = [...new Set(issues.filter(i => i.severity !== "green").map(i => i.key))];
+
+              return (
+                <>
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label:"Total Users",      value: a.users?.total,       icon:"👥" },
+                      { label:"Active",            value: a.users?.active,      icon:"✅" },
+                      { label:"Suspended",         value: a.users?.suspended,   icon:"⏸", warn: a.users?.suspended > 0 },
+                      { label:"Pending Signup",    value: a.users?.pending_role,icon:"⏳", warn: a.users?.pending_role > 0 },
+                      { label:"Professionals",     value: a.professionals?.total,       icon:"🧑‍💼" },
+                      { label:"Pending Verify",    value: a.professionals?.pending_verification, icon:"🔍", warn: a.professionals?.pending_verification > 0 },
+                      { label:"Total Bookings",    value: a.bookings?.total,    icon:"📅" },
+                      { label:"Cancelled",         value: a.bookings?.cancelled,icon:"❌", warn: a.bookings?.cancelled > 0 },
+                      { label:"Orphaned Records",  value: (a.orphans?.professional_profiles||0)+(a.orphans?.customer_profiles||0)+(a.orphans?.pets||0), icon:"🔗", warn: (a.orphans?.professional_profiles||0)+(a.orphans?.customer_profiles||0)+(a.orphans?.pets||0) > 0 },
+                      { label:"Expired OTPs",      value: a.otp_tokens?.expired,icon:"🔑", warn: a.otp_tokens?.expired > 0 },
+                      { label:"Website Leads",     value: a.website_leads?.total,       icon:"📬" },
+                      { label:"Payment Logs",      value: a.payment_logs?.total,icon:"💳" },
+                    ].map(c => (
+                      <div key={c.label} className={`rounded-2xl p-4 border ${c.warn ? "bg-red-50 border-red-200" : "bg-white border-gray-100"}`}>
+                        <div className="text-xs text-gray-500 font-medium">{c.icon} {c.label}</div>
+                        <div className={`text-2xl font-extrabold mt-1 ${c.warn ? "text-red-600" : "text-gray-800"}`}>{c.value ?? "—"}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Issues */}
+                  {issues.length === 0 ? (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center">
+                      <div className="text-3xl mb-2">✅</div>
+                      <p className="font-bold text-emerald-700">Database is clean</p>
+                      <p className="text-xs text-emerald-600 mt-1">No stale or orphaned data found.</p>
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-gray-100 rounded-2xl divide-y divide-gray-100">
+                      <div className="px-4 py-3 font-bold text-gray-700 text-sm flex items-center gap-2">
+                        ⚠️ Issues Found ({issues.length})
+                      </div>
+                      {issues.map((iss, i) => (
+                        <div key={i} className="px-4 py-3 flex items-center gap-3">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${iss.severity === "red" ? "bg-red-500" : "bg-amber-400"}`}/>
+                          <span className="text-sm text-gray-700 flex-1">{iss.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Cleanup button */}
+                  {cleanTargets.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        setDbCleanLoading(true);
+                        try {
+                          const r = await api.dbCleanup(cleanTargets);
+                          const total = Object.values(r.cleaned).reduce((s, v) => s + (typeof v === 'number' ? v : 0), 0);
+                          showToast(`🧹 Cleaned ${total} stale record${total !== 1 ? 's' : ''}.`);
+                          // Re-run audit to reflect new state
+                          const fresh = await api.dbAudit();
+                          setDbAudit(fresh.audit);
+                          // Also refresh users list
+                          const usersRes = await api.getAdminUsers().catch(() => null);
+                          if (usersRes?.users) setUsers(usersRes.users);
+                        } catch (e) { showToast("❌ " + e.message, "error"); }
+                        finally { setDbCleanLoading(false); }
+                      }}
+                      disabled={dbCleanLoading}
+                      className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl transition disabled:opacity-60 flex items-center justify-center gap-2">
+                      {dbCleanLoading
+                        ? <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Cleaning…</>
+                        : `🧹 Clean Up All Issues (${cleanTargets.length} category${cleanTargets.length !== 1 ? 'ies' : 'y'})`}
+                    </button>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        )}
+
       </main>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 flex shadow-nav">
