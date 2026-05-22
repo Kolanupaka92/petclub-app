@@ -1,4 +1,7 @@
-const BASE = import.meta.env.VITE_API_URL || (() => {
+// Strip UTF-8 BOM (﻿ / ﻿) that Vercel sometimes injects into env var values
+const _stripBom = (v) => (v || '').replace(/^﻿/, '').trim();
+
+const BASE = _stripBom(import.meta.env.VITE_API_URL) || (() => {
   console.warn('[PETclub] VITE_API_URL not set — falling back to production API. Set it in .env.local for local dev.');
   return 'https://api.mypetclub.app/api';
 })();
