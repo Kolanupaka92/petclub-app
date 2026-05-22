@@ -56,12 +56,33 @@ let _confirmationResult = null;
  * Call once when the phone-entry screen mounts.
  * @param {string} containerId — id of a <div> in the DOM for the reCAPTCHA widget
  */
+// ── Helper: replace the reCAPTCHA container with a brand-new element ──────────
+// Google's reCAPTCHA registers elements in an internal global registry by DOM
+// node reference. innerHTML-wiping or .clear() do NOT remove that registry entry.
+// The only reliable way to get a clean slate is to remove the old element from
+// the DOM entirely and insert a fresh one. This prevents "reCAPTCHA has already
+// been rendered in this element" on back-navigation, Resend OTP, or any re-init.
+const _freshRecaptchaEl = () => {
+  const OLD_ID = 'recaptcha-container';
+  const old = document.getElementById(OLD_ID);
+  const parent = old?.parentNode || document.body;
+
+  // Remove the old element (and its reCAPTCHA registration) from the DOM
+  if (old) parent.removeChild(old);
+
+  // Create a completely fresh element with the same ID
+  const fresh = document.createElement('div');
+  fresh.id = OLD_ID;
+  fresh.style.cssText = 'position:fixed;bottom:0;left:0;z-index:-1;opacity:0;pointer-events:none;';
+  parent.appendChild(fresh);
+  return OLD_ID; // return the ID string for RecaptchaVerifier
+};
+
 export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
   if (!phoneConfigured) {
     console.warn('[PhoneAuth] Firebase config incomplete — check VITE_FIREBASE_* env vars');
     return false;
   }
-  const elId = typeof containerId === 'string' ? containerId : 'recaptcha-container';
 
   try {
     const app = await getApp();
@@ -69,23 +90,14 @@ export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
 
     _auth = getAuth(app);
 
-    // Destroy the old Firebase verifier object
+    // Destroy the old Firebase verifier object first
     if (_recaptchaVerifier) {
       try { _recaptchaVerifier.clear(); } catch {}
       _recaptchaVerifier = null;
     }
 
-    // ── KEY FIX: wipe the DOM element so Google's reCAPTCHA widget is removed.
-    // Firebase's .clear() destroys the JS object but leaves the iframe/widget
-    // in the DOM. On the second call (back-nav, Resend OTP, etc.) Google throws
-    // "reCAPTCHA has already been rendered in this element".
-    // Wiping innerHTML forces a fresh render every time.
-    const containerEl = document.getElementById(elId);
-    if (!containerEl) {
-      console.error('[PhoneAuth] recaptcha-container element not found in DOM');
-      return false;
-    }
-    containerEl.innerHTML = '';
+    // Replace the container element entirely — this clears Google's internal registry
+    const elId = _freshRecaptchaEl();
 
     _recaptchaVerifier = new RecaptchaVerifier(_auth, elId, {
       size: 'invisible',
@@ -94,9 +106,7 @@ export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
         if (_recaptchaVerifier) {
           try { _recaptchaVerifier.clear(); } catch {}
           _recaptchaVerifier = null;
-          // Also wipe the DOM widget so re-init can render fresh
-          const el = document.getElementById(elId);
-          if (el) el.innerHTML = '';
+          _freshRecaptchaEl(); // swap out the element for next render
         }
       },
     });
@@ -114,9 +124,7 @@ export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
     }
     _auth = null;
     _recaptchaVerifier = null;
-    // Wipe the element so any partial widget is removed
-    const el = document.getElementById(elId);
-    if (el) el.innerHTML = '';
+    _freshRecaptchaEl(); // swap element so next attempt starts clean
     // Surface the error code so the UI can display it
     const err = new Error(e.message || 'Firebase phone auth failed');
     err.code = code;
@@ -164,9 +172,10 @@ export const clearPhoneAuth = () => {
     _recaptchaVerifier = null;
   }
   _confirmationResult = null;
-  // Wipe the DOM widget so re-mounting the login screen renders a fresh reCAPTCHA
-  const el = document.getElementById('recaptcha-container');
-  if (el) el.innerHTML = '';
+  // Replace the DOM element entirely — innerHTML wipe does NOT clear Google's
+  // internal reCAPTCHA registry, so back-navigation would re-trigger the
+  // "reCAPTCHA has already been rendered in this element" error.
+  _freshRecaptchaEl();
 };
 
 // ═══════════════════════════════════════════════════════
