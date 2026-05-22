@@ -240,7 +240,10 @@ export default function Login({ onLogin }) {
   /* ── Init Firebase Phone Auth when phone step mounts ── */
   useEffect(() => {
     if (step !== "phone") {
-      clearPhoneAuth();
+      // When moving to the OTP step we still need _confirmationResult to verify
+      // the code — do NOT clear it yet. Clear everything for any other step
+      // (back to start, profile, etc.) where phone auth is no longer needed.
+      if (step !== "otp") clearPhoneAuth();
       return;
     }
     // Reset to "initializing" state — blocks Send OTP until we know Firebase status
