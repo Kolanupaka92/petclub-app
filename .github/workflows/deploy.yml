@@ -6,15 +6,19 @@
 #  This workflow adds a build validation gate that must pass BEFORE Vercel
 #  picks up the commit — it also runs on PRs to catch errors early.
 #
+#  Safeguards implemented:
+#    1. VERCEL_FORCE_NO_BUILD_CACHE=1 set in Vercel project env vars
+#       (done via Vercel dashboard — forces clean builds on every production
+#        deploy, eliminating the cached vite binary "Permission denied" issue)
+#    2. postinstall script in package.json: chmod +x node_modules/.bin/*
+#       (permanent fix — repairs binary execute permissions after sharp's
+#        native libvips compilation disturbs the Vercel cache layer)
+#    3. smoke-test job below — runs after Vercel deploys on main pushes,
+#       pings frontend + backend /api/health to confirm 200 OK
+#
 #  Required GitHub Secrets (Settings → Secrets → Actions):
 #    VITE_API_URL        — https://api.mypetclub.app/api  (build-time env)
 #    VITE_MAPBOX_TOKEN   — Mapbox public token (pk.*)
-#
-#  Optional (only needed if you want GitHub Actions to deploy to Vercel
-#  instead of Vercel's own GitHub integration):
-#    VERCEL_TOKEN        — Vercel personal access token
-#    VERCEL_ORG_ID       — from vercel.json / team settings
-#    VERCEL_PROJECT_ID   — from vercel.json / project settings
 # ══════════════════════════════════════════════════════════════════
 
 name: Build & Validate Frontend
@@ -45,6 +49,10 @@ jobs:
           cache: "npm"
 
       # ── 3. Install dependencies ──────────────────────────────
+      #   postinstall script (package.json) runs automatically here:
+      #   "chmod +x node_modules/.bin/* 2>/dev/null || true"
+      #   This repairs any binary execute-permission corruption that
+      #   sharp's native libvips compilation can cause in cached layers.
       - name: Install dependencies
         run: npm ci
 
@@ -63,3 +71,34 @@ jobs:
           echo "── dist/ contents ──"
           du -sh dist/
           ls -lh dist/assets/ | sort -k5 -hr | head -20
+
+  # ── Smoke Test ─────────────────────────────────────────────────
+  #   Runs only on main-branch pushes (not PRs) — Vercel only deploys
+  #   to production on main. Waits for Vercel's deploy to propagate
+  #   before pinging both the frontend and backend health endpoints.
+  smoke-test:
+    name: Post-Deploy Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      # ── 1. Checkout (needed for the smoke-test script) ────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Allow Vercel propagation ───────────────────────────
+      #   Vercel's GitHub App deploys asynchronously after the commit
+      #   lands. 60 s is usually enough for the build queue + CDN flush.
+      - name: Wait for Vercel propagation (60s)
+        run: sleep 60
+
+      # ── 3. Run smoke tests ────────────────────────────────────
+      - name: Smoke test — frontend + backend health
+        env:
+          FRONTEND_URL: https://app.mypetclub.app
+          BACKEND_URL:  https://api.mypetclub.app
+        run: |
+          chmod +x scripts/smoke-test.sh
+          bash scripts/smoke-test.sh
