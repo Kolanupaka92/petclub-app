@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.1.1...v1.2.0) (2026-05-22)
+
+
+### Features
+
+* switch phone auth from Firebase reCAPTCHA to backend Twilio SMS OTP ([7de8377](https://github.com/Kolanupaka92/petclub-app/commit/7de8377b4cf1804fc0f40cd98e436b0270df482f))
+
 ## [1.1.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.1.0...v1.1.1) (2026-05-22)
 
 
