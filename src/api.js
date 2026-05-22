@@ -2,7 +2,12 @@
 const _stripBom = (v) => (v || '').replace(/^﻿/, '').trim();
 
 const BASE = _stripBom(import.meta.env.VITE_API_URL) || (() => {
-  console.warn('[PETclub] VITE_API_URL not set — falling back to production API. Set it in .env.local for local dev.');
+  if (import.meta.env.DEV) {
+    // Hard-fail in dev — prevents accidentally hitting production from local builds
+    throw new Error('[PETclub] VITE_API_URL is not set. Create a .env.local file with:\nVITE_API_URL=http://localhost:5000/api');
+  }
+  // In production builds: warn and fall back to the default API URL
+  console.warn('[PETclub] VITE_API_URL not set — falling back to production API.');
   return 'https://api.mypetclub.app/api';
 })();
 

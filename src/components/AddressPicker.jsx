@@ -31,9 +31,9 @@ export function AddressPicker({ value, onChange, placeholder, className, token }
   const debounce  = useRef(null);
   const skipBlur  = useRef(false);
 
-  /* auth header — token prop preferred, then localStorage */
+  /* auth header — token prop preferred, then localStorage (key: petclub_token) */
   const authHeader = () => {
-    const t = token || localStorage.getItem("token") || "";
+    const t = token || localStorage.getItem("petclub_token") || "";
     return t ? { Authorization: `Bearer ${t}` } : {};
   };
 

@@ -266,7 +266,7 @@ export const openRazorpayCheckout = async ({ amount, bookingId, userName, userPh
       order_id: order.id,
       name: 'PETclub',
       description,
-      image: 'https://app.mypetclub.app/icon-192.png',
+      image: `${import.meta.env.VITE_APP_URL || 'https://app.mypetclub.app'}/icon-192.png`,
       prefill: { name: userName, contact: userPhone, email: userEmail },
       theme: { color: '#f97316' },
       handler: async (response) => {
