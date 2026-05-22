@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.2.0...v1.3.0) (2026-05-22)
+
+
+### Features
+
+* **auth:** dual-route SMS — India via Firebase, US via Twilio ([c20d455](https://github.com/Kolanupaka92/petclub-app/commit/c20d4552a0255e0c7b382b749879b62ea64a96ce))
+
 # [1.2.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.1.1...v1.2.0) (2026-05-22)
 
 
