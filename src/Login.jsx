@@ -335,9 +335,12 @@ export default function Login({ onLogin }) {
         try {
           await sendPhoneOtp(e164);
         } catch (e) {
-          // reCAPTCHA may expire on retry — reinit and try once more
-          if (e.code === "auth/captcha-check-failed" || e.code === "auth/internal-error") {
-            await initPhoneAuth("recaptcha-container");
+          // reCAPTCHA token expired or failed — re-init and retry once
+          if (e.code === "auth/captcha-check-failed" || e.code === "auth/internal-error" ||
+              (e.message || '').includes('reCAPTCHA')) {
+            // Re-init clears and re-renders the reCAPTCHA widget (innerHTML wiped in initPhoneAuth)
+            const ok = await initPhoneAuth("recaptcha-container").catch(() => false);
+            if (!ok) throw new Error("Could not reinitialize phone verification. Please try again.");
             await sendPhoneOtp(e164);
           } else throw e;
         }

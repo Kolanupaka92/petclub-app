@@ -61,43 +61,47 @@ export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
     console.warn('[PhoneAuth] Firebase config incomplete — check VITE_FIREBASE_* env vars');
     return false;
   }
+  const elId = typeof containerId === 'string' ? containerId : 'recaptcha-container';
+
   try {
     const app = await getApp();
     const { getAuth, RecaptchaVerifier } = await import('firebase/auth');
 
     _auth = getAuth(app);
 
-    // Clear any stale verifier before creating a new one
+    // Destroy the old Firebase verifier object
     if (_recaptchaVerifier) {
       try { _recaptchaVerifier.clear(); } catch {}
       _recaptchaVerifier = null;
     }
 
-    // Verify the container element exists in the DOM
-    const containerEl = document.getElementById(
-      typeof containerId === 'string' ? containerId : 'recaptcha-container'
-    );
+    // ── KEY FIX: wipe the DOM element so Google's reCAPTCHA widget is removed.
+    // Firebase's .clear() destroys the JS object but leaves the iframe/widget
+    // in the DOM. On the second call (back-nav, Resend OTP, etc.) Google throws
+    // "reCAPTCHA has already been rendered in this element".
+    // Wiping innerHTML forces a fresh render every time.
+    const containerEl = document.getElementById(elId);
     if (!containerEl) {
       console.error('[PhoneAuth] recaptcha-container element not found in DOM');
       return false;
     }
+    containerEl.innerHTML = '';
 
-    // Pass string ID (not DOM element) — Firebase Auth SDK resolves it at render time.
-    // Using the string avoids any timing edge-cases with element references.
-    _recaptchaVerifier = new RecaptchaVerifier(_auth, typeof containerId === 'string' ? containerId : 'recaptcha-container', {
+    _recaptchaVerifier = new RecaptchaVerifier(_auth, elId, {
       size: 'invisible',
       callback: () => {},
       'expired-callback': () => {
         if (_recaptchaVerifier) {
           try { _recaptchaVerifier.clear(); } catch {}
           _recaptchaVerifier = null;
+          // Also wipe the DOM widget so re-init can render fresh
+          const el = document.getElementById(elId);
+          if (el) el.innerHTML = '';
         }
       },
     });
 
     // Render reCAPTCHA — no hard timeout so slow networks (India 3G) don't auto-fail.
-    // If reCAPTCHA is genuinely unavailable the promise rejects with an auth/* error
-    // which the catch block handles and falls back to Email OTP.
     await _recaptchaVerifier.render();
 
     console.info('[PhoneAuth] ✅ Initialized successfully');
@@ -110,7 +114,10 @@ export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
     }
     _auth = null;
     _recaptchaVerifier = null;
-    // Surface the error so the UI can show it — the code tells us exactly what to fix
+    // Wipe the element so any partial widget is removed
+    const el = document.getElementById(elId);
+    if (el) el.innerHTML = '';
+    // Surface the error code so the UI can display it
     const err = new Error(e.message || 'Firebase phone auth failed');
     err.code = code;
     throw err;
@@ -157,6 +164,9 @@ export const clearPhoneAuth = () => {
     _recaptchaVerifier = null;
   }
   _confirmationResult = null;
+  // Wipe the DOM widget so re-mounting the login screen renders a fresh reCAPTCHA
+  const el = document.getElementById('recaptcha-container');
+  if (el) el.innerHTML = '';
 };
 
 // ═══════════════════════════════════════════════════════
