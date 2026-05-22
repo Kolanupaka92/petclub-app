@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.0.0...v1.0.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **admin:** correct plural typo on Clean Up button — 'categoryy' → 'category' ([50d7bd3](https://github.com/Kolanupaka92/petclub-app/commit/50d7bd3304c4c249d3049e1672baec80e4c183eb))
+
 # 1.0.0 (2026-05-22)
 
 
