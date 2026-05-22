@@ -652,9 +652,25 @@ export default function Login({ onLogin }) {
                 </div>
               )}
               {phoneAuthReady === false && (
-                <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2.5 rounded-2xl">
-                  <span className="shrink-0">📧</span>
-                  <span>Phone SMS is temporarily unavailable. Sign in with <strong>Email OTP</strong> below.</span>
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2.5 rounded-2xl">
+                  <div className="flex items-center gap-2">
+                    <span className="shrink-0">📧</span>
+                    <span>Phone SMS unavailable right now. Use <strong>Email OTP</strong> or</span>
+                    <button type="button"
+                      onClick={() => {
+                        setPhoneAuthReady(null);
+                        setLoginMethod("phone");
+                        initPhoneAuth("recaptcha-container")
+                          .then(ok => {
+                            setPhoneAuthReady(ok ? true : false);
+                            if (!ok) setLoginMethod("email");
+                          })
+                          .catch(() => { setPhoneAuthReady(false); setLoginMethod("email"); });
+                      }}
+                      className="font-bold underline text-amber-700 hover:text-amber-900 shrink-0">
+                      retry →
+                    </button>
+                  </div>
                 </div>
               )}
               <div className="flex rounded-2xl border-2 border-gray-200 overflow-hidden bg-gray-50 p-1 gap-1">

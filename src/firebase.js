@@ -73,17 +73,18 @@ export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
       _recaptchaVerifier = null;
     }
 
-    // Resolve element — always prefer actual DOM element
-    const el = typeof containerId === 'string'
-      ? document.getElementById(containerId)
-      : containerId;
-
-    if (!el) {
+    // Verify the container element exists in the DOM
+    const containerEl = document.getElementById(
+      typeof containerId === 'string' ? containerId : 'recaptcha-container'
+    );
+    if (!containerEl) {
       console.error('[PhoneAuth] recaptcha-container element not found in DOM');
       return false;
     }
 
-    _recaptchaVerifier = new RecaptchaVerifier(_auth, el, {
+    // Pass string ID (not DOM element) — Firebase Auth SDK resolves it at render time.
+    // Using the string avoids any timing edge-cases with element references.
+    _recaptchaVerifier = new RecaptchaVerifier(_auth, typeof containerId === 'string' ? containerId : 'recaptcha-container', {
       size: 'invisible',
       callback: () => {},
       'expired-callback': () => {
@@ -94,13 +95,10 @@ export const initPhoneAuth = async (containerId = 'recaptcha-container') => {
       },
     });
 
-    // 8-second timeout so we never hang forever on slow/blocked reCAPTCHA
-    await Promise.race([
-      _recaptchaVerifier.render(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('reCAPTCHA render timeout')), 8000)
-      ),
-    ]);
+    // Render reCAPTCHA — no hard timeout so slow networks (India 3G) don't auto-fail.
+    // If reCAPTCHA is genuinely unavailable the promise rejects with an auth/* error
+    // which the catch block handles and falls back to Email OTP.
+    await _recaptchaVerifier.render();
 
     console.info('[PhoneAuth] ✅ Initialized successfully');
     return true;
