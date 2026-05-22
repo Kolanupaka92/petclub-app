@@ -88,6 +88,34 @@ const getCertTypes = (role) => ({
 
 const HERO = "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=900&auto=format&fit=crop&q=85";
 
+/* ── Firebase error → human message ── */
+const firebaseMsg = (e) => {
+  // Extract auth/* code embedded in the message, e.g. "(auth/too-many-requests)"
+  const codeMatch = (e.message || '').match(/\(auth\/([^)]+)\)/);
+  const code = e.code || (codeMatch ? `auth/${codeMatch[1]}` : '');
+  const codeMap = {
+    'auth/invalid-phone-number':   'Invalid phone number. Check the country code and digits.',
+    'auth/too-many-requests':      'Too many attempts. Wait a few minutes and try again.',
+    'auth/quota-exceeded':         'SMS quota reached for today. Try again tomorrow or use Email OTP.',
+    'auth/captcha-check-failed':   'Security check failed. Refresh the page and try again.',
+    'auth/missing-phone-number':   'Enter a phone number first.',
+    'auth/user-disabled':          'This account has been disabled. Contact support.',
+    'auth/operation-not-allowed':  'Phone sign-in is not enabled. Contact support.',
+    'auth/network-request-failed': 'Network error. Check your connection and try again.',
+    'auth/internal-error':         'Firebase internal error. Refresh and try again.',
+    'auth/invalid-verification-code': 'Wrong OTP code. Check the SMS and try again.',
+    'auth/code-expired':           'OTP expired. Request a new one.',
+    'auth/session-expired':        'Session expired. Request a new OTP.',
+  };
+  if (codeMap[code]) return codeMap[code];
+  // Fallback: clean up the raw Firebase message but preserve the code
+  const cleaned = (e.message || '')
+    .replace('Firebase: ', '')
+    .replace(/ \(auth\/[^)]+\)\.?$/, '')
+    .trim();
+  return (cleaned && cleaned !== 'Error') ? cleaned : (code || 'Unknown error. Please try again.');
+};
+
 /* ── OTP single digit box ── */
 const OtpBox = ({ value, onChange, onKeyDown, inputRef, active }) => (
   <input ref={inputRef} type="text" inputMode="numeric" maxLength={1} value={value}
@@ -351,7 +379,7 @@ export default function Login({ onLogin }) {
       setStep("otp"); setOtp(["","","","","",""]); setTimer(60);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } catch (e) {
-      showErr(e.message?.replace("Firebase: ", "").replace(/ \(auth\/.*\)/, "") || "Failed to send OTP. Try again.");
+      showErr(firebaseMsg(e) || "Failed to send OTP. Try again.");
     } finally { setLoading(false); }
   };
 
@@ -380,7 +408,7 @@ export default function Login({ onLogin }) {
         onLogin({ ...res.user });
       }
     } catch (e) {
-      showErr(e.message?.replace("Firebase: ", "").replace(/ \(auth\/.*\)/, "") || "Wrong OTP. Try again.");
+      showErr(firebaseMsg(e) || "Wrong OTP. Try again.");
     } finally { setLoading(false); }
   };
 
