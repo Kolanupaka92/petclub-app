@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.3.1...v1.3.2) (2026-05-23)
+
+
+### Bug Fixes
+
+* **ci:** correct smoke-test health check and auth route probe ([1441bf7](https://github.com/Kolanupaka92/petclub-app/commit/1441bf7fbbf5ea1ec7c82aa91e321872c05635ce))
+
 ## [1.3.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.3.0...v1.3.1) (2026-05-22)
 
 
