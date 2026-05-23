@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.6.0...v1.6.1) (2026-05-23)
+
+
+### Bug Fixes
+
+* **admin:** platform status widget shows real service states via /admin/health ([0103da5](https://github.com/Kolanupaka92/petclub-app/commit/0103da5454d8ec7922033c865c0a372a3d38f0a9))
+
 # [1.6.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.5.4...v1.6.0) (2026-05-23)
 
 
