@@ -1,3 +1,10 @@
+## [1.5.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.5.3...v1.5.4) (2026-05-23)
+
+
+### Bug Fixes
+
+* **auth:** handle email fallback OTP response from backend ([535b5a5](https://github.com/Kolanupaka92/petclub-app/commit/535b5a5bcd2335243e3d8e956533a74ab6e6d553))
+
 ## [1.5.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.5.2...v1.5.3) (2026-05-23)
 
 
