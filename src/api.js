@@ -100,7 +100,7 @@ export const api = {
   firebaseVerify: (idToken) => req('POST', '/auth/firebase-verify', { idToken }),
 
   // Auth — Backend Phone OTP via Twilio SMS (primary, no reCAPTCHA required)
-  sendPhoneOTP: (phone) => req('POST', '/auth/send-phone-otp', { phone }),
+  sendPhoneOTP: (phone, email) => req('POST', '/auth/send-phone-otp', { phone, ...(email ? { email } : {}) }),
   verifyPhoneOTP: (phone, otp) => req('POST', '/auth/verify-phone-otp', { phone, otp }),
 
   // Auth — Email OTP fallback (for users without phone access)

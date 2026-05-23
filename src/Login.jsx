@@ -238,6 +238,7 @@ export default function Login({ onLogin }) {
   const [emailSuggestion, setEmailSuggestion] = useState("");
   const [pendingPhone, setPendingPhone] = useState(""); // E.164 used for Twilio (US) route
   const [phoneRoute, setPhoneRoute] = useState("twilio"); // "twilio" (US) | "firebase" (India)
+  const [otpNote, setOtpNote] = useState(""); // info banner shown on OTP step (e.g. email fallback)
   const [fbReady, setFbReady] = useState(null); // null=initializing, true=ok, false=failed — India only
   const otpRefs = useRef([]);
 
@@ -342,9 +343,16 @@ export default function Login({ onLogin }) {
           setPhoneRoute("firebase");
         } else {
           // US (+1), or India when Firebase is unavailable → Backend Twilio OTP
-          await api.sendPhoneOTP(e164);
+          // Pass optional email so backend can fall back to email delivery if SMS fails
+          const smsRes = await api.sendPhoneOTP(e164, email.trim() || undefined);
           setPendingPhone(e164);
           setPhoneRoute("twilio");
+          // If backend fell back to email delivery, surface an info note for the OTP step
+          if (smsRes?.via === 'email') {
+            setOtpNote(`📧 SMS failed — OTP sent to your email (${smsRes.email || email || 'address on file'}) instead.`);
+          } else {
+            setOtpNote("");
+          }
         }
       }
       setStep("otp"); setOtp(["","","","","",""]); setTimer(60);
@@ -778,6 +786,14 @@ export default function Login({ onLogin }) {
                   }
                 </p>
               </div>
+
+              {/* SMS → email fallback notification */}
+              {otpNote && (
+                <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5">
+                  <span className="text-blue-500 shrink-0 text-sm">ℹ️</span>
+                  <p className="text-xs text-blue-800 font-medium">{otpNote}</p>
+                </div>
+              )}
 
               <div className="flex justify-between gap-2" onPaste={handlePaste}>
                 {otp.map((d, i) => (
