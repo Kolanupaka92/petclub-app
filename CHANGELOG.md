@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.5.0...v1.5.1) (2026-05-23)
+
+
+### Bug Fixes
+
+* strip UTF-8 BOM from VITE_API_URL in AddressPicker and TrackingMap components ([6602362](https://github.com/Kolanupaka92/petclub-app/commit/660236238768bb376c1739420f915dd4138ca38b))
+
 # [1.5.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.4.0...v1.5.0) (2026-05-23)
 
 
