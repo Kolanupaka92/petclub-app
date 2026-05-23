@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.8.0...v1.9.0) (2026-05-23)
+
+
+### Features
+
+* **loyalty:** add loyalty credits dashboard to customer profile tab ([c35e31a](https://github.com/Kolanupaka92/petclub-app/commit/c35e31a6c9b5d1043e2d6109e3f48ffbf2f26776))
+
 # [1.8.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.7.2...v1.8.0) (2026-05-23)
 
 
