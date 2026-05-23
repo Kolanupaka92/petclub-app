@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.7.0...v1.7.1) (2026-05-23)
+
+
+### Bug Fixes
+
+* **provider-flow:** 3 onboarding bugs ([3152286](https://github.com/Kolanupaka92/petclub-app/commit/3152286246a69d98d583e4d7bbe0a931996b4e3a))
+
 # [1.7.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.6.1...v1.7.0) (2026-05-23)
 
 
