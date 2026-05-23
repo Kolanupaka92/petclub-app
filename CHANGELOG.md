@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.10.0...v1.11.0) (2026-05-23)
+
+
+### Features
+
+* **booking:** clickwrap T&C checkbox in booking confirm step ([c2c75b5](https://github.com/Kolanupaka92/petclub-app/commit/c2c75b530a2dfa58545d7e1a020553d2a44b694d))
+
 # [1.10.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.9.1...v1.10.0) (2026-05-23)
 
 
