@@ -150,6 +150,7 @@ export default function PetclubApp({ session, onLogout }) {
   const [showLoyaltyExplainer, setShowLoyaltyExplainer] = useState(false); // "How it Works" modal
   const [bookingStep, setBookingStep] = useState(1); // 1=service 2=details 3=confirm
   const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"", coupon_code:"" });
+  const [termsAccepted, setTermsAccepted] = useState(false); // Clickwrap — must be true before Confirm
   const [bookingAddrMeta, setBookingAddrMeta] = useState({ lat: null, lng: null });
   const [bookingAddrErr,  setBookingAddrErr]  = useState("");
   const [editAddrMeta,   setEditAddrMeta]   = useState({ lat: null, lng: null, postalCode: "", city: "", state: "" });
@@ -398,6 +399,7 @@ export default function PetclubApp({ session, onLogout }) {
     if (!bookingForm.service_type) return showToast("Select a service type", "error");
     if (!bookingForm.service_name) return showToast("Select a service", "error");
     if (!bookingForm.date)         return showToast("Pick a date", "error");
+    if (!termsAccepted)            return showToast("Please accept the Terms of Service to continue.", "error");
     setBookingLoading(true);
     try {
       const scheduled_at = bookingForm.date && bookingForm.time
@@ -416,13 +418,18 @@ export default function PetclubApp({ session, onLogout }) {
         amount: pricing ? pricing.total : (bookingForm.amount ? parseFloat(bookingForm.amount) : null),
         lat: bookingAddrMeta.lat,
         lng: bookingAddrMeta.lng,
+        coupon_code: bookingForm.coupon_code || null,
+        // Clickwrap consent — server validates this; client sends proof of checkbox tick
+        terms_accepted: true,
+        terms_version:  'v1',
       });
       setMyBookings(prev => [res.booking, ...prev]);
       setModal(null);
       setBookingStep(1);
+      setTermsAccepted(false); // reset for next booking
       setBookingAddrMeta({ lat: null, lng: null });
       setBookingAddrErr("");
-      setBookingForm({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
+      setBookingForm({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"", coupon_code:"" });
       showToast("✅ Booking placed! Finding your professional…");
       setView("bookings");
     } catch (e) { showToast(e.message || "Failed to book", "error"); }
@@ -1385,7 +1392,7 @@ export default function PetclubApp({ session, onLogout }) {
 
       {/* BOOK SERVICE — Multi-step */}
       {modal === "bookService" && (
-        <Modal title={bookingStep === 1 ? "Select Service 📅" : bookingStep === 2 ? "Booking Details" : "Confirm Booking"} onClose={() => { setModal(null); setBookingStep(1); setBookingForm({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" }); setBookingAddrMeta({ lat: null, lng: null }); setBookingAddrErr(""); }}>
+        <Modal title={bookingStep === 1 ? "Select Service 📅" : bookingStep === 2 ? "Booking Details" : "Confirm Booking"} onClose={() => { setModal(null); setBookingStep(1); setTermsAccepted(false); setBookingForm({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"", coupon_code:"" }); setBookingAddrMeta({ lat: null, lng: null }); setBookingAddrErr(""); }}>
 
           {/* Step indicators */}
           <div className="flex items-center mb-5">
@@ -1716,13 +1723,50 @@ export default function PetclubApp({ session, onLogout }) {
                 </div>
               )}
 
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-5 text-xs text-blue-700">
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 text-xs text-blue-700">
                 🔍 After confirming, we&apos;ll find the best available {bookingForm.service_type} in your area. You&apos;ll be notified once matched!
               </div>
+
+              {/* ── Clickwrap consent checkbox ───────────────────────────────────── */}
+              <label className={`flex items-start gap-3 mb-5 p-3 rounded-xl border transition-colors cursor-pointer select-none ${termsAccepted ? "bg-emerald-50 border-emerald-200" : "bg-gray-50 border-gray-200 hover:border-orange-300"}`}>
+                <div className="mt-0.5 flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={e => setTermsAccepted(e.target.checked)}
+                    className="sr-only"
+                  />
+                  {/* Custom checkbox — accessible + styled */}
+                  <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all ${termsAccepted ? "bg-emerald-500 border-emerald-500" : "bg-white border-gray-300"}`}>
+                    {termsAccepted && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5"/>
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <span className="text-xs text-gray-600 leading-relaxed">
+                  I agree to the{" "}
+                  <a href="https://mypetclub.app/terms.html" target="_blank" rel="noopener noreferrer"
+                    className="text-orange-600 font-semibold underline underline-offset-2" onClick={e => e.stopPropagation()}>
+                    Terms of Service
+                  </a>
+                  {" "}and{" "}
+                  <a href="https://mypetclub.app/privacy.html" target="_blank" rel="noopener noreferrer"
+                    className="text-orange-600 font-semibold underline underline-offset-2" onClick={e => e.stopPropagation()}>
+                    Privacy Policy
+                  </a>
+                  . I understand PETclub will process my booking and contact details to provide this service.
+                </span>
+              </label>
+
               <div className="flex gap-3">
                 <button onClick={() => setBookingStep(2)} className="flex-1 border border-gray-200 text-gray-600 font-bold py-3 rounded-2xl text-sm hover:bg-gray-50">← Back</button>
-                <button disabled={bookingLoading} onClick={createBooking}
-                  className="flex-1 bg-orange-500 text-white font-bold py-3 rounded-2xl text-sm disabled:opacity-60 hover:bg-orange-600 transition">
+                <button
+                  disabled={bookingLoading || !termsAccepted}
+                  onClick={createBooking}
+                  title={!termsAccepted ? "Please accept the Terms of Service to continue" : undefined}
+                  className={`flex-1 font-bold py-3 rounded-2xl text-sm transition-all ${!termsAccepted ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-orange-500 text-white hover:bg-orange-600 active:scale-[0.98]"} disabled:opacity-70`}>
                   {bookingLoading ? "Placing…" : "✅ Confirm Booking"}
                 </button>
               </div>
