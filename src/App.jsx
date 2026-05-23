@@ -1681,6 +1681,14 @@ const AdminDashboard = ({ session, onLogout }) => {
     }).finally(() => setLoading(false));
   }, []);
 
+  // ── Platform Status auto-refresh every 60 s ──────────────────────────────
+  useEffect(() => {
+    const t = setInterval(() => {
+      api.adminHealth().then(r => { if (r) setHealth(r); }).catch(() => {});
+    }, 60_000);
+    return () => clearInterval(t);
+  }, []);
+
   // Live tracking auto-refresh — poll every 15s when "live" tab is active
   useEffect(() => {
     if (view !== "live") return;
