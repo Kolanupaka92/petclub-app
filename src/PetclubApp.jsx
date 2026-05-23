@@ -148,7 +148,7 @@ export default function PetclubApp({ session, onLogout }) {
   const [loyaltyLoading, setLoyaltyLoading] = useState(false);
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [bookingStep, setBookingStep] = useState(1); // 1=service 2=details 3=confirm
-  const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
+  const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"", coupon_code:"" });
   const [bookingAddrMeta, setBookingAddrMeta] = useState({ lat: null, lng: null });
   const [bookingAddrErr,  setBookingAddrErr]  = useState("");
   const [editAddrMeta,   setEditAddrMeta]   = useState({ lat: null, lng: null, postalCode: "", city: "", state: "" });
@@ -1002,11 +1002,12 @@ export default function PetclubApp({ session, onLogout }) {
 
       {/* ── Loyalty Credits Dashboard ── */}
       {(() => {
-        const ld = loyaltyData;
-        const bal = ld?.balance ?? 0;
-        const threshold = ld?.threshold ?? 1000;
-        const pct = ld ? Math.min(100, Math.round((bal / threshold) * 100)) : 0;
-        const needed = Math.max(0, threshold - bal);
+        const ld      = loyaltyData;
+        const bal     = ld?.balance        ?? 0;
+        const pending = ld?.pending_points ?? 0;   // Fix 5: credits locked in unconfirmed payments
+        const threshold = ld?.threshold   ?? 1000;
+        const pct     = ld ? Math.min(100, Math.round((bal / threshold) * 100)) : 0;
+        const needed  = Math.max(0, threshold - bal);
         const canRedeem = bal >= threshold;
 
         const handleRedeem = async () => {
@@ -1051,6 +1052,15 @@ export default function PetclubApp({ session, onLogout }) {
                   ? "🎉 You've unlocked a free grooming session!"
                   : `Earn ${needed.toLocaleString("en-IN")} more credits for a free Basic Bath!`}
               </p>
+              {/* Fix 5: pending credits notice */}
+              {pending > 0 && (
+                <div className="flex items-center gap-1.5 mt-2 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                  <span className="text-amber-500 text-xs">⏳</span>
+                  <p className="text-[10px] text-amber-700 font-semibold">
+                    <span className="font-bold">+{pending} credits pending</span> — will be added once payment is verified.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Redeem button */}
@@ -1578,6 +1588,32 @@ export default function PetclubApp({ session, onLogout }) {
               {bookingForm.service_type === "Vet" && (
                 <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 mb-4 text-xs text-rose-700">
                   🏥 Vet service pricing is confirmed after the initial assessment. No surprise charges.
+                </div>
+              )}
+
+              {/* Loyalty coupon apply — show only if customer has an active coupon */}
+              {loyaltyData?.coupons?.some(c => !c.is_used && new Date(c.expires_at) > new Date()) && (
+                <div className="mb-4">
+                  {bookingForm.coupon_code ? (
+                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-300 rounded-xl px-3.5 py-3">
+                      <div>
+                        <p className="text-xs font-bold text-emerald-700">🎟️ Coupon applied!</p>
+                        <p className="text-[10px] text-emerald-600 font-mono mt-0.5">{bookingForm.coupon_code} — Free Basic Bath</p>
+                      </div>
+                      <button onClick={() => setBookingForm(f => ({ ...f, coupon_code: "" }))}
+                        className="text-[10px] text-red-400 font-semibold hover:text-red-600">Remove</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const activeCoupon = loyaltyData.coupons.find(c => !c.is_used && new Date(c.expires_at) > new Date());
+                        if (activeCoupon) setBookingForm(f => ({ ...f, coupon_code: activeCoupon.code }));
+                      }}
+                      className="w-full flex items-center justify-between bg-orange-50 border border-orange-200 rounded-xl px-3.5 py-3 hover:bg-orange-100 transition-colors">
+                      <span className="text-xs font-semibold text-orange-700">🎟️ Apply loyalty coupon — Free Basic Bath</span>
+                      <span className="text-orange-500 font-bold text-sm">→</span>
+                    </button>
+                  )}
                 </div>
               )}
 
