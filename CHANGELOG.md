@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.7.2...v1.8.0) (2026-05-23)
+
+
+### Features
+
+* **booking:** add structured service catalog with tiered pricing and add-ons ([de86fee](https://github.com/Kolanupaka92/petclub-app/commit/de86feef1f72df391e29924bc44ba4bda3f9e5f1))
+
 ## [1.7.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.7.1...v1.7.2) (2026-05-23)
 
 
