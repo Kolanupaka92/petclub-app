@@ -262,7 +262,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
   const [form, setForm] = useState({
     name: session.name || "", email: session.email || "", dob: "", gender: "Male",
     address: "", area: "", city: session.city || "", pincode: "",
-    services: [], pet_types: [], bio: "", langs: "", service_areas: "", experience: "",
+    services: [], pet_types: [], bio: "", langs: "", service_areas: "", experience: "<1 year",
     certification: "", license_number: "", clinic_name: "",
     has_salon: false, home_visit: false, mobile_van: false,
     group_classes: false, board_train: false, telemedicine: false, "24_7": false,
@@ -880,6 +880,24 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Poll for approval while pending ─────────────────────────────────────
+  // Checks every 30 s whether verification_status has changed to "approved".
+  // Stops automatically once approved so it doesn't run forever.
+  useEffect(() => {
+    if (!profile || profile.verification_status === "approved") return;
+    const t = setInterval(() => {
+      api.getMyProProfile().then(res => {
+        if (res?.profile?.verification_status === "approved") {
+          setProfile(res.profile);
+          setAvailable(res.profile.is_available ?? false);
+          showToast("🎉 You're verified! You can now go Online and accept bookings.");
+        }
+      }).catch(() => {});
+    }, 30_000);
+    return () => clearInterval(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.verification_status]);
 
   // Load earnings data lazily when the Earnings tab is first opened
   useEffect(() => {
@@ -2159,19 +2177,16 @@ const AdminDashboard = ({ session, onLogout }) => {
                               <span className="text-gray-500">ID Type: <strong className="text-gray-800">{doc.doc_type || "—"}</strong></span>
                               <span className="text-gray-500">No: <strong className="text-gray-800">{doc.doc_number || "—"}</strong></span>
                             </div>
-                            <div className="flex gap-2">
-                              <button onClick={() => openDoc(doc.photo_url)}
-                                className="flex-1 text-xs font-bold bg-blue-50 border border-blue-200 text-blue-700 py-2 rounded-lg hover:bg-blue-100 transition">
-                                🪪 View ID Photo
-                              </button>
-                              {doc.cert_photo_url && (
-                                <button onClick={() => openDoc(doc.cert_photo_url)}
-                                  className="flex-1 text-xs font-bold bg-violet-50 border border-violet-200 text-violet-700 py-2 rounded-lg hover:bg-violet-100 transition">
-                                  📄 View Certificate
-                                </button>
-                              )}
+                            {doc.cert_type && (
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-500">Cert Type: <strong className="text-gray-800">{doc.cert_type}</strong></span>
+                                {doc.cert_number && <span className="text-gray-500">No: <strong className="text-gray-800">{doc.cert_number}</strong></span>}
+                              </div>
+                            )}
+                            <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-800">
+                              <span className="shrink-0 mt-0.5">📧</span>
+                              <span>ID photo was emailed to your admin inbox as an attachment — check <strong>admin@mypetclub.app</strong></span>
                             </div>
-                            <p className="text-[10px] text-gray-400">🔒 Links expire in 60 seconds · Admin access only</p>
                           </div>
                         );
                       })()}
