@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.9.0...v1.9.1) (2026-05-23)
+
+
+### Bug Fixes
+
+* **loyalty:** pending credits UI, coupon apply at checkout, hardening fixes ([4c8cd23](https://github.com/Kolanupaka92/petclub-app/commit/4c8cd239e588f693f3444686ab325b276823b78c))
+
 # [1.9.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.8.0...v1.9.0) (2026-05-23)
 
 
