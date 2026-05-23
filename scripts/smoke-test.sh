@@ -92,12 +92,16 @@ check_url "Frontend index" "$FRONTEND_URL" "200" || true
 
 echo ""
 echo "── Backend (Cloud Run) ─────────────────────"
-# 2. Health endpoint — must return 200 with status:ok
-check_url "Backend /health" "$BACKEND_URL/api/health" "200" '.status == "ok"' || true
+# 2. Health endpoint — must return 200 with a non-null version field.
+#    The status string is descriptive ("🐾 PETclub API running"), not "ok",
+#    so we validate presence of the version key instead.
+check_url "Backend /health" "$BACKEND_URL/api/health" "200" '.version != null' || true
 
-# 3. Auth routes reachable — /api/auth/send-phone-otp returns 400
-#    (not 404/503) when called with no body, confirming the route exists
-check_url "Backend /auth/send-phone-otp route" "$BACKEND_URL/api/auth/send-phone-otp" "400" || true
+# 3. Auth route reachable — POST /api/auth/send-email-otp with no body returns
+#    400 (validation error), confirming the auth router is mounted and live.
+#    We use the email OTP route because it is stable on the currently-deployed
+#    backend; phone OTP route checks are added once that backend deploy lands.
+check_url "Backend /auth/send-email-otp route" "$BACKEND_URL/api/auth/send-email-otp" "400" || true
 
 echo ""
 echo "═══════════════════════════════════════════"
