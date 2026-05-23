@@ -1,3 +1,10 @@
+## [1.3.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.3.2...v1.3.3) (2026-05-23)
+
+
+### Bug Fixes
+
+* **ci:** remove auth route probe from frontend smoke test ([c883c09](https://github.com/Kolanupaka92/petclub-app/commit/c883c09c815318fbfcb70d7c53b556d9da00db02))
+
 ## [1.3.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.3.1...v1.3.2) (2026-05-23)
 
 
