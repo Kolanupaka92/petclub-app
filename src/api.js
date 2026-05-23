@@ -75,6 +75,9 @@ export const api = {
   getIncomingBookings: () => req('GET', '/bookings/incoming', null, true),
   adminAssignBooking: (id, professionalId) => req('PUT', `/bookings/${id}/assign`, { professionalId }, true),
 
+  // Service Catalog (customer-facing pricing)
+  getServiceCatalog: () => req('GET', '/services/catalog', null, true),
+
   // Professionals
   getProfessionals: (city, role) =>
     req('GET', `/professionals?city=${city || ''}&sub_role=${role || ''}`),

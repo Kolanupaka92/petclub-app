@@ -17,9 +17,43 @@ const speciesEmoji = s => s === "cat" ? "🐈" : "🐕";
 
 const INITIAL_PETS = [];
 
+// ── Service Catalog & Pricing ────────────────────────────────────────────────
+// Platform subsidy applied to every bookable service (hidden from SPs)
+const PLATFORM_DISCOUNT = 150; // ₹150 PETclub offer
+
+// Grooming — tiered by pet size
+const GROOMING_PACKAGES = [
+  { name: "Basic Bath",          prices: { Small: 800,  Medium: 1000, Large: 1300, Cat: 900  }, icon: "🛁", desc: "Shampoo, blow-dry & ear clean" },
+  { name: "Trimming & Hygiene",  prices: { Small: 1300, Medium: 1500, Large: 1800, Cat: 1400 }, icon: "✂️", desc: "Bath + full trim, nail & paw care" },
+  { name: "Complete Makeover",   prices: { Small: 1900, Medium: 2200, Large: 2600, Cat: 1600 }, icon: "✨", desc: "Full groom + styling + spa finish" },
+];
+const PET_SIZES = [
+  { id: "Small",  label: "Small",  sub: "Up to 10 kg" },
+  { id: "Medium", label: "Medium", sub: "10 – 20 kg"  },
+  { id: "Large",  label: "Large",  sub: "20 kg+"      },
+  { id: "Cat",    label: "Cat",    sub: "All breeds"  },
+];
+const GROOMING_ADDONS = [
+  { id: "dematting",  label: "De-matting",             price: 550, desc: "Long-haired breeds — Shih Tzu, Golden" },
+  { id: "tick_flea",  label: "Tick & Flea Treatment",   price: 750, desc: "Medicated treatment" },
+  { id: "anal_gland", label: "Anal Gland Expression",   price: 300, desc: "Hygienic value-add" },
+];
+
+// Training — time-based packages (not size-dependent)
+const TRAINING_PACKAGES = [
+  { name: "Consultation Session",           price: 650,   icon: "💬", desc: "60 min temperament & behaviour assessment" },
+  { name: "Puppy Basics",                   price: 650,   icon: "🐶", desc: "Gentle first sessions for pups under 6 months" },
+  { name: "Leash Training",                 price: 800,   icon: "🦮", desc: "Per session — walking & heel training" },
+  { name: "Behavioural Modification",       price: 1500,  icon: "🧠", desc: "Per session — anxiety, aggression, reactivity" },
+  { name: "Agility Training",               price: 1500,  icon: "⚡", desc: "Per session — obstacle & agility course" },
+  { name: "Advanced Obedience",             price: 1800,  icon: "🏆", desc: "Per session — off-leash & complex commands" },
+  { name: "Basic Obedience (10 Sessions)",  price: 10000, icon: "🎓", desc: "Full package — sit, stay, recall & leash basics" },
+];
+
+// SVC_OPTS — used for pet health RECORDS only (not booking flow)
 const SVC_OPTS = {
-  grooming: ["Full Groom","Basic Groom","Bath & Brush","Nail Trim","De-shedding","Herbal Bath","Spa Treatment"],
-  training: ["Puppy Basics","Basic Obedience","Advanced Obedience","Agility","Behaviour Correction","Leash Training"],
+  grooming: ["Basic Bath","Trimming & Hygiene","Complete Makeover","De-matting","Tick & Flea Treatment","Anal Gland Expression","Puppy/Kitten First Groom","Herbal Bath","Spa Treatment"],
+  training: ["Consultation Session","Puppy Basics","Basic Obedience","Behavioural Modification","Advanced Obedience","Leash Training","Agility Training"],
   food:     ["Dry Food","Wet Food","Raw Diet","Treats","Supplement"],
   vet:      ["General Check-up","Vaccination","Deworming","Dental Care","Surgery","Emergency Care"],
 };
@@ -32,10 +66,10 @@ const TAB_META = {
 };
 
 const SERVICES = [
-  { id:"grooming", icon:"✂️", label:"Grooming", bg:"bg-blue-50",   tc:"text-blue-600",   desc:"Doorstep grooming" },
+  { id:"grooming", icon:"✂️",  label:"Grooming", bg:"bg-blue-50",   tc:"text-blue-600",   desc:"Doorstep grooming" },
   { id:"training", icon:"🐕‍🦺", label:"Training", bg:"bg-purple-50", tc:"text-purple-600", desc:"Certified trainers" },
-  { id:"vet",      icon:"🏥", label:"Vet Care",  bg:"bg-rose-50",   tc:"text-rose-600",   desc:"In-home vet visits" },
-  { id:"food",     icon:"🍖", label:"Pet Food",  bg:"bg-green-50",  tc:"text-green-600",  desc:"Free delivery" },
+  { id:"vet",      icon:"🏥",  label:"Vet Care",  bg:"bg-rose-50",   tc:"text-rose-600",   desc:"In-home vet visits" },
+  { id:"food",     icon:"🍖",  label:"Pet Food",  bg:"bg-green-50",  tc:"text-green-600",  desc:"Free delivery" },
 ];
 
 /* ── Shared UI ── */
@@ -111,7 +145,7 @@ export default function PetclubApp({ session, onLogout }) {
   const [loadingPets, setLoadingPets] = useState(true);
   const [myBookings, setMyBookings] = useState([]);
   const [bookingStep, setBookingStep] = useState(1); // 1=service 2=details 3=confirm
-  const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
+  const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
   const [bookingAddrMeta, setBookingAddrMeta] = useState({ lat: null, lng: null });
   const [bookingAddrErr,  setBookingAddrErr]  = useState("");
   const [editAddrMeta,   setEditAddrMeta]   = useState({ lat: null, lng: null, postalCode: "", city: "", state: "" });
@@ -329,6 +363,23 @@ export default function PetclubApp({ session, onLogout }) {
     } catch (e) { showToast(e.message || "Failed to save record", "error"); }
   };
 
+  // Calculate final booking amount shown to customer (platform discount applied)
+  const calcAmount = (form) => {
+    if (form.service_type === "Groomer") {
+      const pkg = GROOMING_PACKAGES.find(p => p.name === form.service_name);
+      if (!pkg || !form.pet_size) return null;
+      const base     = pkg.prices[form.pet_size] || 0;
+      const addonSum = (form.addons || []).reduce((s, id) => s + (GROOMING_ADDONS.find(a => a.id === id)?.price || 0), 0);
+      return { base, addonSum, discount: PLATFORM_DISCOUNT, total: Math.max(0, base + addonSum - PLATFORM_DISCOUNT) };
+    }
+    if (form.service_type === "Trainer") {
+      const pkg = TRAINING_PACKAGES.find(p => p.name === form.service_name);
+      if (!pkg) return null;
+      return { base: pkg.price, addonSum: 0, discount: PLATFORM_DISCOUNT, total: Math.max(0, pkg.price - PLATFORM_DISCOUNT) };
+    }
+    return null; // Vet — quoted on-site
+  };
+
   const createBooking = async () => {
     if (!bookingForm.service_type) return showToast("Select a service type", "error");
     if (!bookingForm.service_name) return showToast("Select a service", "error");
@@ -337,15 +388,18 @@ export default function PetclubApp({ session, onLogout }) {
     try {
       const scheduled_at = bookingForm.date && bookingForm.time
         ? new Date(`${bookingForm.date}T${bookingForm.time}:00`).toISOString() : null;
+      const pricing = calcAmount(bookingForm);
       const res = await api.createBooking({
         service_type: bookingForm.service_type,
         service_name: bookingForm.service_name,
         pet_id: bookingForm.pet_id || null,
+        pet_size: bookingForm.pet_size || null,
+        addons: bookingForm.addons?.length ? bookingForm.addons : null,
         scheduled_at,
         city: bookingForm.city || userInfo.city || "",
         address: bookingForm.address || "",
         notes: bookingForm.notes || "",
-        amount: bookingForm.amount ? parseFloat(bookingForm.amount) : null,
+        amount: pricing ? pricing.total : (bookingForm.amount ? parseFloat(bookingForm.amount) : null),
         lat: bookingAddrMeta.lat,
         lng: bookingAddrMeta.lng,
       });
@@ -354,7 +408,7 @@ export default function PetclubApp({ session, onLogout }) {
       setBookingStep(1);
       setBookingAddrMeta({ lat: null, lng: null });
       setBookingAddrErr("");
-      setBookingForm({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
+      setBookingForm({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
       showToast("✅ Booking placed! Finding your professional…");
       setView("bookings");
     } catch (e) { showToast(e.message || "Failed to book", "error"); }
@@ -1100,7 +1154,7 @@ export default function PetclubApp({ session, onLogout }) {
 
       {/* BOOK SERVICE — Multi-step */}
       {modal === "bookService" && (
-        <Modal title={bookingStep === 1 ? "Select Service 📅" : bookingStep === 2 ? "Booking Details" : "Confirm Booking"} onClose={() => { setModal(null); setBookingStep(1); setBookingForm({ service_type:"", service_name:"", pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" }); setBookingAddrMeta({ lat: null, lng: null }); setBookingAddrErr(""); }}>
+        <Modal title={bookingStep === 1 ? "Select Service 📅" : bookingStep === 2 ? "Booking Details" : "Confirm Booking"} onClose={() => { setModal(null); setBookingStep(1); setBookingForm({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" }); setBookingAddrMeta({ lat: null, lng: null }); setBookingAddrErr(""); }}>
 
           {/* Step indicators */}
           <div className="flex items-center mb-5">
@@ -1143,16 +1197,111 @@ export default function PetclubApp({ session, onLogout }) {
           {/* STEP 2: Details */}
           {bookingStep === 2 && (
             <div>
-              {/* Specific service */}
-              <Fld label="Specific Service *">
-                <select className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-orange-400 bg-white"
-                  value={bookingForm.service_name} onChange={bsf("service_name")}>
-                  <option value="">Select service…</option>
-                  {(SVC_OPTS[{ Groomer:"grooming", Trainer:"training", Vet:"vet" }[bookingForm.service_type]] || []).map(o => (
-                    <option key={o}>{o}</option>
+
+              {/* ── GROOMING: size selector + package cards + add-ons ── */}
+              {bookingForm.service_type === "Groomer" && (<>
+                {/* Pet size */}
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Pet Size *</p>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {PET_SIZES.map(sz => (
+                    <button key={sz.id} onClick={() => setBookingForm(f => ({ ...f, pet_size: sz.id, service_name: "" }))}
+                      className={`flex flex-col items-center py-2.5 px-1 rounded-xl border-2 text-center transition-all ${bookingForm.pet_size === sz.id ? "border-orange-400 bg-orange-50" : "border-gray-100 bg-gray-50 hover:border-gray-200"}`}>
+                      <span className="text-xs font-bold text-gray-700">{sz.label}</span>
+                      <span className="text-[10px] text-gray-400 leading-tight mt-0.5">{sz.sub}</span>
+                    </button>
                   ))}
-                </select>
-              </Fld>
+                </div>
+
+                {/* Package cards — show only once size is selected */}
+                {bookingForm.pet_size && (<>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Choose Package *</p>
+                  <div className="space-y-2 mb-4">
+                    {GROOMING_PACKAGES.map(pkg => {
+                      const price = pkg.prices[bookingForm.pet_size];
+                      const sel   = bookingForm.service_name === pkg.name;
+                      return (
+                        <button key={pkg.name} onClick={() => setBookingForm(f => ({ ...f, service_name: pkg.name }))}
+                          className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all ${sel ? "border-orange-400 bg-orange-50" : "border-gray-100 bg-white hover:border-gray-200"}`}>
+                          <span className="text-xl">{pkg.icon}</span>
+                          <div className="flex-1 text-left">
+                            <div className={`font-bold text-sm ${sel ? "text-orange-700" : "text-gray-800"}`}>{pkg.name}</div>
+                            <div className="text-xs text-gray-400">{pkg.desc}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>₹{price}</div>
+                            <div className="text-[10px] text-emerald-600 font-semibold">Save ₹{PLATFORM_DISCOUNT}</div>
+                          </div>
+                          {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Add-ons */}
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Add-on Services</p>
+                  <div className="space-y-2 mb-4">
+                    {GROOMING_ADDONS.map(addon => {
+                      const checked = (bookingForm.addons || []).includes(addon.id);
+                      return (
+                        <label key={addon.id}
+                          className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${checked ? "border-blue-300 bg-blue-50" : "border-gray-100 bg-white hover:border-gray-200"}`}>
+                          <input type="checkbox" checked={checked} onChange={() => {
+                            setBookingForm(f => ({
+                              ...f,
+                              addons: checked
+                                ? (f.addons || []).filter(x => x !== addon.id)
+                                : [...(f.addons || []), addon.id]
+                            }));
+                          }} className="accent-orange-500 w-4 h-4 shrink-0"/>
+                          <div className="flex-1">
+                            <div className={`font-semibold text-xs ${checked ? "text-blue-700" : "text-gray-700"}`}>{addon.label}</div>
+                            <div className="text-[10px] text-gray-400">{addon.desc}</div>
+                          </div>
+                          <span className={`text-xs font-bold ${checked ? "text-blue-600" : "text-gray-500"}`}>+₹{addon.price}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </>)}
+              </>)}
+
+              {/* ── TRAINING: package cards ── */}
+              {bookingForm.service_type === "Trainer" && (<>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Choose Package *</p>
+                <div className="space-y-2 mb-4">
+                  {TRAINING_PACKAGES.map(pkg => {
+                    const sel = bookingForm.service_name === pkg.name;
+                    return (
+                      <button key={pkg.name} onClick={() => setBookingForm(f => ({ ...f, service_name: pkg.name }))}
+                        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all ${sel ? "border-orange-400 bg-orange-50" : "border-gray-100 bg-white hover:border-gray-200"}`}>
+                        <span className="text-xl">{pkg.icon}</span>
+                        <div className="flex-1 text-left">
+                          <div className={`font-bold text-sm ${sel ? "text-orange-700" : "text-gray-800"}`}>{pkg.name}</div>
+                          <div className="text-xs text-gray-400">{pkg.desc}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>₹{pkg.price.toLocaleString("en-IN")}</div>
+                          <div className="text-[10px] text-emerald-600 font-semibold">Save ₹{PLATFORM_DISCOUNT}</div>
+                        </div>
+                        {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>)}
+
+              {/* ── VET: dropdown (quoted on-site) ── */}
+              {bookingForm.service_type === "Vet" && (
+                <Fld label="Service Type *">
+                  <select className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-orange-400 bg-white"
+                    value={bookingForm.service_name} onChange={bsf("service_name")}>
+                    <option value="">Select service…</option>
+                    {SVC_OPTS.vet.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1 pl-1">💡 Our vet will confirm pricing after the initial assessment</p>
+                </Fld>
+              )}
+
               {/* Pet */}
               {pets.length > 0 && (
                 <Fld label="Pet">
@@ -1210,7 +1359,8 @@ export default function PetclubApp({ session, onLogout }) {
               <div className="flex gap-3 mt-2">
                 <button onClick={() => setBookingStep(1)} className="flex-1 border border-gray-200 text-gray-600 font-bold py-3 rounded-2xl text-sm hover:bg-gray-50">← Back</button>
                 <button
-                  disabled={!bookingForm.service_name || !bookingForm.date || !(bookingForm.city || userInfo.city)}
+                  disabled={!bookingForm.service_name || !bookingForm.date || !(bookingForm.city || userInfo.city)
+                    || (bookingForm.service_type === "Groomer" && !bookingForm.pet_size)}
                   onClick={() => {
                     // Require verified address (geocoded from dropdown) if any address was typed
                     if (bookingForm.address?.trim() && !bookingAddrMeta.lat) {
@@ -1226,21 +1376,39 @@ export default function PetclubApp({ session, onLogout }) {
           )}
 
           {/* STEP 3: Confirm */}
-          {bookingStep === 3 && (
+          {bookingStep === 3 && (() => {
+            const pricing = calcAmount(bookingForm);
+            const pet     = pets.find(p => p.id === bookingForm.pet_id);
+            return (
             <div>
-              <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 mb-5 space-y-2.5">
+              {/* Booking summary card */}
+              <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 mb-4 space-y-2.5">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">
                     {({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[bookingForm.service_type] || "📋"}
                   </span>
                   <div>
                     <div className="font-bold text-gray-800">{bookingForm.service_name}</div>
-                    <div className="text-xs text-orange-600">{bookingForm.service_type}</div>
+                    <div className="text-xs text-orange-600">
+                      {bookingForm.service_type}
+                      {bookingForm.pet_size ? ` · ${bookingForm.pet_size}` : ""}
+                    </div>
                   </div>
                 </div>
-                {bookingForm.pet_id && pets.find(p => p.id === bookingForm.pet_id) && (
+                {/* Add-ons summary */}
+                {bookingForm.addons?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pl-9">
+                    {bookingForm.addons.map(id => {
+                      const a = GROOMING_ADDONS.find(x => x.id === id);
+                      return a ? (
+                        <span key={id} className="text-[10px] bg-blue-100 text-blue-700 font-semibold rounded-full px-2 py-0.5">+ {a.label}</span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+                {pet && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>🐾</span><span>{pets.find(p => p.id === bookingForm.pet_id)?.name}</span>
+                    <span>🐾</span><span>{pet.name} ({pet.species})</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -1253,12 +1421,46 @@ export default function PetclubApp({ session, onLogout }) {
                 )}
                 {bookingForm.notes && (
                   <div className="flex items-start gap-2 text-sm text-gray-500 italic">
-                    <span>📝</span><span>"{bookingForm.notes}"</span>
+                    <span>📝</span><span>&ldquo;{bookingForm.notes}&rdquo;</span>
                   </div>
                 )}
               </div>
+
+              {/* Price breakdown — grooming & training only */}
+              {pricing && (
+                <div className="bg-white border border-gray-100 rounded-2xl p-4 mb-4 space-y-2">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Price Breakdown</p>
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{bookingForm.service_name}</span>
+                    <span className="font-semibold">₹{pricing.base.toLocaleString("en-IN")}</span>
+                  </div>
+                  {pricing.addonSum > 0 && (
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Add-on services</span>
+                      <span className="font-semibold">+₹{pricing.addonSum.toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm text-emerald-600">
+                    <span>🎁 PETclub Offer</span>
+                    <span className="font-semibold">−₹{pricing.discount.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
+                    <span className="font-bold text-gray-800">Total</span>
+                    <span className="font-extrabold text-orange-600 text-lg">₹{pricing.total.toLocaleString("en-IN")}</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400">Payment collected at service. No advance required.</p>
+                </div>
+              )}
+
+              {/* Vet — quoted on-site notice */}
+              {bookingForm.service_type === "Vet" && (
+                <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 mb-4 text-xs text-rose-700">
+                  🏥 Vet service pricing is confirmed after the initial assessment. No surprise charges.
+                </div>
+              )}
+
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-5 text-xs text-blue-700">
-                🔍 After confirming, we'll find the best available {bookingForm.service_type} in your area using our smart matching system. You'll be notified once confirmed!
+                🔍 After confirming, we&apos;ll find the best available {bookingForm.service_type} in your area. You&apos;ll be notified once matched!
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setBookingStep(2)} className="flex-1 border border-gray-200 text-gray-600 font-bold py-3 rounded-2xl text-sm hover:bg-gray-50">← Back</button>
@@ -1268,7 +1470,8 @@ export default function PetclubApp({ session, onLogout }) {
                 </button>
               </div>
             </div>
-          )}
+            );
+          })()}
         </Modal>
       )}
 
