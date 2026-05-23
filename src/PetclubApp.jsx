@@ -429,6 +429,9 @@ export default function PetclubApp({ session, onLogout }) {
       confirmed:         { icon:"✅", label:"Confirmed",          cls:"bg-emerald-50 text-emerald-700 border-emerald-200" },
       on_the_way:        { icon:"🚗", label:"Pro On The Way!",    cls:"bg-orange-50 text-orange-700 border-orange-300" },
       in_progress:       { icon:"⚙️", label:"In Progress",        cls:"bg-violet-50 text-violet-700 border-violet-200" },
+      completed:         { icon:"🎉", label:"Completed",          cls:"bg-green-50 text-green-700 border-green-200" },
+      cancelled:         { icon:"❌", label:"Cancelled",          cls:"bg-red-50 text-red-500 border-red-200" },
+      pending:           { icon:"🕐", label:"Pending",            cls:"bg-gray-50 text-gray-500 border-gray-200" },
       no_pros_available: { icon:"😔", label:"No Pro Found",       cls:"bg-gray-100 text-gray-500 border-gray-200" },
     };
     const StarRow = ({ val, onSelect }) => (
@@ -468,7 +471,7 @@ export default function PetclubApp({ session, onLogout }) {
         ) : (
           <div className="space-y-3">
             {myBookings.map(b => {
-              const s = statusMap[b.assignment_status] || statusMap.searching;
+              const s = statusMap[b.assignment_status] || statusMap[b.status] || statusMap.pending;
               const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[b.service_type] || "📋";
               const svcAccent = ({ Groomer:"border-l-violet-500", Trainer:"border-l-blue-500", Vet:"border-l-emerald-500" })[b.service_type] || "border-l-orange-400";
               const svcBg = ({ Groomer:"bg-violet-50", Trainer:"bg-blue-50", Vet:"bg-emerald-50" })[b.service_type] || "bg-orange-50";
