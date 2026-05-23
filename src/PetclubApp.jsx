@@ -147,6 +147,7 @@ export default function PetclubApp({ session, onLogout }) {
   const [loyaltyData, setLoyaltyData] = useState(null);
   const [loyaltyLoading, setLoyaltyLoading] = useState(false);
   const [redeemLoading, setRedeemLoading] = useState(false);
+  const [showLoyaltyExplainer, setShowLoyaltyExplainer] = useState(false); // "How it Works" modal
   const [bookingStep, setBookingStep] = useState(1); // 1=service 2=details 3=confirm
   const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"", coupon_code:"" });
   const [bookingAddrMeta, setBookingAddrMeta] = useState({ lat: null, lng: null });
@@ -193,7 +194,13 @@ export default function PetclubApp({ session, onLogout }) {
     }).catch(() => {}).finally(() => setLoadingPets(false));
     api.getBookings().then(r => setMyBookings(r.bookings || [])).catch(() => {});
     // Load loyalty data (only for customers — graceful on 403)
-    api.getLoyalty().then(r => { if (r.success) setLoyaltyData(r); }).catch(() => {});
+    // is_new_member flag triggers the welcome/explainer modal on first visit
+    api.getLoyalty().then(r => {
+      if (r.success) {
+        setLoyaltyData(r);
+        if (r.is_new_member) setShowLoyaltyExplainer(true);
+      }
+    }).catch(() => {});
   }, []);
 
   // Smart polling: 5s when any booking is actively searching/offered, otherwise 30s
@@ -1027,6 +1034,14 @@ export default function PetclubApp({ session, onLogout }) {
               <div className="flex items-center gap-2">
                 <span className="text-lg">🎁</span>
                 <p className="text-xs font-bold text-gray-800 uppercase tracking-wide">PETclub Credits</p>
+                <button
+                  onClick={() => setShowLoyaltyExplainer(true)}
+                  className="text-gray-400 hover:text-orange-500 transition-colors"
+                  title="How it Works">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+                  </svg>
+                </button>
               </div>
               {ld?.referral_code && (
                 <span className="text-[10px] bg-orange-50 text-orange-600 font-bold px-2 py-0.5 rounded-full border border-orange-100">
@@ -1182,6 +1197,90 @@ export default function PetclubApp({ session, onLogout }) {
         }>
           <TrackingMap booking={trackingBooking} onClose={() => setTrackingBooking(null)} session={session} />
         </Suspense>
+      )}
+
+      {/* ── LOYALTY EXPLAINER / WELCOME MODAL ─────────────────────────── */}
+      {showLoyaltyExplainer && (
+        <Modal
+          title={loyaltyData?.transactions?.length === 0 ? "Welcome to PETclub Rewards 🎁" : "How PETclub Credits Work 🎁"}
+          onClose={() => setShowLoyaltyExplainer(false)}>
+          <div className="space-y-4 text-sm text-gray-600">
+            {loyaltyData?.transactions?.length === 0 && (
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-xl p-3 text-center">
+                <p className="text-base font-bold text-gray-800 mb-1">You're in! 🐾</p>
+                <p className="text-xs text-gray-500">Every booking, review, and referral earns you credits towards a <strong>free grooming session</strong>.</p>
+              </div>
+            )}
+            {/* What is 1 credit worth */}
+            <div>
+              <p className="text-xs font-bold text-gray-800 uppercase tracking-wide mb-2">💡 What is 1 credit worth?</p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">1,000 credits =</span>
+                  <span className="font-bold text-emerald-600">1 Free Basic Bath (₹800+ value)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Earn rate:</span>
+                  <span className="font-bold text-gray-700">1 credit per ₹10 spent</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">To earn 1,000 credits from bookings alone:</span>
+                  <span className="font-bold text-gray-700">~₹10,000 in bookings</span>
+                </div>
+              </div>
+            </div>
+            {/* How to earn faster */}
+            <div>
+              <p className="text-xs font-bold text-gray-800 uppercase tracking-wide mb-2">🚀 Earn Faster</p>
+              <div className="space-y-2">
+                {[
+                  { icon:"📅", label:"Book & pay via app",      val:"1 credit / ₹10",     note:"Every booking counts" },
+                  { icon:"💳", label:"Pay via Razorpay",         val:"+50 bonus",           note:"One-time bonus per payment" },
+                  { icon:"⭐", label:"Write a review",            val:"+50 bonus",           note:"Once per booking" },
+                  { icon:"👥", label:"Refer a friend",            val:"+200 bonus",          note:"You earn when they book" },
+                ].map(r => (
+                  <div key={r.label} className="flex items-start gap-2.5 bg-gray-50 rounded-xl px-3 py-2">
+                    <span className="text-base mt-0.5">{r.icon}</span>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-xs font-semibold text-gray-700">{r.label}</span>
+                        <span className="text-xs font-bold text-orange-500">{r.val}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400">{r.note}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Referral code highlight */}
+            {loyaltyData?.referral_code && (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
+                <p className="text-xs font-bold text-gray-700 mb-1">Your referral code</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-black text-orange-600 text-base tracking-widest">{loyaltyData.referral_code}</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(loyaltyData.referral_code);
+                      showToast("Referral code copied!", "success");
+                    }}
+                    className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded-lg hover:bg-orange-200 transition-colors">
+                    Copy
+                  </button>
+                </div>
+                <p className="text-[10px] text-orange-500 mt-1">Share this with friends — you earn +200 credits when they complete their first booking.</p>
+              </div>
+            )}
+            {/* Fine print */}
+            <p className="text-[10px] text-gray-400 text-center">
+              Credits have no cash value. PETclub reserves the right to modify earn rules at any time. Coupons are valid for 6 months.
+            </p>
+            <button
+              onClick={() => setShowLoyaltyExplainer(false)}
+              className="w-full bg-orange-500 text-white font-bold py-3 rounded-xl text-sm hover:bg-orange-600 active:scale-[0.98] transition-all">
+              Got it 🐾
+            </button>
+          </div>
+        </Modal>
       )}
 
       {/* ADD PET */}
