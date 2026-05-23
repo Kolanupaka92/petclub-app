@@ -133,7 +133,8 @@ export const api = {
   getOtp: (phone, cc = '91') => req('GET', `/admin/otp?phone=${encodeURIComponent(phone)}&cc=${cc}`, null, true),
 
   // Health
-  health: () => req('GET', '/health'),
+  health:      () => req('GET', '/health'),
+  adminHealth: () => req('GET', '/admin/health', null, true),
 };
 
 export const saveToken = (token) => localStorage.setItem('petclub_token', token);

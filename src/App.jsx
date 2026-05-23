@@ -1671,7 +1671,7 @@ const AdminDashboard = ({ session, onLogout }) => {
       api.getPendingVerifications().catch(() => ({ pending:[] })),
       api.getAdminUsers().catch(() => ({ users:[] })),
       api.getBookings().catch(() => ({ bookings:[] })),
-      api.health().catch(() => null),
+      api.adminHealth().catch(() => null),
     ]).then(([statsRes, pendRes, usersRes, bkRes, healthRes]) => {
       if (statsRes?.stats) setStats(statsRes.stats);
       setPending(pendRes?.pending || []);
@@ -2061,13 +2061,15 @@ const AdminDashboard = ({ session, onLogout }) => {
                   {(() => {
                     const svc = health?.services || {};
                     const ok  = v => v?.startsWith("✅");
+                    const svcVal = (raw) => raw ? raw.replace(' live','').replace(' configured','').replace(' (set FIREBASE_SERVICE_ACCOUNT_JSON)','').replace(' (set env vars)','').replace(' (email fallback active)','') : '—';
                     const rows = [
                       { label:"Backend API",  val: health ? (ok(svc.supabase) ? "Cloud Run ✅" : "Cloud Run ⚠️") : "Checking…",    color: health ? (ok(svc.supabase) ? "text-emerald-600":"text-amber-600") : "text-gray-400" },
                       { label:"Frontend",     val: "Vercel ✅",                                                                       color: "text-emerald-600" },
-                      { label:"Database",     val: svc.supabase   ? `Supabase ${svc.supabase}`   : "Supabase —",                     color: ok(svc.supabase)    ? "text-emerald-600":"text-amber-600" },
-                      { label:"Auth / Push",  val: svc.firebase_auth ? `Firebase ${svc.firebase_auth.replace(" live","").replace(" pending (set FIREBASE_SERVICE_ACCOUNT_JSON)","⚠️")}` : "Firebase —", color: ok(svc.firebase_auth) ? "text-emerald-600":"text-amber-600" },
-                      { label:"Email (SMTP)", val: svc.zoho_smtp  ? `Zoho ${svc.zoho_smtp}`      : "Zoho —",                         color: ok(svc.zoho_smtp)   ? "text-emerald-600":"text-amber-600" },
-                      { label:"Payments",     val: svc.razorpay   ? (ok(svc.razorpay) ? "Razorpay ✅" : "⏳ Pending LLC")            : "⏳ Pending LLC",          color: ok(svc.razorpay)    ? "text-emerald-600":"text-amber-600" },
+                      { label:"Database",     val: svc.supabase      ? `Supabase ${svcVal(svc.supabase)}`         : "Supabase —",     color: ok(svc.supabase)      ? "text-emerald-600":"text-amber-600" },
+                      { label:"Auth / Push",  val: svc.firebase_auth ? `Firebase ${svcVal(svc.firebase_auth)}`    : "Firebase —",     color: ok(svc.firebase_auth) ? "text-emerald-600":"text-amber-600" },
+                      { label:"SMS (OTP)",    val: svc.twilio_sms    ? `Twilio ${svcVal(svc.twilio_sms)}`         : "Twilio —",       color: ok(svc.twilio_sms)    ? "text-emerald-600":"text-amber-600" },
+                      { label:"Email (SMTP)", val: svc.zoho_smtp     ? `Zoho ${svcVal(svc.zoho_smtp)}`            : "Zoho —",         color: ok(svc.zoho_smtp)     ? "text-emerald-600":"text-amber-600" },
+                      { label:"Payments",     val: svc.razorpay      ? (ok(svc.razorpay) ? "Razorpay ✅" : "⏳ Pending LLC") : "⏳ Pending LLC", color: ok(svc.razorpay) ? "text-emerald-600":"text-amber-600" },
                     ];
                     return rows.map(s => (
                       <div key={s.label} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5 border border-gray-100">
