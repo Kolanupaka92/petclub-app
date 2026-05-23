@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.5.4...v1.6.0) (2026-05-23)
+
+
+### Features
+
+* **auth:** route all phone OTP through Firebase (India + USA) ([9f00f25](https://github.com/Kolanupaka92/petclub-app/commit/9f00f2588b3ff0e3e9ca4f6b64190c870901ec8d))
+
 ## [1.5.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.5.3...v1.5.4) (2026-05-23)
 
 
