@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { api, saveToken } from "./api.js";
-// Dual-route SMS auth:
-//   India (+91) → Firebase Phone Auth (Blaze plan, cost-effective for IN carrier rates)
-//   USA   (+1)  → Backend Twilio SMS OTP (no reCAPTCHA, any domain)
+// Phone auth — all countries via Firebase Phone Auth (Blaze plan)
+//   India (+91) → Firebase  ($0.0023/verification)
+//   USA   (+1)  → Firebase  ($0.0060/verification)
+//   Fallback    → Backend Twilio/email OTP when Firebase is unavailable
 import { initPhoneAuth, sendPhoneOtp, verifyPhoneOtp, clearPhoneAuth } from "./firebase.js";
 import { AddressPicker } from "./components/AddressPicker.jsx";
 
@@ -242,11 +243,11 @@ export default function Login({ onLogin }) {
   const [fbReady, setFbReady] = useState(null); // null=initializing, true=ok, false=failed — India only
   const otpRefs = useRef([]);
 
-  /* ── Firebase init — India (+91) phone SMS only ── */
+  /* ── Firebase init — all countries (India + USA + fallback) ── */
   useEffect(() => {
-    const needsFirebase = step === "phone" && loginMethod === "phone" && cc === "91";
+    const needsFirebase = step === "phone" && loginMethod === "phone";
     if (!needsFirebase) {
-      setFbReady(null); // reset so next India visit starts fresh
+      setFbReady(null); // reset whenever we leave the phone step
       return;
     }
     setFbReady(null);
@@ -308,10 +309,10 @@ export default function Login({ onLogin }) {
   const flowSteps   = mode === "signup" ? signupSteps : signinSteps;
   const stepIdx     = flowSteps.indexOf(step);
 
-  /* ── Send OTP — country-code routed ──
-       India (+91) → Firebase Phone Auth (Blaze plan, cheap IN carrier rates)
-       USA   (+1)  → Backend Twilio SMS (no reCAPTCHA required)
-       Email       → Backend email OTP (always available)
+  /* ── Send OTP ──
+       Phone (all countries) → Firebase Phone Auth (India $0.0023 · USA $0.0060/verification)
+       Firebase unavailable  → Backend Twilio SMS → email fallback
+       Email                 → Backend email OTP (always available)
   ── */
   const sendOtp = async () => {
     setLoading(true); setErr("");
@@ -337,17 +338,16 @@ export default function Login({ onLogin }) {
         if (digits.length < 6) return showErr("Enter a valid phone number");
         const e164 = `+${cc}${digits}`;
 
-        if (cc === "91" && fbReady === true) {
-          // India + Firebase ready → Firebase Phone Auth (cheap IN carrier rates)
+        if (fbReady === true) {
+          // All countries → Firebase Phone Auth (India + USA, cheapest & most reliable)
           await sendPhoneOtp(e164);
           setPhoneRoute("firebase");
+          setOtpNote("");
         } else {
-          // US (+1), or India when Firebase is unavailable → Backend Twilio OTP
-          // Pass optional email so backend can fall back to email delivery if SMS fails
+          // Firebase unavailable → Backend Twilio/email fallback
           const smsRes = await api.sendPhoneOTP(e164, email.trim() || undefined);
           setPendingPhone(e164);
           setPhoneRoute("twilio");
-          // If backend fell back to email delivery, surface an info note for the OTP step
           if (smsRes?.via === 'email') {
             setOtpNote(`📧 SMS failed — OTP sent to your email (${smsRes.email || email || 'address on file'}) instead.`);
           } else {
@@ -682,15 +682,15 @@ export default function Login({ onLogin }) {
                 </button>
               </div>
 
-              {/* ── India Firebase status — only shown for +91 phone route ── */}
-              {loginMethod === "phone" && cc === "91" && fbReady === null && (
+              {/* ── Firebase init status (all countries) ── */}
+              {loginMethod === "phone" && fbReady === null && (
                 <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-xs px-3 py-2.5 rounded-2xl">
                   <span className="w-3.5 h-3.5 border-2 border-blue-400 border-t-blue-700 rounded-full animate-spin shrink-0"/>
-                  <span>Setting up SMS verification for India…</span>
+                  <span>Setting up secure SMS verification…</span>
                 </div>
               )}
-              {loginMethod === "phone" && cc === "91" && fbReady === false && (
-                <div className="bg-blue-50 border border-blue-200 text-blue-800 text-xs px-3 py-2.5 rounded-2xl">
+              {loginMethod === "phone" && fbReady === false && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2.5 rounded-2xl">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="shrink-0">📱</span>
                     <span>Firebase unavailable — OTP will be sent via <strong>SMS backup</strong>. Tap <em>Send OTP</em> to continue, or switch to Email OTP.</span>
@@ -754,13 +754,12 @@ export default function Login({ onLogin }) {
 
               {err && <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
 
-              {/* India Firebase not ready → show a soft hint, but SMS fallback is still available via Send OTP */}
               <button onClick={sendOtp}
-                disabled={loading || (loginMethod === "phone" && cc === "91" && fbReady === null)}
+                disabled={loading || (loginMethod === "phone" && fbReady === null)}
                 className="w-full h-14 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] disabled:opacity-60 text-white font-bold text-base rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2">
                 {loading
                   ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Sending…</>
-                  : (loginMethod === "phone" && cc === "91" && fbReady === null)
+                  : (loginMethod === "phone" && fbReady === null)
                     ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Initializing…</>
                     : <>Send OTP →</>}
               </button>
