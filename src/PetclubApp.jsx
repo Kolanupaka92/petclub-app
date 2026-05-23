@@ -991,7 +991,7 @@ export default function PetclubApp({ session, onLogout }) {
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
           </div>
         }>
-          <TrackingMap booking={trackingBooking} onClose={() => setTrackingBooking(null)} />
+          <TrackingMap booking={trackingBooking} onClose={() => setTrackingBooking(null)} session={session} />
         </Suspense>
       )}
 
