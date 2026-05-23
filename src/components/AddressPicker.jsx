@@ -14,7 +14,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 
-const API_BASE = import.meta.env.VITE_API_URL || "";
+// Strip UTF-8 BOM that Vercel sometimes injects into env var values
+const _stripBom = (v) => (v || '').replace(/^﻿/, '').trim();
+const API_BASE = _stripBom(import.meta.env.VITE_API_URL) || "https://api.mypetclub.app/api";
 
 /* ─── Main component ───────────────────────────────────────── */
 export function AddressPicker({ value, onChange, placeholder, className, token }) {

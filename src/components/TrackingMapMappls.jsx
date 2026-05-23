@@ -26,7 +26,8 @@
  */
 import { useEffect, useRef, useState, useCallback } from "react";
 
-const BASE    = import.meta.env.VITE_API_URL    || "https://api.mypetclub.app/api";
+const _stripBom = (v) => (v || '').replace(/^﻿/, '').trim();
+const BASE    = _stripBom(import.meta.env.VITE_API_URL) || "https://api.mypetclub.app/api";
 const MAP_KEY = import.meta.env.VITE_MAPPLS_KEY || "";
 
 const SVC_ICON  = { Groomer: "✂️", Trainer: "🐕‍🦺", Vet: "🏥" };
