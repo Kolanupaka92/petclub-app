@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.9.1...v1.10.0) (2026-05-23)
+
+
+### Features
+
+* **loyalty:** welcome modal and How it Works explainer ([55e9388](https://github.com/Kolanupaka92/petclub-app/commit/55e938882ed97b48511c70163b3b1fe496cde986))
+
 ## [1.9.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.9.0...v1.9.1) (2026-05-23)
 
 
