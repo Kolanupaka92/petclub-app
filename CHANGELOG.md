@@ -1,3 +1,10 @@
+## [1.7.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.7.1...v1.7.2) (2026-05-23)
+
+
+### Bug Fixes
+
+* **bookings:** add missing statusMap entries for completed/cancelled/pending ([50c8827](https://github.com/Kolanupaka92/petclub-app/commit/50c8827a8aebedd9baa16fb7cb60591e0a69345f))
+
 ## [1.7.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.7.0...v1.7.1) (2026-05-23)
 
 
