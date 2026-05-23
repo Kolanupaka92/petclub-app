@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.6.1...v1.7.0) (2026-05-23)
+
+
+### Features
+
+* **admin:** auto-refresh Platform Status widget every 60 s ([df385f5](https://github.com/Kolanupaka92/petclub-app/commit/df385f5a54040e1725e802f0cdeb57319d23a79e))
+
 ## [1.6.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.6.0...v1.6.1) (2026-05-23)
 
 
