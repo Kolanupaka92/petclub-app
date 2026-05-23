@@ -1,3 +1,10 @@
+## [1.5.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.5.2...v1.5.3) (2026-05-23)
+
+
+### Bug Fixes
+
+* **auth:** fall back to Twilio OTP when Firebase phone auth is unavailable ([1b7026d](https://github.com/Kolanupaka92/petclub-app/commit/1b7026d5ce98e4ef644fa100dc5645e8a909dfb3))
+
 ## [1.5.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.5.1...v1.5.2) (2026-05-23)
 
 
