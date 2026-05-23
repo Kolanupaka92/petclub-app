@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.3.3...v1.4.0) (2026-05-23)
+
+
+### Features
+
+* **assets:** add email-logo.png for transactional email header ([ae0e886](https://github.com/Kolanupaka92/petclub-app/commit/ae0e886698e0fbdc31be50149ed5221c4c9c0b28))
+
 ## [1.3.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.3.2...v1.3.3) (2026-05-23)
 
 
