@@ -78,6 +78,13 @@ export const api = {
   // Service Catalog (customer-facing pricing)
   getServiceCatalog: () => req('GET', '/services/catalog', null, true),
 
+  // Loyalty Credits
+  getLoyalty:        ()           => req('GET',  '/loyalty',                  null,   true),
+  redeemCredits:     ()           => req('POST', '/loyalty/redeem',           {},     true),
+  validateCoupon:    (code)       => req('POST', '/loyalty/validate-coupon',  { code }, true),
+  adminAwardLoyalty: (userId, points, description) =>
+    req('POST', '/admin/loyalty/award', { userId, points, description }, true),
+
   // Professionals
   getProfessionals: (city, role) =>
     req('GET', `/professionals?city=${city || ''}&sub_role=${role || ''}`),

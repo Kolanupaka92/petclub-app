@@ -144,6 +144,9 @@ export default function PetclubApp({ session, onLogout }) {
   const [search, setSearch] = useState("");
   const [loadingPets, setLoadingPets] = useState(true);
   const [myBookings, setMyBookings] = useState([]);
+  const [loyaltyData, setLoyaltyData] = useState(null);
+  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+  const [redeemLoading, setRedeemLoading] = useState(false);
   const [bookingStep, setBookingStep] = useState(1); // 1=service 2=details 3=confirm
   const [bookingForm, setBookingForm] = useState({ service_type:"", service_name:"", pet_size:"", addons:[], pet_id:"", date:"", time:"10:00", address:"", city:"", notes:"", amount:"" });
   const [bookingAddrMeta, setBookingAddrMeta] = useState({ lat: null, lng: null });
@@ -189,6 +192,8 @@ export default function PetclubApp({ session, onLogout }) {
       }
     }).catch(() => {}).finally(() => setLoadingPets(false));
     api.getBookings().then(r => setMyBookings(r.bookings || [])).catch(() => {});
+    // Load loyalty data (only for customers — graceful on 403)
+    api.getLoyalty().then(r => { if (r.success) setLoyaltyData(r); }).catch(() => {});
   }, []);
 
   // Smart polling: 5s when any booking is actively searching/offered, otherwise 30s
@@ -338,7 +343,9 @@ export default function PetclubApp({ session, onLogout }) {
       await api.rateBooking(ratingModal.bookingId, ratingVal, ratingReview);
       setRatedBookings(prev => new Set([...prev, ratingModal.bookingId]));
       setRatingModal(null); setRatingVal(0); setRatingReview("");
-      showToast("⭐ Thanks for your review!");
+      showToast("⭐ Thanks! +50 PETclub Credits earned!");
+      // Refresh loyalty balance in background
+      api.getLoyalty().then(r => { if (r.success) setLoyaltyData(r); }).catch(() => {});
     } catch (e) { showToast(e.message || "Failed to submit rating", "error"); }
     setRatingLoading(false);
   };
@@ -992,6 +999,121 @@ export default function PetclubApp({ session, onLogout }) {
           ))}
         </div>
       </div>
+
+      {/* ── Loyalty Credits Dashboard ── */}
+      {(() => {
+        const ld = loyaltyData;
+        const bal = ld?.balance ?? 0;
+        const threshold = ld?.threshold ?? 1000;
+        const pct = ld ? Math.min(100, Math.round((bal / threshold) * 100)) : 0;
+        const needed = Math.max(0, threshold - bal);
+        const canRedeem = bal >= threshold;
+
+        const handleRedeem = async () => {
+          setRedeemLoading(true);
+          try {
+            const r = await api.redeemCredits();
+            showToast(`🎉 Coupon ready: ${r.couponCode} — Free ${r.serviceName}!`, "success");
+            api.getLoyalty().then(res => { if (res.success) setLoyaltyData(res); }).catch(() => {});
+          } catch (e) { showToast(e.message || "Redemption failed", "error"); }
+          setRedeemLoading(false);
+        };
+
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-5 mb-4">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🎁</span>
+                <p className="text-xs font-bold text-gray-800 uppercase tracking-wide">PETclub Credits</p>
+              </div>
+              {ld?.referral_code && (
+                <span className="text-[10px] bg-orange-50 text-orange-600 font-bold px-2 py-0.5 rounded-full border border-orange-100">
+                  {ld.referral_code}
+                </span>
+              )}
+            </div>
+
+            {/* Progress */}
+            <div className="mb-3">
+              <div className="flex justify-between items-end mb-1.5">
+                <span className="text-2xl font-black text-gray-900">{bal.toLocaleString("en-IN")}</span>
+                <span className="text-xs text-gray-400 font-semibold">{threshold.toLocaleString("en-IN")} Credits</span>
+              </div>
+              <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${canRedeem ? "bg-emerald-400" : "bg-gradient-to-r from-orange-400 to-amber-400"}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1.5">
+                {canRedeem
+                  ? "🎉 You've unlocked a free grooming session!"
+                  : `Earn ${needed.toLocaleString("en-IN")} more credits for a free Basic Bath!`}
+              </p>
+            </div>
+
+            {/* Redeem button */}
+            <button
+              disabled={!canRedeem || redeemLoading}
+              onClick={handleRedeem}
+              className={`w-full font-bold py-2.5 rounded-xl text-sm transition-all mb-4 ${canRedeem ? "bg-emerald-500 text-white hover:bg-emerald-600 active:scale-[0.98] shadow-sm" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}>
+              {redeemLoading ? "Processing…" : canRedeem ? "✨ Redeem 1,000 Credits — Free Basic Bath" : `🔒 Redeem (${bal}/${threshold} Credits)`}
+            </button>
+
+            {/* Active coupons */}
+            {ld?.coupons?.filter(c => !c.is_used).length > 0 && (
+              <div className="mb-4 space-y-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Active Coupons</p>
+                {ld.coupons.filter(c => !c.is_used).map(c => (
+                  <div key={c.code} className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                    <div>
+                      <p className="text-xs font-bold text-emerald-700 font-mono tracking-widest">{c.code}</p>
+                      <p className="text-[10px] text-emerald-600">Free {c.service_name} · Expires {new Date(c.expires_at).toLocaleDateString("en-IN")}</p>
+                    </div>
+                    <span className="text-emerald-500 text-base">🎟️</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Earn rules */}
+            <div className="border-t border-gray-50 pt-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">How to Earn</p>
+              <div className="space-y-1.5">
+                {(ld?.earn_rules || [
+                  { icon:"📅", event:"Book & pay via app",    points:"1 per ₹10" },
+                  { icon:"💳", event:"Pay in-app (Razorpay)", points:"+50 bonus" },
+                  { icon:"⭐", event:"Write a review",         points:"+50"       },
+                  { icon:"👥", event:"Refer a friend",          points:"+200"      },
+                ]).map(r => (
+                  <div key={r.event} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 flex items-center gap-1.5"><span>{r.icon}</span>{r.event}</span>
+                    <span className="font-bold text-orange-500">{r.points}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent transactions */}
+            {ld?.transactions?.length > 0 && (
+              <div className="border-t border-gray-50 pt-3 mt-3">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Recent Activity</p>
+                <div className="space-y-1.5">
+                  {ld.transactions.slice(0, 5).map(t => (
+                    <div key={t.id} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500 truncate max-w-[70%]">{t.description || t.type}</span>
+                      <span className={`font-bold ${t.points > 0 ? "text-emerald-600" : "text-red-500"}`}>
+                        {t.points > 0 ? "+" : ""}{t.points}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* My Pets quick list */}
       {pets.length > 0 && (
