@@ -378,6 +378,9 @@ export default function Login({ onLogin }) {
           setCust(cv => ({ ...cv, email: cv.email || email.trim() }));
           setPro(p => ({ ...p, email: p.email || email.trim() }));
         }
+        // Sign In path (mode==="signin") never sets role — default to "customer"
+        // so the profile step always renders a form instead of blank screen.
+        if (mode !== "signup" && !role) setRole("customer");
         setStep("profile");
       } else {
         onLogin({ ...res.user });
