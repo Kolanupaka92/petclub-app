@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.4.0...v1.5.0) (2026-05-23)
+
+
+### Features
+
+* **tracking:** dual-map regional split — Mappls (India) + Mapbox (USA) ([3a25a38](https://github.com/Kolanupaka92/petclub-app/commit/3a25a385b90b8e0a56866d78240153f47e9c052e))
+
 # [1.4.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.3.3...v1.4.0) (2026-05-23)
 
 
