@@ -1671,6 +1671,15 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [dbAudit,    setDbAudit]    = useState(null);
   const [dbAuditLoading, setDbAuditLoading] = useState(false);
   const [dbCleanLoading, setDbCleanLoading] = useState(false);
+
+  /* ── Loyalty Award state ── */
+  const [loyaltySearch,       setLoyaltySearch]       = useState("");
+  const [loyaltyTarget,       setLoyaltyTarget]       = useState(null);   // selected user object
+  const [loyaltyPoints,       setLoyaltyPoints]       = useState("");
+  const [loyaltyDesc,         setLoyaltyDesc]         = useState("");
+  const [loyaltySubmitting,   setLoyaltySubmitting]   = useState(false);
+  const [loyaltyStats,        setLoyaltyStats]        = useState(null);
+  const [loyaltyStatsLoading, setLoyaltyStatsLoading] = useState(false);
   const isIndia      = session.phone?.startsWith("+91");
   const currencySymbol = isIndia ? "₹" : "$";
 
@@ -1721,6 +1730,13 @@ const AdminDashboard = ({ session, onLogout }) => {
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
+
+  // Load loyalty programme stats whenever the loyalty tab is opened
+  useEffect(() => {
+    if (view !== "loyalty" || loyaltyStats || loyaltyStatsLoading) return;
+    setLoyaltyStatsLoading(true);
+    api.loyaltyStats(30).then(r => setLoyaltyStats(r)).catch(() => {}).finally(() => setLoyaltyStatsLoading(false));
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset pagination + selection when the user changes filters or search
   useEffect(() => {
@@ -1884,6 +1900,7 @@ const AdminDashboard = ({ session, onLogout }) => {
     { id:"verify",   icon:"🔍", label:"Verify",   badge: pending.length },
     { id:"users",    icon:"👥", label:"Users" },
     { id:"bookings", icon:"📅", label:"Bookings" },
+    { id:"loyalty",  icon:"🎁", label:"Loyalty" },
     { id:"dbhealth", icon:"🗄️", label:"DB Health" },
   ];
 
@@ -2689,6 +2706,301 @@ const AdminDashboard = ({ session, onLogout }) => {
                   })}
                 </div>
               )}
+            </div>
+          );
+        })()}
+
+        {/* ══ 🎁 LOYALTY ════════════════════════════════════════════════════ */}
+        {view === "loyalty" && (() => {
+          // Customers filtered by the search query in this panel (separate from the users-tab search)
+          const loyaltyCustomers = users.filter(u =>
+            u.role === "customer" &&
+            loyaltySearch.length >= 2 &&
+            (u.name?.toLowerCase().includes(loyaltySearch.toLowerCase()) ||
+             u.phone?.includes(loyaltySearch))
+          ).slice(0, 6);
+
+          const pts        = parseInt(loyaltyPoints, 10);
+          const isAward    = pts > 0;
+          const isDeduct   = pts < 0;
+          const currentBal = loyaltyTarget?.loyalty_points ?? 0;
+          const newBal     = isNaN(pts) ? currentBal : currentBal + pts;
+          const canSubmit  = loyaltyTarget && !isNaN(pts) && pts !== 0 && loyaltyDesc.trim().length >= 3;
+
+          const submitAward = async () => {
+            if (!canSubmit) return;
+            setLoyaltySubmitting(true);
+            try {
+              const r = await api.adminAwardLoyalty(loyaltyTarget.id, pts, loyaltyDesc.trim());
+              // Reflect new balance in the users list immediately
+              setUsers(prev => prev.map(u =>
+                u.id === loyaltyTarget.id
+                  ? { ...u, loyalty_points: r.newBalance ?? newBal }
+                  : u
+              ));
+              setLoyaltyTarget(prev => prev ? { ...prev, loyalty_points: r.newBalance ?? newBal } : prev);
+              showToast(`✅ ${isAward ? "Awarded" : "Deducted"} ${Math.abs(pts)} pts — new balance: ${r.newBalance ?? newBal}`);
+              setLoyaltyPoints("");
+              setLoyaltyDesc("");
+            } catch (e) {
+              showToast("❌ " + (e.message || "Failed to update points"), "error");
+            }
+            setLoyaltySubmitting(false);
+          };
+
+          return (
+            <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+              <div>
+                <h1 className="text-xl font-extrabold text-gray-800">🎁 Loyalty Points</h1>
+                <p className="text-sm text-gray-400 mt-0.5">Award credits, fix errors, or issue goodwill adjustments</p>
+              </div>
+
+              {/* ── Award / Adjust card ── */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+                <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Award or Adjust Points</h2>
+
+                {/* Customer search */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Search customer</label>
+                  <input
+                    value={loyaltySearch}
+                    onChange={e => { setLoyaltySearch(e.target.value); if (loyaltyTarget) setLoyaltyTarget(null); }}
+                    placeholder="Name or phone number…"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition"
+                  />
+                  {/* Dropdown results */}
+                  {loyaltySearch.length >= 2 && !loyaltyTarget && (
+                    <div className="mt-1 border border-gray-200 rounded-xl overflow-hidden shadow-lg bg-white">
+                      {loyaltyCustomers.length === 0 ? (
+                        <div className="px-4 py-3 text-xs text-gray-400">No matching customers found</div>
+                      ) : loyaltyCustomers.map(u => (
+                        <button key={u.id}
+                          onClick={() => { setLoyaltyTarget(u); setLoyaltySearch(u.name || u.phone || ""); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 transition border-b border-gray-50 last:border-0 text-left">
+                          <div className="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center text-sm font-bold text-orange-600 shrink-0">
+                            {(u.name || "?").charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-sm text-gray-800 truncate">{u.name || "—"}</div>
+                            <div className="text-xs text-gray-400">{u.phone}</div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-xs font-bold text-orange-600">{(u.loyalty_points ?? 0).toLocaleString()} pts</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected user card */}
+                {loyaltyTarget && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center gap-4">
+                    <div className="w-11 h-11 bg-orange-100 rounded-2xl flex items-center justify-center text-lg font-bold text-orange-600 shrink-0">
+                      {(loyaltyTarget.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-gray-800">{loyaltyTarget.name || "—"}</div>
+                      <div className="text-xs text-gray-500">{loyaltyTarget.phone}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-xs text-gray-500 font-medium">Current balance</div>
+                      <div className="text-xl font-extrabold text-orange-600">{currentBal.toLocaleString()}</div>
+                      <div className="text-xs text-gray-400">credits</div>
+                    </div>
+                    <button onClick={() => { setLoyaltyTarget(null); setLoyaltySearch(""); setLoyaltyPoints(""); setLoyaltyDesc(""); }}
+                      className="ml-1 text-gray-400 hover:text-red-400 text-lg leading-none shrink-0">✕</button>
+                  </div>
+                )}
+
+                {/* Points + description — only show once a user is selected */}
+                {loyaltyTarget && (
+                  <>
+                    {/* Points input */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                        Points to add / deduct
+                        <span className="ml-2 font-normal text-gray-400">(positive = award, negative = deduct)</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {/* Quick preset buttons */}
+                        {[50, 100, 200, -50, -100].map(v => (
+                          <button key={v} type="button"
+                            onClick={() => setLoyaltyPoints(String(v))}
+                            className={`text-xs font-bold px-3 py-2 rounded-xl border transition ${
+                              parseInt(loyaltyPoints) === v
+                                ? v > 0 ? "bg-emerald-500 text-white border-emerald-500" : "bg-red-500 text-white border-red-500"
+                                : v > 0 ? "border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100" : "border-red-200 text-red-600 bg-red-50 hover:bg-red-100"
+                            }`}>
+                            {v > 0 ? `+${v}` : v}
+                          </button>
+                        ))}
+                        <input
+                          type="number"
+                          value={loyaltyPoints}
+                          onChange={e => setLoyaltyPoints(e.target.value)}
+                          placeholder="Custom…"
+                          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition text-center font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1.5">Reason / description</label>
+                      <input
+                        value={loyaltyDesc}
+                        onChange={e => setLoyaltyDesc(e.target.value)}
+                        placeholder="e.g. Goodwill for delayed appointment, Correction for missed webhook…"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
+                      />
+                    </div>
+
+                    {/* Balance preview */}
+                    {!isNaN(pts) && pts !== 0 && (
+                      <div className={`rounded-xl px-4 py-3 flex items-center gap-3 border ${
+                        isAward ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"
+                      }`}>
+                        <span className="text-2xl">{isAward ? "🎉" : "📉"}</span>
+                        <div className="flex-1">
+                          <div className={`font-bold text-sm ${isAward ? "text-emerald-700" : "text-red-600"}`}>
+                            {isAward ? "Award" : "Deduct"} {Math.abs(pts)} credits
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            Balance: <strong>{currentBal.toLocaleString()}</strong>
+                            <span className="mx-1.5 text-gray-300">→</span>
+                            <strong className={isAward ? "text-emerald-700" : "text-red-600"}>{Math.max(0, newBal).toLocaleString()}</strong>
+                            {newBal < 0 && <span className="ml-1 text-xs text-red-500">(capped at 0)</span>}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Submit */}
+                    <button
+                      onClick={submitAward}
+                      disabled={!canSubmit || loyaltySubmitting}
+                      className={`w-full py-3.5 font-bold rounded-2xl text-white text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isDeduct ? "bg-red-500 hover:bg-red-600" : "bg-orange-500 hover:bg-orange-600"
+                      }`}>
+                      {loyaltySubmitting
+                        ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Processing…</>
+                        : isDeduct
+                          ? `📉 Deduct ${Math.abs(pts)} Points`
+                          : `🎁 Award ${pts || 0} Points`}
+                    </button>
+                    {!canSubmit && loyaltyTarget && loyaltyDesc.trim().length > 0 && loyaltyDesc.trim().length < 3 && (
+                      <p className="text-xs text-red-500 -mt-2">Please write a reason (at least 3 characters).</p>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* ── Programme stats ── */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Programme Health · Last 30 Days</h2>
+                  <button
+                    onClick={() => {
+                      setLoyaltyStats(null);
+                      setLoyaltyStatsLoading(true);
+                      api.loyaltyStats(30).then(r => setLoyaltyStats(r)).catch(() => {}).finally(() => setLoyaltyStatsLoading(false));
+                    }}
+                    className="text-xs text-orange-500 font-semibold hover:text-orange-600 transition">
+                    🔄 Refresh
+                  </button>
+                </div>
+
+                {loyaltyStatsLoading && (
+                  <div className="flex items-center justify-center py-10 gap-3 text-gray-400">
+                    <span className="w-5 h-5 border-2 border-gray-200 border-t-orange-400 rounded-full animate-spin"/>
+                    Loading stats…
+                  </div>
+                )}
+
+                {!loyaltyStatsLoading && !loyaltyStats && (
+                  <div className="text-center py-8 text-gray-400 text-sm">Stats failed to load. Click Refresh to try again.</div>
+                )}
+
+                {loyaltyStats && (() => {
+                  const s = loyaltyStats;
+                  const statCards = [
+                    { icon:"💰", label:"Points Earned (30d)",   value:(s.total_earned_30d ?? 0).toLocaleString(),   color:"text-emerald-700", bg:"bg-emerald-50", border:"border-emerald-100" },
+                    { icon:"🎫", label:"Coupons Redeemed (30d)", value:(s.redeemed_coupons_30d ?? 0).toLocaleString(), color:"text-orange-700",  bg:"bg-orange-50",  border:"border-orange-100" },
+                    { icon:"🏦", label:"Active Coupons",         value:(s.active_coupons ?? 0).toLocaleString(),       color:"text-blue-700",    bg:"bg-blue-50",    border:"border-blue-100" },
+                    { icon:"👤", label:"Active Members",          value:(s.active_members ?? users.filter(u=>u.role==="customer" && (u.loyalty_points||0)>0).length).toLocaleString(), color:"text-violet-700", bg:"bg-violet-50", border:"border-violet-100" },
+                  ];
+                  return (
+                    <>
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        {statCards.map(c => (
+                          <div key={c.label} className={`rounded-xl p-3.5 border ${c.bg} ${c.border}`}>
+                            <div className="text-lg mb-1">{c.icon}</div>
+                            <div className={`text-2xl font-extrabold ${c.color}`}>{c.value}</div>
+                            <div className="text-xs text-gray-500 font-medium mt-0.5">{c.label}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Top earners leaderboard */}
+                      {Array.isArray(s.top_earners) && s.top_earners.length > 0 && (
+                        <div>
+                          <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">🏆 Top Earners</div>
+                          <div className="space-y-1.5">
+                            {s.top_earners.slice(0, 5).map((e, i) => (
+                              <div key={e.user_id || i} className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 rounded-xl">
+                                <span className="text-sm font-extrabold text-gray-400 w-5 text-center shrink-0">
+                                  {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i+1}.`}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-semibold text-sm text-gray-800 truncate">{e.name || "—"}</div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <div className="text-xs font-bold text-orange-600">{(e.current_balance ?? 0).toLocaleString()} pts</div>
+                                  <div className="text-[10px] text-gray-400">{(e.total_earned ?? 0).toLocaleString()} earned</div>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    const fullUser = users.find(u => u.id === e.user_id);
+                                    if (fullUser) {
+                                      setLoyaltyTarget({ ...fullUser, loyalty_points: e.current_balance ?? fullUser.loyalty_points });
+                                      setLoyaltySearch(fullUser.name || fullUser.phone || "");
+                                      setLoyaltyPoints("");
+                                      setLoyaltyDesc("");
+                                      window.scrollTo({ top: 0, behavior: "smooth" });
+                                    }
+                                  }}
+                                  className="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 transition shrink-0">
+                                  ➕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Anomaly alerts */}
+                      {Array.isArray(s.anomalies) && s.anomalies.length > 0 && (
+                        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-base">🚨</span>
+                            <span className="font-bold text-red-700 text-sm">Anomaly Alerts ({s.anomalies.length})</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {s.anomalies.map((a, i) => (
+                              <div key={i} className="flex items-center justify-between text-xs text-red-700 bg-white rounded-lg px-3 py-2 border border-red-100">
+                                <span className="font-medium truncate mr-2">{a.name || a.user_id}</span>
+                                <span className="font-bold shrink-0">{(a.earned_24h ?? 0).toLocaleString()} pts in 24h</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-red-500 mt-2">Review these accounts in the Users tab.</p>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
             </div>
           );
         })()}
