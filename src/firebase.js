@@ -160,7 +160,26 @@ export const verifyPhoneOtp = async (otp) => {
   const result = await _confirmationResult.confirm(otp);
   const idToken = await result.user.getIdToken();
   // Exchange Firebase token for our JWT (keeps rest of app unchanged)
-  return api.firebaseVerify(idToken);
+  try {
+    return await api.firebaseVerify(idToken);
+  } catch (backendErr) {
+    // C-6 fix: if the backend JWT exchange fails for any reason (500, network
+    // error, rate limit), sign the user out of Firebase immediately.
+    // Without this, the user is stuck in a half-authenticated state where
+    // Firebase sees them as signed in but PETclub has no JWT in localStorage.
+    // Signing out here ensures the next login attempt starts from a clean state.
+    try {
+      const { getAuth, signOut } = await import('firebase/auth');
+      await signOut(getAuth());
+    } catch (signOutErr) {
+      console.warn('[PhoneAuth] sign-out after backend failure failed:', signOutErr.message);
+    }
+    // Re-throw with a clear user-facing message so Login.jsx can display it.
+    const err = new Error('Verification failed — please try again.');
+    err.code  = backendErr?.code || 'auth/backend-error';
+    err.cause = backendErr;
+    throw err;
+  }
 };
 
 /**

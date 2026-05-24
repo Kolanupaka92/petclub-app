@@ -85,7 +85,14 @@ export const api = {
   adminAwardLoyalty: (userId, points, description) =>
     req('POST', '/admin/loyalty/award', { userId, points, description }, true),
   loyaltyStats:   (days = 30) => req('GET', `/admin/loyalty/stats?days=${days}`,  null, true),
-  partnerReport:  ()          => req('GET', '/admin/loyalty/partner-report',       null, true),
+  partnerReport:  (detail = false) => req('GET', `/admin/loyalty/partner-report${detail ? '?detail=true' : ''}`, null, true),
+  // O-2 fix: booking revenue grouped by professional via SQL aggregate RPC
+  revenueReport: (from_date, to_date) => {
+    const params = new URLSearchParams();
+    if (from_date) params.set('from_date', from_date);
+    if (to_date)   params.set('to_date', to_date);
+    return req('GET', `/admin/revenue-report?${params}`, null, true);
+  },
 
   // Professionals
   getProfessionals: (city, role) =>
@@ -104,6 +111,9 @@ export const api = {
   // Ratings
   rateBooking: (id, rating, review) => req('POST', `/bookings/${id}/rate`, { rating, review }, true),
   getMyRating: (id) => req('GET', `/bookings/${id}/my-rating`, null, true),
+  // W-6 fix: fetch all booking IDs this user has already rated from the server.
+  // Prevents the "re-rate" dialog from reappearing after localStorage is cleared.
+  getMyRatings: () => req('GET', '/ratings/mine', null, true),
 
   // ID Documents
   uploadUserIdPhoto: (data) => req('POST', '/users/upload-id-photo', data, true),
@@ -131,7 +141,12 @@ export const api = {
   // Admin
   getSignedDocUrl: (path) => req('GET', `/admin/signed-url?path=${encodeURIComponent(path)}`, null, true),
   getAdminStats: () => req('GET', '/admin/stats', null, true),
-  getAdminUsers: () => req('GET', '/admin/users', null, true),
+  // O-1 fix: paginated with optional search. page/limit/search are all optional.
+  getAdminUsers: ({ page = 1, limit = 50, search = '' } = {}) => {
+    const params = new URLSearchParams({ page, limit });
+    if (search) params.set('search', search);
+    return req('GET', `/admin/users?${params}`, null, true);
+  },
   getPendingVerifications: () => req('GET', '/admin/pending-verifications', null, true),
   verifyProfessional: (id, action, reason) => req('PUT', `/admin/verify/${id}`, { action, reason }, true),
   suspendUser: (id) => req('PUT', `/admin/users/${id}/suspend`, {}, true),

@@ -18,10 +18,13 @@ const speciesEmoji = s => s === "cat" ? "🐈" : "🐕";
 const INITIAL_PETS = [];
 
 // ── Service Catalog & Pricing ────────────────────────────────────────────────
-// Platform subsidy applied to every bookable service (hidden from SPs)
-const PLATFORM_DISCOUNT = 150; // ₹150 PETclub offer
+// O-3 fix: pricing is now fetched from GET /api/services/catalog on mount so
+// that any backend price change propagates immediately without a frontend deploy.
+// These DEFAULT constants are the offline/loading fallback ONLY — the live
+// values come from the useCatalog() hook below and override these on load.
+const PLATFORM_DISCOUNT = 150; // fallback — overridden by catalog.platform_discount
 
-// Grooming — tiered by pet size
+// Grooming — tiered by pet size (fallback)
 const GROOMING_PACKAGES = [
   { name: "Basic Bath",          prices: { Small: 800,  Medium: 1000, Large: 1300, Cat: 900  }, icon: "🛁", desc: "Shampoo, blow-dry & ear clean" },
   { name: "Trimming & Hygiene",  prices: { Small: 1300, Medium: 1500, Large: 1800, Cat: 1400 }, icon: "✂️", desc: "Bath + full trim, nail & paw care" },
@@ -39,7 +42,7 @@ const GROOMING_ADDONS = [
   { id: "anal_gland", label: "Anal Gland Expression",   price: 300, desc: "Hygienic value-add" },
 ];
 
-// Training — time-based packages (not size-dependent)
+// Training — time-based packages (fallback)
 const TRAINING_PACKAGES = [
   { name: "Consultation Session",           price: 650,   icon: "💬", desc: "60 min temperament & behaviour assessment" },
   { name: "Puppy Basics",                   price: 650,   icon: "🐶", desc: "Gentle first sessions for pups under 6 months" },
@@ -163,6 +166,9 @@ export default function PetclubApp({ session, onLogout }) {
   const [ratedBookings, setRatedBookings] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem("petclub_rated") || "[]")); } catch { return new Set(); }
   });
+  // O-3 fix: live service catalog fetched from backend — overrides fallback constants above.
+  // Shape: { platform_discount, grooming: { packages, addons, pet_sizes }, training: { packages } }
+  const [catalog, setCatalog] = useState(null);
   const [trackingBooking, setTrackingBooking] = useState(null); // booking object → open TrackingMap
   const [loadedPetRecs, setLoadedPetRecs] = useState(new Set()); // tracks which pet IDs have had API records fetched
 
@@ -200,6 +206,20 @@ export default function PetclubApp({ session, onLogout }) {
       if (r.success) {
         setLoyaltyData(r);
         if (r.is_new_member) setShowLoyaltyExplainer(true);
+      }
+    }).catch(() => {});
+    // O-3 fix: fetch live service catalog to replace hardcoded pricing constants.
+    // Falls back to module-level defaults silently if the fetch fails (e.g. offline).
+    api.getServiceCatalog().then(r => {
+      if (r.success) setCatalog(r);
+    }).catch(() => {});
+    // W-6 fix: sync rated booking IDs from server and merge with localStorage.
+    // Prevents the rating dialog from reappearing after localStorage is cleared
+    // (private mode, browser reset, new device). The DB unique constraint is the
+    // authoritative gate — this just keeps the UI consistent.
+    api.getMyRatings().then(r => {
+      if (r.success && r.ratedIds?.length) {
+        setRatedBookings(prev => new Set([...prev, ...r.ratedIds]));
       }
     }).catch(() => {});
   }, []);
@@ -378,19 +398,26 @@ export default function PetclubApp({ session, onLogout }) {
     } catch (e) { showToast(e.message || "Failed to save record", "error"); }
   };
 
+  // O-3 fix: resolved pricing uses live catalog when available; falls back to
+  // module-level constants while the catalog is loading or if fetch failed.
+  const activePlatformDiscount = catalog?.platform_discount ?? PLATFORM_DISCOUNT;
+  const activeGroomingPackages = catalog?.grooming?.packages ?? GROOMING_PACKAGES;
+  const activeGroomingAddons   = catalog?.grooming?.addons   ?? GROOMING_ADDONS;
+  const activeTrainingPackages = catalog?.training?.packages ?? TRAINING_PACKAGES;
+
   // Calculate final booking amount shown to customer (platform discount applied)
   const calcAmount = (form) => {
     if (form.service_type === "Groomer") {
-      const pkg = GROOMING_PACKAGES.find(p => p.name === form.service_name);
+      const pkg = activeGroomingPackages.find(p => p.name === form.service_name);
       if (!pkg || !form.pet_size) return null;
       const base     = pkg.prices[form.pet_size] || 0;
-      const addonSum = (form.addons || []).reduce((s, id) => s + (GROOMING_ADDONS.find(a => a.id === id)?.price || 0), 0);
-      return { base, addonSum, discount: PLATFORM_DISCOUNT, total: Math.max(0, base + addonSum - PLATFORM_DISCOUNT) };
+      const addonSum = (form.addons || []).reduce((s, id) => s + (activeGroomingAddons.find(a => a.id === id)?.price || 0), 0);
+      return { base, addonSum, discount: activePlatformDiscount, total: Math.max(0, base + addonSum - activePlatformDiscount) };
     }
     if (form.service_type === "Trainer") {
-      const pkg = TRAINING_PACKAGES.find(p => p.name === form.service_name);
+      const pkg = activeTrainingPackages.find(p => p.name === form.service_name);
       if (!pkg) return null;
-      return { base: pkg.price, addonSum: 0, discount: PLATFORM_DISCOUNT, total: Math.max(0, pkg.price - PLATFORM_DISCOUNT) };
+      return { base: pkg.price, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, pkg.price - activePlatformDiscount) };
     }
     return null; // Vet — quoted on-site
   };
@@ -1454,7 +1481,7 @@ export default function PetclubApp({ session, onLogout }) {
                 {bookingForm.pet_size && (<>
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Choose Package *</p>
                   <div className="space-y-2 mb-4">
-                    {GROOMING_PACKAGES.map(pkg => {
+                    {activeGroomingPackages.map(pkg => {
                       const price = pkg.prices[bookingForm.pet_size];
                       const sel   = bookingForm.service_name === pkg.name;
                       return (
@@ -1478,7 +1505,7 @@ export default function PetclubApp({ session, onLogout }) {
                   {/* Add-ons */}
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Add-on Services</p>
                   <div className="space-y-2 mb-4">
-                    {GROOMING_ADDONS.map(addon => {
+                    {activeGroomingAddons.map(addon => {
                       const checked = (bookingForm.addons || []).includes(addon.id);
                       return (
                         <label key={addon.id}
@@ -1507,7 +1534,7 @@ export default function PetclubApp({ session, onLogout }) {
               {bookingForm.service_type === "Trainer" && (<>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Choose Package *</p>
                 <div className="space-y-2 mb-4">
-                  {TRAINING_PACKAGES.map(pkg => {
+                  {activeTrainingPackages.map(pkg => {
                     const sel = bookingForm.service_name === pkg.name;
                     return (
                       <button key={pkg.name} onClick={() => setBookingForm(f => ({ ...f, service_name: pkg.name }))}
