@@ -272,6 +272,7 @@ export default function Login({ onLogin }) {
   const [cust, setCust] = useState({
     name:"", email:"", address:"",
     petName:"", petSpecies:"Dog", petBreed:"", petAge:"", petGender:"Male",
+    referralInput:"",
   });
   const [custAddrMeta, setCustAddrMeta] = useState({ lat:null, lng:null, postalCode:"", city:"", state:"" });
   const [custId, setCustId] = useState({ type:"aadhar", number:"", photo:null, photoName:"", preview:null });
@@ -504,7 +505,8 @@ export default function Login({ onLogin }) {
         addrMeta.lng,
         addrMeta.postalCode || undefined,
         addrMeta.city       || undefined,
-        addrMeta.state      || undefined
+        addrMeta.state      || undefined,
+        isCust ? (cust.referralInput.trim() || undefined) : undefined
       );
       saveToken(res.token);
 
@@ -845,6 +847,15 @@ export default function Login({ onLogin }) {
                   <input type="email" autoComplete="email" placeholder="you@example.com"
                     value={cust.email} onChange={e => setCust(f => ({...f, email: e.target.value}))}
                     className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Referral Code or Partner Name <span className="text-gray-400 normal-case font-normal">(optional)</span>
+                  </label>
+                  <input type="text" autoComplete="off" placeholder="e.g. PCR-A1B2C3-D4E5F6 or Dr. Sharma's Clinic"
+                    value={cust.referralInput} onChange={e => setCust(f => ({...f, referralInput: e.target.value}))}
+                    className={inp} />
+                  <p className="text-xs text-gray-400 mt-1">🎁 Got a referral code from a friend, or recommended by a vet / pet shop? Enter it here.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Service Address <span className="text-red-400">*</span></label>

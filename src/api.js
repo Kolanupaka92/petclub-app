@@ -55,8 +55,8 @@ export const api = {
   // User
   getMe: () => req('GET', '/users/me', null, true),
   updateMe: (data) => req('PUT', '/users/me', data, true),
-  setRole: (role, subRole, name, email, city, address, pet, addressLat, addressLng, addressPostalCode, addressCity, addressState) =>
-    req('POST', '/users/set-role', { role, subRole, name, email, city, address, pet, addressLat, addressLng, addressPostalCode, addressCity, addressState }, true),
+  setRole: (role, subRole, name, email, city, address, pet, addressLat, addressLng, addressPostalCode, addressCity, addressState, referralInput) =>
+    req('POST', '/users/set-role', { role, subRole, name, email, city, address, pet, addressLat, addressLng, addressPostalCode, addressCity, addressState, referral_input: referralInput || undefined }, true),
 
   // Pets
   getPets: () => req('GET', '/pets', null, true),
@@ -84,6 +84,8 @@ export const api = {
   validateCoupon:    (code)       => req('POST', '/loyalty/validate-coupon',  { code }, true),
   adminAwardLoyalty: (userId, points, description) =>
     req('POST', '/admin/loyalty/award', { userId, points, description }, true),
+  loyaltyStats:   (days = 30) => req('GET', `/admin/loyalty/stats?days=${days}`,  null, true),
+  partnerReport:  ()          => req('GET', '/admin/loyalty/partner-report',       null, true),
 
   // Professionals
   getProfessionals: (city, role) =>
