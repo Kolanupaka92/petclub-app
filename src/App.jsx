@@ -1169,7 +1169,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                             <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-right">
                               <div className="text-xs text-emerald-600 font-medium">Your Earning</div>
                               <div className="font-extrabold text-emerald-700 text-base">{currencySymbol}{parseFloat(bk.provider_earnings).toFixed(2)}</div>
-                              <div className="text-[10px] text-emerald-500">70% of booking</div>
+                              <div className="text-[10px] text-emerald-500">45% of booking</div>
                             </div>
                           )}
                         </div>
@@ -1264,7 +1264,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                           </span>
                           <div className="text-right">
                             <span className="text-sm font-extrabold text-emerald-600">
-                              {currencySymbol}{parseFloat(b.provider_earnings || b.amount * 0.7 || 0).toFixed(2)}
+                              {currencySymbol}{parseFloat(b.provider_earnings || b.amount * 0.45 || 0).toFixed(2)}
                             </span>
                             {b.payout_status && (
                               <span className={`ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${b.payout_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -1438,7 +1438,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
             </div>
 
             <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 text-xs text-orange-700 leading-relaxed">
-              <strong>How it works:</strong> For every booking, PETclub facilitates payment and you receive <strong>70%</strong> of the service fee directly to your registered bank account. Payouts are processed T+2 business days after the service is marked complete.
+              <strong>How it works:</strong> For every booking, PETclub facilitates payment and you receive <strong>45%</strong> of the service fee directly to your registered bank account. Payouts are processed T+2 business days after the service is marked complete.
             </div>
           </div>
         )}
@@ -1992,15 +1992,15 @@ const AdminDashboard = ({ session, onLogout }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/10">
                   <div className="bg-white/5 rounded-xl p-2.5 text-center">
-                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">PETclub Net (30%)</div>
+                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">PETclub Net (55%)</div>
                     <div className="text-orange-400 font-extrabold text-sm">
-                      {currencySymbol}{(stats?.platform_net ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.platform_fee||b.amount*0.3||0),0)).toLocaleString()}
+                      {currencySymbol}{(stats?.platform_net ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.platform_fee||b.amount*0.55||0),0)).toLocaleString()}
                     </div>
                   </div>
                   <div className="bg-white/5 rounded-xl p-2.5 text-center">
-                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">Provider Payouts (70%)</div>
+                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">Provider Payouts (45%)</div>
                     <div className="text-emerald-400 font-extrabold text-sm">
-                      {currencySymbol}{(stats?.provider_total ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.provider_earnings||b.amount*0.7||0),0)).toLocaleString()}
+                      {currencySymbol}{(stats?.provider_total ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.provider_earnings||b.amount*0.45||0),0)).toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -2550,12 +2550,12 @@ const AdminDashboard = ({ session, onLogout }) => {
                             <div className="text-xs font-extrabold text-blue-700">{currencySymbol}{parseFloat(b.total_amount || b.amount || 0).toFixed(2)}</div>
                           </div>
                           <div className="bg-emerald-50 rounded-lg p-1.5">
-                            <div className="text-[10px] text-emerald-500 font-semibold">Provider (70%)</div>
-                            <div className="text-xs font-extrabold text-emerald-700">{currencySymbol}{parseFloat(b.provider_earnings || (b.amount * 0.7) || 0).toFixed(2)}</div>
+                            <div className="text-[10px] text-emerald-500 font-semibold">Provider (45%)</div>
+                            <div className="text-xs font-extrabold text-emerald-700">{currencySymbol}{parseFloat(b.provider_earnings || (b.amount * 0.45) || 0).toFixed(2)}</div>
                           </div>
                           <div className="bg-orange-50 rounded-lg p-1.5">
-                            <div className="text-[10px] text-orange-500 font-semibold">PETclub (30%)</div>
-                            <div className="text-xs font-extrabold text-orange-700">{currencySymbol}{parseFloat(b.platform_fee || (b.amount * 0.3) || 0).toFixed(2)}</div>
+                            <div className="text-[10px] text-orange-500 font-semibold">PETclub (55%)</div>
+                            <div className="text-xs font-extrabold text-orange-700">{currencySymbol}{parseFloat(b.platform_fee || (b.amount * 0.55) || 0).toFixed(2)}</div>
                           </div>
                         </div>
                         {b.gateway_fee && (
