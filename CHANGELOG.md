@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.11.0...v1.12.0) (2026-05-24)
+
+
+### Features
+
+* referral/partner field at sign-up and api helpers ([4a8cf76](https://github.com/Kolanupaka92/petclub-app/commit/4a8cf7632b70b64d85d222876c5179f1dfe4930a))
+
 # [1.11.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.10.0...v1.11.0) (2026-05-23)
 
 
