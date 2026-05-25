@@ -256,6 +256,21 @@ function Root() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!session]);
 
+  /* ── 401 / expired JWT auto-logout ── */
+  // api.js dispatches petclub:unauthorized when any request receives a 401.
+  // This handles the case where the 7-day JWT expires mid-session.
+  useEffect(() => {
+    const handle = () => {
+      if (sessionRef.current) {
+        console.info('[Auth] JWT expired — auto-logging out');
+        doLogout();
+        setShowLanding(false); // go straight to login, skip landing
+      }
+    };
+    window.addEventListener('petclub:unauthorized', handle);
+    return () => window.removeEventListener('petclub:unauthorized', handle);
+  }, [doLogout]);
+
   /* ── Push notifications ── */
   useEffect(() => {
     if (session) {

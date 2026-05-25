@@ -44,6 +44,14 @@ const req = async (method, path, body, requireAuth = false, _swRetry = false) =>
     if (!res.ok) throw new Error(`Server error (${res.status}). Please try again.`);
     return {};
   }
+  // 401 — JWT expired or invalid: clear local session and signal the app to re-login
+  if (res.status === 401) {
+    localStorage.removeItem('petclub_token');
+    localStorage.removeItem('petclub_session');
+    // Dispatch a custom event — Root in main.jsx listens and calls doLogout()
+    window.dispatchEvent(new CustomEvent('petclub:unauthorized'));
+    throw new Error('Your session has expired. Please sign in again.');
+  }
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status}) [${res.url}]`);
   return data;
 };
