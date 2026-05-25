@@ -1776,8 +1776,9 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [loyaltySubmitting,   setLoyaltySubmitting]   = useState(false);
   const [loyaltyStats,        setLoyaltyStats]        = useState(null);
   const [loyaltyStatsLoading, setLoyaltyStatsLoading] = useState(false);
-  const isIndia      = session.phone?.startsWith("+91");
-  const currencySymbol = isIndia ? "₹" : "$";
+  // PETclub operates exclusively in India — all platform revenue is in INR.
+  // Admin's phone may be a non-Indian number but the currency is always ₹.
+  const currencySymbol = "₹";
 
   /* ── Admin UX additions ── */
   const [confirmModal,   setConfirmModal]   = useState(null);   // { action, userId?, userName?, userIds?, count? }
