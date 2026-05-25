@@ -1437,8 +1437,104 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
               )}
             </div>
 
-            <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 text-xs text-orange-700 leading-relaxed">
-              <strong>How it works:</strong> For every booking, PETclub facilitates payment and you receive <strong>45%</strong> of the service fee directly to your registered bank account. Payouts are processed T+2 business days after the service is marked complete.
+            {/* ── Partner Compensation Breakdown ── */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-4 py-3">
+                <p className="text-white font-bold text-sm">💼 Your Partner Compensation</p>
+                <p className="text-gray-400 text-xs mt-0.5">PETclub Partner Network Agreement</p>
+              </div>
+
+              {/* Total earnings formula */}
+              <div className="bg-orange-500 px-4 py-2.5 flex items-center justify-between">
+                <p className="text-white text-xs font-bold">Total Earnings =</p>
+                <p className="text-white text-xs font-extrabold">45% Commission + Travel Allowance + 100% Tips</p>
+              </div>
+
+              <div className="p-4 space-y-4">
+                {/* Commission */}
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center text-lg shrink-0">💰</div>
+                  <div className="flex-1">
+                    <p className="font-bold text-sm text-gray-800">45% Service Commission</p>
+                    <p className="text-xs text-gray-500 mt-0.5">You keep 45% of every service including upsells at the customer's doorstep.</p>
+                    <div className="bg-gray-50 rounded-lg px-3 py-2 mt-1.5 text-xs text-gray-600">
+                      <strong>Example:</strong> ₹1,500 grooming → you earn <strong className="text-emerald-600">₹675</strong>. ₹300 add-on shampoo → +<strong className="text-emerald-600">₹135</strong> more.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Travel allowance */}
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center text-lg shrink-0">🚗</div>
+                  <div className="flex-1">
+                    <p className="font-bold text-sm text-gray-800">Flat Travel Allowance</p>
+                    <p className="text-xs text-gray-500 mt-0.5 mb-1.5">No mileage tracking. Flat call-out fee per completed job:</p>
+                    <div className="rounded-xl overflow-hidden border border-gray-100">
+                      {[
+                        { tier:"Tier 1", dist:"Up to 8 km",  amt:"₹150" },
+                        { tier:"Tier 2", dist:"8 – 20 km",   amt:"₹250" },
+                        { tier:"Tier 3", dist:"20 – 40 km",  amt:"₹350 – ₹400" },
+                      ].map((r, i) => (
+                        <div key={r.tier} className={`flex items-center text-xs px-3 py-2 ${i % 2 === 0 ? "bg-gray-50" : "bg-white"}`}>
+                          <span className="w-14 font-bold text-gray-600 shrink-0">{r.tier}</span>
+                          <span className="flex-1 text-gray-500">{r.dist}</span>
+                          <span className="font-extrabold text-emerald-600">{r.amt}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tips */}
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center text-lg shrink-0">🎁</div>
+                  <div className="flex-1">
+                    <p className="font-bold text-sm text-gray-800">100% Gratuity</p>
+                    <p className="text-xs text-gray-500 mt-0.5">All tips — cash or in-app — are entirely yours. PETclub takes zero commission on tips.</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-50"/>
+
+                {/* Weekly settlement */}
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center text-lg shrink-0">📅</div>
+                  <div className="flex-1">
+                    <p className="font-bold text-sm text-gray-800">Weekly Settlement — Every Saturday</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Itemized statement sent via WhatsApp/App showing jobs, commission, travel allowance, and bonuses. Direct bank transfer.</p>
+                  </div>
+                </div>
+
+                {/* Insurance */}
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 flex items-start gap-2.5">
+                  <span className="text-lg shrink-0">🛡️</span>
+                  <div>
+                    <p className="font-bold text-xs text-emerald-800">Company-Sponsored Insurance — 100% Paid by PETclub</p>
+                    <p className="text-xs text-emerald-700 mt-0.5">Group Accidental Insurance active during all working hours — transit and on-site. Zero deductions from your earnings.</p>
+                  </div>
+                </div>
+
+                {/* Performance incentives */}
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">🏆 Performance Incentives</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { icon:"🥇", label:"Elite Award",            desc:"Top performer monthly — ₹1,500 bonus + Gold badge 30 days" },
+                      { icon:"⭐", label:"5-Star Review Bonus",     desc:"₹100 extra for every review mentioning your name" },
+                      { icon:"🔄", label:"Subscription Conversion", desc:"₹250 for every client on a recurring care package" },
+                      { icon:"✅", label:"Reliability Bonus",       desc:"₹750/month for 80+ jobs with zero last-minute cancellations" },
+                    ].map(item => (
+                      <div key={item.label} className="flex items-center gap-2.5 bg-gray-50 rounded-xl px-3 py-2">
+                        <span className="text-base shrink-0">{item.icon}</span>
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-gray-700">{item.label} — </span>
+                          <span className="text-xs text-gray-500">{item.desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

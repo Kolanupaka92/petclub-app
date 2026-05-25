@@ -282,6 +282,8 @@ export default function Login({ onLogin }) {
   const [proAddrMeta, setProAddrMeta] = useState({ lat:null, lng:null, postalCode:"", city:"", state:"" });
   const [proId, setProId] = useState({ type:"aadhar", number:"", photo:null, photoName:"", preview:null });
   const [proCert, setProCert] = useState({ type:"", photo:null, photoName:"", preview:null });
+  const [partnerAgreed,    setPartnerAgreed]    = useState(false);
+  const [showAgreement,    setShowAgreement]    = useState(false);
 
   const country  = COUNTRIES.find(c => c.code === cc) || COUNTRIES[0];
   const selRole  = ROLES.find(r => r.id === role);
@@ -1125,13 +1127,123 @@ export default function Login({ onLogin }) {
                 🔒 All documents are encrypted and visible only to PETclub admins for verification. Never shared publicly.
               </p>
 
+              {/* ── Partner Network Agreement ── */}
+              <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 overflow-hidden">
+                {/* Header — tap to expand */}
+                <button
+                  type="button"
+                  onClick={() => setShowAgreement(a => !a)}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">📋</span>
+                    <div>
+                      <div className="font-bold text-orange-800 text-sm">PETclub Partner Network Agreement</div>
+                      <div className="text-[11px] text-orange-600">Read before submitting — acceptance required</div>
+                    </div>
+                  </div>
+                  <span className="text-orange-500 font-bold text-sm ml-2">{showAgreement ? "▲" : "▼"}</span>
+                </button>
+
+                {/* Agreement content */}
+                {showAgreement && (
+                  <div className="px-4 pb-4 space-y-4 border-t border-orange-200">
+
+                    {/* Section 1 — Earnings */}
+                    <div className="pt-3">
+                      <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-2">1. Earnings & Compensation</p>
+                      <div className="bg-gray-900 rounded-xl px-4 py-2.5 mb-2">
+                        <p className="text-xs text-white font-semibold">Total Partner Earnings = 45% Commission + Travel Allowance + 100% of Tips</p>
+                      </div>
+                      <div className="space-y-1.5 text-xs text-orange-800">
+                        <p>• <strong>45% Service Commission</strong> — you retain 45% of the base service value, including any add-ons upsold at the customer's doorstep.</p>
+                        <p>• <strong>100% Gratuity</strong> — all tips (cash or in-app) go entirely to you. PETclub takes zero commission on tips.</p>
+                      </div>
+                      {/* Travel allowance table */}
+                      <div className="mt-2 rounded-xl overflow-hidden border border-orange-200">
+                        <div className="bg-gray-800 px-3 py-1.5">
+                          <p className="text-xs font-bold text-white">Flat Travel Allowance (per completed job)</p>
+                        </div>
+                        {[
+                          { tier:"Tier 1", dist:"Up to 8 km",   amt:"₹150" },
+                          { tier:"Tier 2", dist:"8 – 20 km",    amt:"₹250" },
+                          { tier:"Tier 3", dist:"20 – 40 km",   amt:"₹350 – ₹400" },
+                        ].map((r, i) => (
+                          <div key={r.tier} className={`flex items-center text-xs px-3 py-2 ${i % 2 === 0 ? "bg-white" : "bg-orange-50/50"}`}>
+                            <span className="w-14 font-bold text-orange-700 shrink-0">{r.tier}</span>
+                            <span className="flex-1 text-gray-600">{r.dist}</span>
+                            <span className="font-extrabold text-emerald-700">{r.amt}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Section 2 — Insurance */}
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5">
+                      <p className="text-xs font-extrabold text-emerald-700 uppercase tracking-wider mb-1">2. Company-Sponsored Insurance</p>
+                      <p className="text-xs text-emerald-800">PETclub covers <strong>100%</strong> of your Group Accidental Insurance Policy premiums — zero deductions from your earnings. Coverage is active throughout all working hours including transit.</p>
+                    </div>
+
+                    {/* Section 3 — Weekly Settlement */}
+                    <div>
+                      <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-1.5">3. Weekly Settlement</p>
+                      <p className="text-xs text-orange-800 mb-2">Earnings are transferred to your bank account <strong>every Saturday</strong>. You will receive an itemized statement via WhatsApp/App showing:</p>
+                      <div className="space-y-1 text-xs text-orange-800">
+                        {["Jobs completed during the week","Total gross service value","Your exact 45% commission","Travel allowances & performance bonuses"].map(item => (
+                          <p key={item} className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span>{item}</p>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Section 4 — Performance */}
+                    <div>
+                      <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-1.5">4. Performance Incentives</p>
+                      <div className="space-y-1 text-xs text-orange-800">
+                        <p>• <strong>🏆 Elite Award</strong> — Top groomer/trainer monthly: ₹1,500 cash bonus + Gold badge on profile for 30 days</p>
+                        <p>• <strong>⭐ 5-Star Review Bonus</strong> — ₹100 extra for every review mentioning your name</p>
+                        <p>• <strong>🔄 Subscription Conversion</strong> — ₹250 for every client on a recurring care package</p>
+                        <p>• <strong>✅ Reliability Bonus</strong> — ₹750/month for 80+ jobs with zero last-minute cancellations</p>
+                      </div>
+                    </div>
+
+                    {/* Section 5 — Operational Standards */}
+                    <div>
+                      <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-1.5">5. Operational Standards</p>
+                      <div className="space-y-1 text-xs text-orange-800">
+                        <p>• <strong>App Check-Ins</strong> — Log arrival, obtain customer signature on waiver, and close out before departing</p>
+                        <p>• <strong>Visual QC</strong> — Upload before & after photos for every session via the app</p>
+                        <p>• <strong>Insurance Validity</strong> — Coverage is linked to your active app check-in status</p>
+                        <p>• <strong>Quality Gate</strong> — Repeated negative feedback may result in suspension from premium zones</p>
+                      </div>
+                    </div>
+
+                    <p className="text-[10px] text-orange-600 italic">This document is confidential and intended solely for authorised PETclub partners. Queries: eshwar.kolanupaka@mypetclub.app</p>
+                  </div>
+                )}
+
+                {/* Acceptance checkbox — always visible */}
+                <label className="flex items-start gap-3 px-4 py-3.5 cursor-pointer border-t border-orange-200 bg-white">
+                  <input
+                    type="checkbox"
+                    checked={partnerAgreed}
+                    onChange={e => setPartnerAgreed(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-orange-500 shrink-0 cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-700 leading-relaxed">
+                    I have read and agree to the <strong>PETclub Partner Network Agreement</strong> — including the 45% commission structure, travel allowance tiers, weekly settlement terms, operational standards, and insurance policy.
+                  </span>
+                </label>
+              </div>
+
               {err && <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
 
-              <button onClick={submit} disabled={loading}
+              <button onClick={submit} disabled={loading || !partnerAgreed}
                 className="w-full h-14 text-white font-bold text-base rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60"
                 style={{background: selRole.color}}>
                 {loading ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>Submitting…</> : "Submit Application →"}
               </button>
+              {!partnerAgreed && (
+                <p className="text-center text-xs text-orange-600 -mt-2">☝️ Please read and accept the Partner Agreement above to continue</p>
+              )}
               <button onClick={() => { setStep("otp"); setErr(""); }} className="w-full text-xs text-gray-400 hover:text-gray-600 py-1.5 text-center transition-colors">← Back</button>
             </div>
           )}
