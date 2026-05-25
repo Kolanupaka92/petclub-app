@@ -341,13 +341,24 @@ export default function Login({ onLogin }) {
         if (digits.length < 6) return showErr("Enter a valid phone number");
         const e164 = `+${cc}${digits}`;
 
+        // Try Firebase first (if initialised) — silently fall back to Twilio on any failure.
+        // This handles: reCAPTCHA expiry, Firebase quota, CSP issues, or any other Firebase error.
+        let firebaseOk = false;
         if (fbReady === true) {
-          // All countries → Firebase Phone Auth (India + USA, cheapest & most reliable)
-          await sendPhoneOtp(e164);
-          setPhoneRoute("firebase");
-          setOtpNote("");
-        } else {
-          // Firebase unavailable → Backend Twilio/email fallback
+          try {
+            await sendPhoneOtp(e164);
+            setPhoneRoute("firebase");
+            setOtpNote("");
+            firebaseOk = true;
+          } catch (fbErr) {
+            console.warn('[Login] Firebase send failed, falling back to Twilio:', fbErr.message);
+            // Reset Firebase state so next attempt starts clean
+            clearPhoneAuth();
+            setFbReady(null); // will re-init on next mount
+          }
+        }
+        if (!firebaseOk) {
+          // Twilio SMS fallback — works even when Firebase is unavailable
           const smsRes = await api.sendPhoneOTP(e164, email.trim() || undefined);
           setPendingPhone(e164);
           setPhoneRoute("twilio");
