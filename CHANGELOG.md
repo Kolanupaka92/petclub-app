@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.13.0...v1.13.1) (2026-05-25)
+
+
+### Bug Fixes
+
+* **auth:** fix Firebase reCAPTCHA CSP block and remove confusing fallback banner ([25ca3fa](https://github.com/Kolanupaka92/petclub-app/commit/25ca3fadf1ef32c3fcbb14d60cd45ea5847cb218))
+
 # [1.13.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.12.0...v1.13.0) (2026-05-25)
 
 
