@@ -686,21 +686,7 @@ export default function Login({ onLogin }) {
                 </button>
               </div>
 
-              {/* ── Firebase init status (all countries) ── */}
-              {loginMethod === "phone" && fbReady === null && (
-                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-xs px-3 py-2.5 rounded-2xl">
-                  <span className="w-3.5 h-3.5 border-2 border-blue-400 border-t-blue-700 rounded-full animate-spin shrink-0"/>
-                  <span>Setting up secure SMS verification…</span>
-                </div>
-              )}
-              {loginMethod === "phone" && fbReady === false && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2.5 rounded-2xl">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="shrink-0">📱</span>
-                    <span>Firebase unavailable — OTP will be sent via <strong>SMS backup</strong>. Tap <em>Send OTP</em> to continue, or switch to Email OTP.</span>
-                  </div>
-                </div>
-              )}
+              {/* Firebase / SMS route is resolved silently — no banner needed */}
 
               {/* ── Phone input ── */}
               {loginMethod === "phone" && (
