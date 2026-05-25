@@ -1,3 +1,10 @@
+## [1.13.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.13.1...v1.13.2) (2026-05-25)
+
+
+### Bug Fixes
+
+* **auth:** silently fall back to Twilio when Firebase Phone Auth fails ([56bc138](https://github.com/Kolanupaka92/petclub-app/commit/56bc138e05076f283cda86f9abca9d0be099afa5))
+
 ## [1.13.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.13.0...v1.13.1) (2026-05-25)
 
 
