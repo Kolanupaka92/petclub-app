@@ -1,3 +1,19 @@
+# [1.13.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.12.0...v1.13.0) (2026-05-25)
+
+
+### Bug Fixes
+
+* **admin:** always show ₹ in admin dashboard — PETclub operates in INR only ([074413f](https://github.com/Kolanupaka92/petclub-app/commit/074413ff07e525e6061e1e8ecaf46958c732361d))
+* **security:** add comprehensive CSP + security headers to Vercel deployment ([ec8e849](https://github.com/Kolanupaka92/petclub-app/commit/ec8e849e9b51d01d2d632939245e17019f0351a9))
+* **security:** handle JWT expiry — auto-logout on 401 + 7-day session awareness ([44db9b3](https://github.com/Kolanupaka92/petclub-app/commit/44db9b356b3ad753dcebdcb69dd4144ae5163ba0))
+
+
+### Features
+
+* **admin:** add Loyalty Points management tab to admin dashboard ([efe90bd](https://github.com/Kolanupaka92/petclub-app/commit/efe90bdc83b2954c1dea729f0e8389e0b76d7ee4))
+* **billing:** update all UI labels from 70/30 to 45/55 split ([6ee373e](https://github.com/Kolanupaka92/petclub-app/commit/6ee373e4901928991365ce89771e159cd0568b13))
+* **partner:** add Partner Network Agreement clickwrap in signup + compensation card in earnings screen ([9511c06](https://github.com/Kolanupaka92/petclub-app/commit/9511c069319b8ad310f51d02d3225525ef14eb15))
+
 # [1.12.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.11.0...v1.12.0) (2026-05-24)
 
 
