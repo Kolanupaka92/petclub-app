@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.13.2...v1.14.0) (2026-05-26)
+
+
+### Features
+
+* **legal:** add Terms of Service link to landing page footer and profile tab ([67bdbd6](https://github.com/Kolanupaka92/petclub-app/commit/67bdbd66d7c733fcb83e11a7adeb74a212810ce9))
+
 ## [1.13.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.13.1...v1.13.2) (2026-05-25)
 
 
