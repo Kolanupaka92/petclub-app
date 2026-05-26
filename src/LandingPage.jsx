@@ -630,9 +630,13 @@ export default function LandingPage({ onGetStarted }) {
           <span style={{ marginLeft: 8, color: "#1f2937", fontFamily: "monospace" }}>v{__APP_VERSION__}</span>
         </div>
         <div style={{ display: "flex", gap: 16 }}>
-          {["Terms of Service", "Privacy Policy"].map(l => (
-            <span key={l} style={{ fontSize: 11, color: "#374151", cursor: "default" }}>{l}</span>
-          ))}
+          <a href="/terms.html" target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 11, color: "#6b7280", textDecoration: "none", cursor: "pointer" }}
+            onMouseEnter={e => e.target.style.color = ORANGE}
+            onMouseLeave={e => e.target.style.color = "#6b7280"}>
+            Terms of Service
+          </a>
+          <span style={{ fontSize: 11, color: "#374151", cursor: "default" }}>Privacy Policy</span>
         </div>
       </footer>
 

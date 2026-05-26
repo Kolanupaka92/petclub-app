@@ -1200,7 +1200,15 @@ export default function PetclubApp({ session, onLogout }) {
       <button onClick={() => setModal("logout")} className="w-full border border-red-200 text-red-500 font-bold py-3.5 rounded-2xl text-sm hover:bg-red-50 active:scale-[0.98] transition-all">
         🚪 Sign Out
       </button>
-      <p className="text-center text-[10px] text-gray-300 font-semibold mt-3 pb-4">PETclub v1.0 · Made with 🐾 for pets</p>
+      <div className="flex items-center justify-center gap-4 mt-3 pb-1">
+        <a href="/terms.html" target="_blank" rel="noopener noreferrer"
+          className="text-[11px] text-gray-400 font-semibold hover:text-orange-500 transition-colors">
+          Terms of Service
+        </a>
+        <span className="text-gray-200 text-xs">·</span>
+        <span className="text-[11px] text-gray-300 font-semibold">Privacy Policy</span>
+      </div>
+      <p className="text-center text-[10px] text-gray-300 font-semibold mt-1.5 pb-4">PETclub · Made with 🐾 for pets</p>
     </div>
     );
   };
