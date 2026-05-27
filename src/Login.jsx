@@ -253,7 +253,7 @@ const DocUploadBox = ({ preview, onFile, onClear, accept = "image/*", label, hin
 /* ══════════════════════════════════════════
    MAIN LOGIN COMPONENT
 ══════════════════════════════════════════ */
-export default function Login({ onLogin }) {
+export default function Login({ onLogin, initialHint }) {
   const [step, setStep]     = useState("start");
   const [mode, setMode]     = useState(null);
   const [cc, setCC]         = useState("91");   // default India
@@ -297,6 +297,16 @@ export default function Login({ onLogin }) {
   useEffect(() => {
     return () => { clearPhoneAuth(); };
   }, []);
+
+  /* ── Scroll to / highlight professional roles when landing page sends hint ── */
+  useEffect(() => {
+    if (initialHint !== "professional" || step !== "start") return;
+    const t = setTimeout(() => {
+      const el = document.getElementById("role-first-pro");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 200);
+    return () => clearTimeout(t);
+  }, [initialHint, step]);
 
   /* ── Customer profile ── */
   const [cust, setCust] = useState({
@@ -649,11 +659,12 @@ export default function Login({ onLogin }) {
                 <div className="flex-1 h-px bg-gray-200" />
               </div>
 
-              <div>
+              <div id="role-picker">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Create Account — Choose your role</p>
                 <div className="space-y-2.5">
                   {ROLES.map(r => (
                     <button key={r.id} type="button"
+                      id={initialHint === "professional" && !r.instant ? `role-first-pro` : undefined}
                       onClick={() => { setMode("signup"); setRole(r.id); setStep("phone"); setErr(""); }}
                       className="w-full flex items-center gap-3.5 p-4 rounded-2xl border-2 border-gray-100 bg-white hover:shadow-md transition-all group text-left"
                       onMouseEnter={e => e.currentTarget.style.borderColor = r.border}

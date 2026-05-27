@@ -7,9 +7,9 @@ import { bufferPosition, saveTokenToGpsDb } from "./utils/gpsBuffer.js";
 /* ── Helpers ── */
 const fmtDate = s => { try { return new Date(s).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }); } catch { return s || "—"; } };
 const fmtTime = s => { try { return new Date(s).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
-const rIcon  = r => ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥", Admin:"🛡️", customer:"🐕" })[r] || "👤";
-const rColor = r => ({ Groomer:"from-violet-500 to-purple-600", Trainer:"from-blue-500 to-indigo-600", Vet:"from-emerald-500 to-teal-600", Admin:"from-gray-700 to-gray-900" })[r] || "from-orange-500 to-amber-500";
-const rAccent= r => ({ Groomer:"#7c3aed", Trainer:"#2563eb", Vet:"#059669" })[r] || "#f97316";
+const rIcon  = r => ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥", Walker:"🦮", Boarding:"🏠", Admin:"🛡️", customer:"🐕" })[r] || "👤";
+const rColor = r => ({ Groomer:"from-violet-500 to-purple-600", Trainer:"from-blue-500 to-indigo-600", Vet:"from-emerald-500 to-teal-600", Walker:"from-green-500 to-emerald-600", Boarding:"from-amber-500 to-orange-500", Admin:"from-gray-700 to-gray-900" })[r] || "from-orange-500 to-amber-500";
+const rAccent= r => ({ Groomer:"#7c3aed", Trainer:"#2563eb", Vet:"#059669", Walker:"#16a34a", Boarding:"#d97706" })[r] || "#f97316";
 const sColor = s => ({
   completed:"bg-emerald-50 text-emerald-700 border-emerald-200", upcoming:"bg-blue-50 text-blue-700 border-blue-200",
   ongoing:"bg-orange-50 text-orange-700 border-orange-200", pending:"bg-amber-50 text-amber-700 border-amber-200",
@@ -74,6 +74,18 @@ const SVC_OPTS = {
     // Consult
     "Nutrition & Diet Consult", "Dermatology / Skin", "Orthopaedics",
   ],
+  Walker: [
+    "30-Minute Walk", "60-Minute Walk",
+    "5-Walk Weekly Pack", "Monthly Pack (22 Walks)",
+    "Group Walk (up to 3 dogs)", "Puppy Walk (first-timers)",
+    "Park Visit & Off-Leash Play", "Pickup & Drop-off",
+  ],
+  Boarding: [
+    "Overnight Stay (1 night)", "Weekend Stay (2 nights)",
+    "3-Night Stay", "5-Night Stay", "Weekly Stay (7 nights)",
+    "Extended Stay (8+ nights)", "Daycare (no overnight)",
+    "Holiday Special",
+  ],
 };
 
 const ROLE_CONFIG = {
@@ -132,6 +144,42 @@ const ROLE_CONFIG = {
       { key:"home_visit",   label:"I do home / doorstep visits" },
       { key:"telemedicine", label:"I offer video / telemedicine consults" },
       { key:"24_7",         label:"24/7 emergency availability" },
+    ],
+  },
+  Walker: {
+    grad:    "from-green-500 to-emerald-600",
+    accent:  "#16a34a",
+    bg:      "#f0fdf4",
+    border:  "#bbf7d0",
+    fields:  [
+      { key:"experience",    label:"Years of Experience", type:"select", opts:["<1 year","1–2 years","2–5 years","5–8 years","8+ years"] },
+      { key:"langs",         label:"Languages Spoken",    type:"text",   placeholder:"e.g. Hindi, English" },
+      { key:"service_areas", label:"Walking Areas",       type:"text",   placeholder:"e.g. Jubilee Hills, Banjara Hills" },
+    ],
+    pricing: { a:"30-min walk", b:"60-min walk", c:"Monthly pack" },
+    bioHint: "Describe your walking experience, breeds you handle, routes covered, and what makes your walks safe and fun for dogs…",
+    extras:  [
+      { key:"group_walks",   label:"I offer group walks (multiple dogs)" },
+      { key:"home_visit",    label:"I do pickup & drop-off" },
+      { key:"has_insurance", label:"I have pet care insurance" },
+    ],
+  },
+  Boarding: {
+    grad:    "from-amber-500 to-orange-500",
+    accent:  "#d97706",
+    bg:      "#fffbeb",
+    border:  "#fde68a",
+    fields:  [
+      { key:"experience",    label:"Years of Experience",  type:"select", opts:["<1 year","1–2 years","2–5 years","5–8 years","8+ years"] },
+      { key:"langs",         label:"Languages Spoken",     type:"text",   placeholder:"e.g. Hindi, English" },
+      { key:"service_areas", label:"Location / Locality",  type:"text",   placeholder:"e.g. Madhapur, Gachibowli" },
+    ],
+    pricing: { a:"Per night (1 pet)", b:"Per night (2 pets)", c:"Weekly rate" },
+    bioHint: "Describe your home setup, cage-free policy, daily routine, pets of your own, outdoor space, and why your home is special for boarding…",
+    extras:  [
+      { key:"has_yard",       label:"I have a yard / outdoor space" },
+      { key:"home_visit",     label:"I offer pickup & drop-off" },
+      { key:"has_other_pets", label:"I have my own friendly pets at home" },
     ],
   },
 };
@@ -406,7 +454,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
               <div className="mb-5">
                 <label className="block text-xs font-semibold text-gray-500 mb-2">I am a… *</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[{id:"Groomer",icon:"✂️"},{id:"Trainer",icon:"🐕‍🦺"},{id:"Vet",icon:"🏥"}].map(r => (
+                  {[{id:"Groomer",icon:"✂️"},{id:"Trainer",icon:"🐕‍🦺"},{id:"Vet",icon:"🏥"},{id:"Walker",icon:"🦮"},{id:"Boarding",icon:"🏠"}].map(r => (
                     <button key={r.id} type="button" onClick={() => setPickedRole(r.id)}
                       className={`flex flex-col items-center gap-1 py-3 rounded-xl border-2 text-sm font-bold transition-all ${pickedRole === r.id ? "border-orange-400 bg-orange-50 text-orange-600" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}>
                       <span className="text-xl">{r.icon}</span>{r.id}
@@ -457,7 +505,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
         {step === 2 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-lg font-extrabold text-gray-800 mb-1">
-              {effectiveRole === "Groomer" ? "Grooming Profile" : effectiveRole === "Trainer" ? "Training Profile" : "Veterinary Profile"}
+              {({ Groomer:"Grooming Profile", Trainer:"Training Profile", Vet:"Veterinary Profile", Walker:"Dog Walker Profile", Boarding:"Pet Boarding Profile" })[effectiveRole] || "Professional Profile"}
             </h2>
             <p className="text-sm text-gray-400 mb-5">Services, expertise & pricing</p>
 
@@ -1132,7 +1180,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
             ) : (
               <div className="space-y-4">
                 {activeRequests.map(bk => {
-                  const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[bk.service_type] || "📋";
+                  const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥", Walker:"🦮", Boarding:"🏠" })[bk.service_type] || "📋";
                   const pet = bk.pets;
                   const customer = bk.users;
                   const custFirstName = (customer?.name || "Customer").split(" ")[0];
@@ -2161,7 +2209,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                   return (
                     <div key={i} className="flex items-center gap-3 px-5 py-3 border-b border-gray-50 last:border-0">
                       <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center text-base shrink-0">
-                        {({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[b.service_type] || "🐕"}
+                        {({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥", Walker:"🦮", Boarding:"🏠" })[b.service_type] || "🐕"}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold text-gray-800 truncate">{b.service_name || b.service_type || "Service"}</div>
@@ -2359,7 +2407,7 @@ const AdminDashboard = ({ session, onLogout }) => {
 
             {/* ── Role filter chips ── */}
             <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1">
-              {["All","customer","Groomer","Trainer","Vet"].map(r => (
+              {["All","customer","Groomer","Trainer","Vet","Walker","Boarding"].map(r => (
                 <button key={r} onClick={() => setRoleFilter(r)}
                   className={`text-xs font-semibold px-3 py-2 rounded-full whitespace-nowrap transition-all shrink-0 ${roleFilter === r ? "bg-orange-500 text-white shadow-sm" : "bg-white border border-gray-200 text-gray-600"}`}>
                   {r === "customer" ? "🐕 Owners" : r === "All" ? "All" : `${rIcon(r)} ${r}s`}
@@ -2530,7 +2578,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                                 <>
                                   <div className="fixed inset-0 z-30" onClick={() => setRolePopover(null)} />
                                   <div className="absolute left-0 bottom-full mb-1 bg-white border border-gray-200 rounded-2xl shadow-2xl z-40 min-w-[168px] py-1.5 overflow-hidden">
-                                    {[["Groomer","✂️"],["Trainer","🐕‍🦺"],["Vet","🏥"]].map(([role, icon]) => (
+                                    {[["Groomer","✂️"],["Trainer","🐕‍🦺"],["Vet","🏥"],["Walker","🦮"],["Boarding","🏠"]].map(([role, icon]) => (
                                       <button key={role}
                                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition text-left"
                                         onClick={async () => {

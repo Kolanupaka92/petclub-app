@@ -147,6 +147,7 @@ function Root() {
     }
     return !skip;
   });
+  const [loginHint, setLoginHint]    = useState(null); // "customer" | "professional"
   const [warnVisible, setWarnVisible] = useState(false);
   const [countdown, setCountdown]   = useState(60);
 
@@ -298,8 +299,8 @@ function Root() {
   let content;
   if (!session) {
     content = showLanding
-      ? <LandingPage onGetStarted={() => setShowLanding(false)} />
-      : <Login onLogin={handleLogin} />;
+      ? <LandingPage onGetStarted={hint => { setLoginHint(hint); setShowLanding(false); }} />
+      : <Login onLogin={handleLogin} initialHint={loginHint} />;
   } else {
     const { role, verificationStatus } = session;
     if (role === "customer") {
