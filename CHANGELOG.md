@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.14.0...v1.15.0) (2026-05-27)
+
+
+### Features
+
+* **landing:** add Let's Connect section with India WhatsApp + rewrite ToS ([d5245f8](https://github.com/Kolanupaka92/petclub-app/commit/d5245f83c1c1e315d30b7fba8fb7c2ed4d9ad66c))
+
 # [1.14.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.13.2...v1.14.0) (2026-05-26)
 
 
