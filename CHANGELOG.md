@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.17.0...v1.18.0) (2026-05-27)
+
+
+### Features
+
+* add Walker and Boarding professional roles to Login onboarding ([cdc70a8](https://github.com/Kolanupaka92/petclub-app/commit/cdc70a8d72787f2d7c42172e3de498c5207b466c))
+
 # [1.17.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.16.0...v1.17.0) (2026-05-27)
 
 
