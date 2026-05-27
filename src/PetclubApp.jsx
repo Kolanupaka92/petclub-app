@@ -14,6 +14,7 @@ const getGreeting = () => { const h = new Date().getHours(); return h < 12 ? "Go
 const daysUntil = s => Math.ceil((new Date(s) - Date.now()) / 864e5);
 const isDueSoon = (s, d) => { const n = daysUntil(s); return n >= 0 && n <= d; };
 const speciesEmoji = s => s === "cat" ? "🐈" : "🐕";
+const addDays = (dateStr, n) => { const d = new Date(dateStr || today()); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 
 const INITIAL_PETS = [];
 
@@ -83,6 +84,22 @@ const TAB_META = {
   food:     { icon:"🍖", label:"Food",     color:"green" },
   vet:      { icon:"🏥", label:"Vet",      color:"rose" },
 };
+
+// ── Vaccine schedule — auto-calculates next due date on selection ─────────────
+// days = default interval until next dose after administration
+const VACCINE_SCHEDULE = [
+  { name: "Rabies",                      days: 365, icon: "💉", species: ["dog","cat"], note: "Annual booster" },
+  { name: "DHPP (Distemper · Parvo)",    days: 365, icon: "💉", species: ["dog"],       note: "Annual booster" },
+  { name: "Bordetella (Kennel Cough)",   days: 180, icon: "💉", species: ["dog"],       note: "Every 6 months" },
+  { name: "Leptospirosis",               days: 365, icon: "💉", species: ["dog"],       note: "Annual booster" },
+  { name: "Lyme Disease",                days: 365, icon: "💉", species: ["dog"],       note: "Annual booster" },
+  { name: "Canine Influenza (H3N2)",     days: 365, icon: "💉", species: ["dog"],       note: "Annual booster" },
+  { name: "FVRCP (Cat Flu · Enteritis)", days: 365, icon: "💉", species: ["cat"],       note: "Annual booster" },
+  { name: "FeLV (Feline Leukaemia)",     days: 365, icon: "💉", species: ["cat"],       note: "Annual booster" },
+  { name: "Deworming",                   days: 90,  icon: "🪱", species: ["dog","cat"], note: "Every 3 months" },
+  { name: "Flea & Tick Treatment",       days: 30,  icon: "🦟", species: ["dog","cat"], note: "Monthly" },
+  { name: "Heartworm Prevention",        days: 30,  icon: "🩺", species: ["dog","cat"], note: "Monthly" },
+];
 
 const SERVICES = [
   { id:"grooming", icon:"✂️",  label:"Grooming",   bg:"bg-blue-50",   tc:"text-blue-600",   desc:"Doorstep grooming",    role:"Groomer"  },
@@ -404,7 +421,13 @@ export default function PetclubApp({ session, onLogout }) {
     if (activeTab === "grooming")      rec = { ...base, service: form.service || "Grooming", by: form.by || "", cost: form.cost || "", notes: form.notes || "", rating: form.rating ? Number(form.rating) : 0 };
     else if (activeTab === "training") rec = { ...base, session: form.service || "Training", by: form.by || "", notes: form.notes || "", rating: form.rating ? Number(form.rating) : 0 };
     else if (activeTab === "food")     rec = { ...base, product: form.service || "Food", brand: form.by || "", qty: form.qty || "", cost: form.cost || "", notes: form.notes || "" };
-    else                               rec = { ...base, detail: form.service || "Vet Visit", vet: form.by || "", clinic: form.clinic || "", vtype: form.vtype || "General Check-up", nextDue: form.nextDue || undefined, cost: form.cost || "", notes: form.notes || "" };
+    else {
+      // When service=Vaccination and a specific vaccine was picked, use the vaccine name as the record detail
+      const vetDetail = (form.service === "Vaccination" && form.vaccineType)
+        ? form.vaccineType
+        : form.service || "Vet Visit";
+      rec = { ...base, detail: vetDetail, vet: form.by || "", clinic: form.clinic || "", vtype: form.service || "General Check-up", nextDue: form.nextDue || undefined, cost: form.cost || "", notes: form.notes || "" };
+    }
     try {
       if (apiMode) {
         const ap = { date, service: rec.service, session: rec.session, product: rec.product, detail: rec.detail, by: rec.by, brand: rec.brand, qty: rec.qty, vet: rec.vet, clinic: rec.clinic, vtype: rec.vtype, cost: rec.cost, notes: rec.notes, rating: rec.rating, next_due: rec.nextDue };
@@ -1036,6 +1059,61 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
         </div>
 
+        {/* ── Vaccine Passport ── */}
+        {(() => {
+          const speciesKey = pet.species || "dog";
+          const relevantVax = VACCINE_SCHEDULE.filter(v => v.species.includes(speciesKey));
+          // For each vaccine type, find the most recent vet record that matches
+          const passport = relevantVax.map(vax => {
+            const match = (pet.records.vet || [])
+              .filter(r => r.detail === vax.name)
+              .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            if (!match) return { ...vax, status: "never", nextDue: null };
+            const d = match.nextDue || match.next_due;
+            if (!d) return { ...vax, status: "recorded", nextDue: null };
+            const days = daysUntil(d);
+            const status = days < 0 ? "overdue" : days <= 14 ? "soon" : "ok";
+            return { ...vax, status, nextDue: d, daysLeft: days };
+          });
+          const statusMeta = {
+            ok:       { cls: "bg-green-100 text-green-700 border-green-200",  badge: "✅" },
+            soon:     { cls: "bg-amber-100 text-amber-700 border-amber-200",  badge: "⚠️" },
+            overdue:  { cls: "bg-red-100   text-red-700   border-red-200",    badge: "❌" },
+            recorded: { cls: "bg-blue-100  text-blue-700  border-blue-200",   badge: "📋" },
+            never:    { cls: "bg-gray-100  text-gray-500  border-gray-200",   badge: "➕" },
+          };
+          return (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-extrabold text-gray-600 uppercase tracking-wide">💉 Health Passport</p>
+                <button onClick={() => { setActiveTab("vet"); setForm({ date: today(), service: "Vaccination" }); setModal("addRecord"); }}
+                  className="text-xs font-bold text-rose-500 hover:text-rose-600">+ Add</button>
+              </div>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                {passport.map(v => {
+                  const sm = statusMeta[v.status];
+                  return (
+                    <div key={v.name} className={`shrink-0 border rounded-2xl px-3 py-2 min-w-[108px] ${sm.cls}`}>
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-base">{v.icon}</span>
+                        <span className="text-[9px] font-black uppercase tracking-wide">{sm.badge}</span>
+                      </div>
+                      <p className="text-[10px] font-extrabold leading-tight mb-0.5">{v.name}</p>
+                      <p className="text-[9px] opacity-75">
+                        {v.status === "never"    ? "Never recorded"
+                        : v.status === "recorded" ? "No due date set"
+                        : v.status === "overdue"  ? `${Math.abs(v.daysLeft)}d overdue`
+                        : v.status === "soon"     ? `Due in ${v.daysLeft}d`
+                        : `Due ${fmtDate(v.nextDue)}`}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 mb-3">
           {Object.entries(TAB_META).map(([t, m]) => {
@@ -1059,18 +1137,33 @@ export default function PetclubApp({ session, onLogout }) {
         <div className="space-y-3">
           {list.length === 0
             ? <div className="text-center py-10 text-gray-300"><div className="text-4xl mb-2">{TAB_META[activeTab].icon}</div><div className="font-bold text-gray-400">No {TAB_META[activeTab].label.toLowerCase()} records yet</div></div>
-            : list.map(r => (
-              <div key={r.id} className={`bg-white rounded-2xl border-l-4 ${TC[activeTab]?.border||"border-gray-200"} border border-gray-100 p-4 shadow-card animate-fade-in`}>
-                <div className="flex justify-between items-start gap-2">
-                  <p className="font-bold text-sm text-gray-900">{r.service||r.session||r.product||r.detail}</p>
-                  {r.cost && <span className="text-xs font-semibold text-gray-500 shrink-0">{r.cost}</span>}
+            : list.map(r => {
+              const isVax = activeTab === "vet" && VACCINE_SCHEDULE.some(v => v.detail === r.detail || v.name === r.detail);
+              const nextDue = r.nextDue || r.next_due;
+              const dueDays = nextDue ? daysUntil(nextDue) : null;
+              const dueStatus = dueDays === null ? null : dueDays < 0 ? "overdue" : dueDays <= 14 ? "soon" : "ok";
+              const dueBdg = dueStatus === "overdue"
+                ? { text: `${Math.abs(dueDays)}d overdue`, cls: "bg-red-100 text-red-700" }
+                : dueStatus === "soon"
+                ? { text: `Due in ${dueDays}d`, cls: "bg-amber-100 text-amber-700" }
+                : nextDue ? { text: `Next: ${fmtDate(nextDue)}`, cls: "bg-green-100 text-green-700" }
+                : null;
+              return (
+                <div key={r.id} className={`bg-white rounded-2xl border-l-4 ${TC[activeTab]?.border||"border-gray-200"} border border-gray-100 p-4 shadow-card animate-fade-in`}>
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      {isVax && <span className="text-base shrink-0">💉</span>}
+                      <p className="font-bold text-sm text-gray-900 truncate">{r.service||r.session||r.product||r.detail}</p>
+                    </div>
+                    {r.cost && <span className="text-xs font-semibold text-gray-500 shrink-0">{r.cost}</span>}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">{r.by||r.brand||r.vet}{r.clinic?` · ${r.clinic}`:""} · {fmtDate(r.date)}</p>
+                  {r.rating > 0 && <div className="mt-1.5"><Stars n={r.rating} /></div>}
+                  {r.notes && <p className="text-xs text-gray-400 mt-2 italic border-t border-gray-50 pt-2">&ldquo;{r.notes}&rdquo;</p>}
+                  {dueBdg && <div className="mt-2"><Bdg text={dueBdg.text} cls={dueBdg.cls} /></div>}
                 </div>
-                <p className="text-xs text-gray-400 mt-1">{r.by||r.brand||r.vet}{r.clinic?` · ${r.clinic}`:""} · {fmtDate(r.date)}</p>
-                {r.rating > 0 && <div className="mt-1.5"><Stars n={r.rating} /></div>}
-                {r.notes && <p className="text-xs text-gray-400 mt-2 italic border-t border-gray-50 pt-2">&ldquo;{r.notes}&rdquo;</p>}
-                {r.nextDue && <div className="mt-2"><Bdg text={`Next: ${fmtDate(r.nextDue)}`} cls="bg-green-100 text-green-700" /></div>}
-              </div>
-            ))
+              );
+            })
           }
         </div>
       </div>
@@ -1526,19 +1619,72 @@ export default function PetclubApp({ session, onLogout }) {
       {/* ADD RECORD */}
       {modal === "addRecord" && pet && (
         <Modal title={`Add ${TAB_META[activeTab].label} Record`} onClose={() => { setModal(null); setForm({}); }}>
-          <Fld label={activeTab==="food"?"Product":"Service"}>
-            <Sel opts={SVC_OPTS[activeTab]} value={form.service||""} onChange={sf("service")} />
+          <Fld label={activeTab==="food"?"Product":"Service Type"}>
+            <Sel opts={SVC_OPTS[activeTab]} value={form.service||""} onChange={v => {
+              setForm(f => {
+                // Clear vaccine-specific fields when switching service type
+                const next = { ...f, service: v, vaccineType: "", nextDue: "" };
+                return next;
+              });
+            }} />
           </Fld>
-          <Fld label={activeTab==="food"?"Brand":activeTab==="vet"?"Vet Name":"Provider"}>
+
+          {/* ── Smart vaccine picker — only shown when service = Vaccination ── */}
+          {activeTab === "vet" && form.service === "Vaccination" && (() => {
+            const speciesKey = pet?.species || "dog";
+            const available = VACCINE_SCHEDULE.filter(v => v.species.includes(speciesKey));
+            return (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3 -mt-1">
+                <p className="text-xs font-bold text-rose-700 mb-2">💉 Select Vaccine</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {available.map(v => {
+                    const sel = form.vaccineType === v.name;
+                    return (
+                      <button key={v.name} type="button"
+                        onClick={() => setForm(f => ({ ...f, vaccineType: v.name, nextDue: addDays(f.date || today(), v.days) }))}
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${sel ? "bg-rose-600 text-white border-rose-600 shadow-sm" : "bg-white text-gray-600 border-gray-200 hover:border-rose-300"}`}>
+                        {v.icon} {v.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.vaccineType && (() => {
+                  const vax = VACCINE_SCHEDULE.find(v => v.name === form.vaccineType);
+                  return (
+                    <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-rose-100">
+                      <span className="text-xs text-rose-600 font-semibold">⏰ Next due auto-set:</span>
+                      <span className="text-xs font-bold text-gray-900">{fmtDate(form.nextDue)}</span>
+                      <span className="ml-auto text-xs text-gray-400">{vax?.note}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          })()}
+
+          <Fld label={activeTab==="food"?"Brand":activeTab==="vet"?"Vet / Doctor Name":"Provider"}>
             <Inp placeholder={activeTab==="vet"?"Dr. Kavitha":"Arjun Mehta"} value={form.by||""} onChange={sf("by")} />
           </Fld>
-          {activeTab==="vet" && <Fld label="Clinic"><Inp placeholder="PetCare Clinic" value={form.clinic||""} onChange={sf("clinic")} /></Fld>}
+          {activeTab==="vet" && <Fld label="Clinic / Hospital"><Inp placeholder="PetCare Clinic" value={form.clinic||""} onChange={sf("clinic")} /></Fld>}
           {activeTab==="food" && <Fld label="Quantity"><Inp placeholder="3 kg" value={form.qty||""} onChange={sf("qty")} /></Fld>}
           <div className="grid grid-cols-2 gap-3">
-            <Fld label="Date *"><Inp type="date" max={today()} value={form.date||""} onChange={sf("date")} /></Fld>
+            <Fld label="Date *"><Inp type="date" max={today()} value={form.date||""} onChange={v => {
+              // If a vaccine is already selected, update the auto-due date when visit date changes
+              setForm(f => {
+                if (f.vaccineType) {
+                  const vax = VACCINE_SCHEDULE.find(vx => vx.name === f.vaccineType);
+                  return { ...f, date: v, nextDue: vax ? addDays(v, vax.days) : f.nextDue };
+                }
+                return { ...f, date: v };
+              });
+            }} /></Fld>
             <Fld label={`Cost (${currencySymbol})`}><Inp placeholder={`${currencySymbol}${currencySymbol === "₹" ? "999" : "29"}`} value={form.cost||""} onChange={sf("cost")} /></Fld>
           </div>
-          {activeTab==="vet" && <Fld label="Next Due Date"><Inp type="date" value={form.nextDue||""} onChange={sf("nextDue")} /></Fld>}
+          {activeTab==="vet" && (
+            <Fld label={form.vaccineType ? "Next Due Date (auto-calculated — edit if needed)" : "Next Due Date"}>
+              <Inp type="date" value={form.nextDue||""} onChange={sf("nextDue")} />
+            </Fld>
+          )}
           {(activeTab==="grooming"||activeTab==="training") && (
             <Fld label="Rating"><Sel opts={["","5 ★","4 ★","3 ★","2 ★","1 ★"]} value={form.rating||""} onChange={sf("rating")} /></Fld>
           )}
