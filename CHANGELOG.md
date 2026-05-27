@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.18.0...v1.19.0) (2026-05-27)
+
+
+### Features
+
+* smart vaccine picker + health passport on pet profile ([8368954](https://github.com/Kolanupaka92/petclub-app/commit/8368954c0871560d16ebe83ce82f6e04736eaeb8))
+
 # [1.18.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.17.0...v1.18.0) (2026-05-27)
 
 
