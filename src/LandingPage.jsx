@@ -1,8 +1,17 @@
 import { useRef, useState, useEffect } from "react";
 
 /* ─────────────────────────────────────────────
-   PETclub Public Landing Page  v2
+   PETclub Public Landing Page  v2.0
+   Released: 27 May 2026
    Dark-premium design · USA + India
+
+   v2.0 changes (vs competitors PawSpace / PetJio / Groomit):
+   - 6 service cards (added Dog Walking, Pet Boarding, Cat Grooming)
+   - Social proof bar after hero
+   - "Why PETclub Wins" competitive differentiators section
+   - Loyalty rewards teaser section
+   - 4-card trust section (added Booking Protection)
+   - Transparent pricing callout in Pro section
 ─────────────────────────────────────────────── */
 
 const ORANGE  = "#f97316";
@@ -19,7 +28,7 @@ const PawMark = ({ size = 30 }) => (
   </svg>
 );
 
-/* ── Animated CSS phone with dark map + "Sai on the way" card ── */
+/* ── Animated phone mockup ── */
 function PhoneMockup() {
   const [dots, setDots] = useState(1);
   useEffect(() => {
@@ -29,102 +38,41 @@ function PhoneMockup() {
 
   return (
     <div style={{ position: "relative", width: 260, margin: "0 auto", filter: "drop-shadow(0 40px 60px rgba(249,115,22,0.18))" }}>
-
-      {/* Outer glow ring */}
+      <div style={{ position: "absolute", inset: -6, borderRadius: 46, background: `radial-gradient(ellipse at 50% 30%, ${ORANGE}22 0%, transparent 70%)`, pointerEvents: "none" }}/>
       <div style={{
-        position: "absolute", inset: -6,
-        borderRadius: 46,
-        background: `radial-gradient(ellipse at 50% 30%, ${ORANGE}22 0%, transparent 70%)`,
-        pointerEvents: "none",
-      }}/>
-
-      {/* Phone shell */}
-      <div style={{
-        width: 260, height: 500,
-        background: "#0d1117",
-        borderRadius: 40,
-        padding: "10px 7px",
-        boxShadow: `
-          inset 0 0 0 1px rgba(255,255,255,0.10),
-          0 0 0 2px #1f2937,
-          0 32px 64px rgba(0,0,0,0.6)
-        `,
+        width: 260, height: 500, background: "#0d1117", borderRadius: 40, padding: "10px 7px",
+        boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.10), 0 0 0 2px #1f2937, 0 32px 64px rgba(0,0,0,0.6)`,
         position: "relative", overflow: "hidden",
       }}>
-
-        {/* Dynamic island / notch */}
-        <div style={{
-          position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
-          width: 88, height: 24,
-          background: "#0d1117",
-          borderRadius: "0 0 16px 16px",
-          zIndex: 20,
-        }}/>
-
-        {/* Screen */}
-        <div style={{
-          width: "100%", height: "100%",
-          borderRadius: 33,
-          overflow: "hidden",
-          background: "#111827",
-          position: "relative",
-        }}>
-
-          {/* ── Dark map background ── */}
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "linear-gradient(170deg, #0d1b2e 0%, #0f2239 35%, #0a1a2d 70%, #0d1525 100%)",
-          }}>
-            {/* Road grid */}
+        <div style={{ position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)", width: 88, height: 24, background: "#0d1117", borderRadius: "0 0 16px 16px", zIndex: 20 }}/>
+        <div style={{ width: "100%", height: "100%", borderRadius: 33, overflow: "hidden", background: "#111827", position: "relative" }}>
+          {/* Dark map */}
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(170deg, #0d1b2e 0%, #0f2239 35%, #0a1a2d 70%, #0d1525 100%)" }}>
             {[22, 44, 63, 81].map((top, i) => (
-              <div key={"h"+i} style={{
-                position: "absolute", top: `${top}%`, left: 0, right: 0,
-                height: i % 2 === 0 ? 2 : 1.5,
-                background: "rgba(255,255,255,0.06)",
-              }}/>
+              <div key={"h"+i} style={{ position: "absolute", top: `${top}%`, left: 0, right: 0, height: i % 2 === 0 ? 2 : 1.5, background: "rgba(255,255,255,0.06)" }}/>
             ))}
             {[18, 40, 62, 82].map((left, i) => (
-              <div key={"v"+i} style={{
-                position: "absolute", left: `${left}%`, top: 0, bottom: 0,
-                width: i % 2 === 0 ? 2 : 1.5,
-                background: "rgba(255,255,255,0.05)",
-              }}/>
+              <div key={"v"+i} style={{ position: "absolute", left: `${left}%`, top: 0, bottom: 0, width: i % 2 === 0 ? 2 : 1.5, background: "rgba(255,255,255,0.05)" }}/>
             ))}
-
-            {/* Block fills (city blocks) */}
             {[
               { top: "5%",  left: "42%", w: "18%", h: "14%", bg: "rgba(255,255,255,0.03)" },
               { top: "23%", left: "20%", w: "16%", h: "17%", bg: "rgba(255,255,255,0.025)" },
               { top: "47%", left: "42%", w: "17%", h: "13%", bg: "rgba(255,255,255,0.03)" },
               { top: "66%", left: "20%", w: "17%", h: "12%", bg: "rgba(255,255,255,0.025)" },
             ].map((b, i) => (
-              <div key={"b"+i} style={{
-                position: "absolute", top: b.top, left: b.left,
-                width: b.w, height: b.h,
-                background: b.bg, borderRadius: 2,
-              }}/>
+              <div key={"b"+i} style={{ position: "absolute", top: b.top, left: b.left, width: b.w, height: b.h, background: b.bg, borderRadius: 2 }}/>
             ))}
-
-            {/* Animated orange route */}
             <svg viewBox="0 0 246 480" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} preserveAspectRatio="none">
-              {/* Route glow */}
               <path d="M 50 440 C 80 380 100 310 123 255 C 140 205 135 155 148 110 C 155 85 160 68 155 48" stroke={ORANGE} strokeWidth="8" strokeLinecap="round" fill="none" opacity="0.15"/>
-              {/* Route main */}
               <path d="M 50 440 C 80 380 100 310 123 255 C 140 205 135 155 148 110 C 155 85 160 68 155 48" stroke={ORANGE} strokeWidth="3" strokeLinecap="round" strokeDasharray="10 7" fill="none" opacity="0.95">
                 <animate attributeName="stroke-dashoffset" from="100" to="-100" dur="2.8s" repeatCount="indefinite"/>
               </path>
-
-              {/* Destination pulse */}
               <circle cx="155" cy="48" r="6" fill={ORANGE}/>
               <circle cx="155" cy="48" r="12" fill={ORANGE} opacity="0.2">
                 <animate attributeName="r" values="6;18;6" dur="2s" repeatCount="indefinite"/>
                 <animate attributeName="opacity" values="0.3;0;0.3" dur="2s" repeatCount="indefinite"/>
               </circle>
-
-              {/* Home pin (customer) */}
               <circle cx="50" cy="440" r="7" fill="#3b82f6" stroke="white" strokeWidth="2"/>
-
-              {/* Moving pro dot */}
               <circle r="7" fill="white" stroke={ORANGE} strokeWidth="2.5">
                 <animateMotion path="M 50 440 C 80 380 100 310 123 255 C 140 205 135 155 148 110 C 155 85 160 68 155 48" dur="2.8s" repeatCount="indefinite"/>
               </circle>
@@ -132,118 +80,67 @@ function PhoneMockup() {
                 <animateMotion path="M 50 440 C 80 380 100 310 123 255 C 140 205 135 155 148 110 C 155 85 160 68 155 48" dur="2.8s" repeatCount="indefinite"/>
               </circle>
             </svg>
-
-            {/* Map labels */}
             <div style={{ position: "absolute", top: "19%", left: "42%", color: "rgba(255,255,255,0.14)", fontSize: 7, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>MG Road</div>
             <div style={{ position: "absolute", top: "50%", left: "5%", color: "rgba(255,255,255,0.12)", fontSize: 7, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", transform: "rotate(-90deg)", transformOrigin: "left center" }}>Park St</div>
           </div>
-
-          {/* ── Top status bar ── */}
-          <div style={{
-            position: "absolute", top: 0, left: 0, right: 0,
-            padding: "30px 14px 8px",
-            background: "linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 100%)",
-            zIndex: 10,
-          }}>
+          {/* Top bar */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "30px 14px 8px", background: "linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 100%)", zIndex: 10 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px #22c55e" }}/>
                 <span style={{ color: "white", fontSize: 9, fontWeight: 800, letterSpacing: 0.8 }}>LIVE</span>
               </div>
-              <div style={{
-                background: "rgba(249,115,22,0.2)",
-                border: "1px solid rgba(249,115,22,0.4)",
-                borderRadius: 20, padding: "2px 8px",
-                color: ORANGE, fontSize: 8, fontWeight: 700,
-              }}>✓ ID Verified</div>
+              <div style={{ background: "rgba(249,115,22,0.2)", border: "1px solid rgba(249,115,22,0.4)", borderRadius: 20, padding: "2px 8px", color: ORANGE, fontSize: 8, fontWeight: 700 }}>ID Verified</div>
             </div>
           </div>
-
-          {/* ── Bottom card ── */}
-          <div style={{
-            position: "absolute", bottom: 0, left: 0, right: 0,
-            padding: "8px 10px 14px",
-            background: "linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.6) 70%, transparent 100%)",
-            zIndex: 10,
-          }}>
-            {/* Provider card */}
-            <div style={{
-              background: "rgba(255,255,255,0.97)",
-              borderRadius: 18,
-              padding: "11px 13px",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
-            }}>
+          {/* Bottom card */}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "8px 10px 14px", background: "linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.6) 70%, transparent 100%)", zIndex: 10 }}>
+            <div style={{ background: "rgba(255,255,255,0.97)", borderRadius: 18, padding: "11px 13px", boxShadow: "0 8px 32px rgba(0,0,0,0.45)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {/* Avatar */}
-                <div style={{
-                  width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-                  background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 19,
-                }}>✂️</div>
-
+                <div style={{ width: 38, height: 38, borderRadius: 12, flexShrink: 0, background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19 }}>✂️</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#374151" }}>Sai Krishna · Groomer</div>
-                  <div style={{ fontSize: 13, fontWeight: 900, color: ORANGE, lineHeight: 1.2 }}>
-                    10 min away{".".repeat(dots)}
-                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: ORANGE, lineHeight: 1.2 }}>10 min away{".".repeat(dots)}</div>
                 </div>
-
-                {/* Call button */}
-                <div style={{
-                  width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                  background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 14, boxShadow: `0 4px 12px ${ORANGE}55`,
-                }}>📞</div>
+                <div style={{ width: 32, height: 32, borderRadius: 10, flexShrink: 0, background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: `0 4px 12px ${ORANGE}55` }}>📞</div>
               </div>
-
-              {/* Progress bar */}
               <div style={{ marginTop: 9, background: "#f1f5f9", borderRadius: 6, height: 5, overflow: "hidden" }}>
-                <div style={{
-                  height: "100%", width: "65%",
-                  background: `linear-gradient(90deg, ${ORANGE}, ${ORANGE2})`,
-                  borderRadius: 6,
-                  animation: "progress 3s ease-in-out infinite alternate",
-                }}/>
+                <div style={{ height: "100%", width: "65%", background: `linear-gradient(90deg, ${ORANGE}, ${ORANGE2})`, borderRadius: 6, animation: "progress 3s ease-in-out infinite alternate" }}/>
               </div>
             </div>
           </div>
-
         </div>
       </div>
-
-      <style>{`
-        @keyframes progress { from { width: 55%; } to { width: 80%; } }
-        @keyframes ping2 { 0%,100% { transform: scale(1); opacity:1; } 50% { transform: scale(2); opacity:0; } }
-      `}</style>
+      <style>{`@keyframes progress { from { width: 55%; } to { width: 80%; } }`}</style>
     </div>
   );
 }
 
-/* ── Services strip card ── */
-function ServiceCard({ icon, title, desc, badge }) {
+/* ── Service card ── */
+function ServiceCard({ icon, title, desc, badge, badgeColor, isNew }) {
   const [hov, setHov] = useState(false);
   return (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        flex: "1 1 200px", minWidth: 0,
+        flex: "1 1 190px", minWidth: 0,
         background: hov ? "linear-gradient(135deg, #1e293b, #0f172a)" : "#0f172a",
         border: `1.5px solid ${hov ? ORANGE+"55" : "rgba(255,255,255,0.07)"}`,
-        borderRadius: 20,
-        padding: "28px 24px",
-        transition: "all 0.2s",
-        cursor: "default",
+        borderRadius: 20, padding: "26px 22px",
+        transition: "all 0.2s", cursor: "default",
         boxShadow: hov ? `0 8px 32px ${ORANGE}22` : "none",
+        position: "relative",
       }}
     >
-      <div style={{ fontSize: 36, marginBottom: 12 }}>{icon}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 15, fontWeight: 800, color: "white" }}>{title}</span>
+      {isNew && (
+        <div style={{ position: "absolute", top: 14, right: 14, fontSize: 9, fontWeight: 700, background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 20, padding: "2px 8px" }}>NEW</div>
+      )}
+      <div style={{ fontSize: 34, marginBottom: 12 }}>{icon}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}>
+        <span style={{ fontSize: 14, fontWeight: 800, color: "white" }}>{title}</span>
         {badge && (
-          <span style={{ fontSize: 9, fontWeight: 700, background: `${ORANGE}22`, color: ORANGE, border: `1px solid ${ORANGE}44`, borderRadius: 20, padding: "2px 8px" }}>{badge}</span>
+          <span style={{ fontSize: 9, fontWeight: 700, background: `${badgeColor || ORANGE}22`, color: badgeColor || ORANGE, border: `1px solid ${badgeColor || ORANGE}44`, borderRadius: 20, padding: "2px 7px" }}>{badge}</span>
         )}
       </div>
       <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.65, margin: 0 }}>{desc}</p>
@@ -254,14 +151,8 @@ function ServiceCard({ icon, title, desc, badge }) {
 /* ── How it works step ── */
 function HowStep({ num, icon, title, body }) {
   return (
-    <div style={{ flex: "1 1 220px", minWidth: 0, textAlign: "center", padding: "0 8px" }}>
-      <div style={{
-        width: 56, height: 56, borderRadius: 18,
-        background: `linear-gradient(135deg, ${ORANGE}22, ${ORANGE}11)`,
-        border: `2px solid ${ORANGE}44`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 26, margin: "0 auto 16px",
-      }}>{icon}</div>
+    <div style={{ flex: "1 1 200px", minWidth: 0, textAlign: "center", padding: "0 8px" }}>
+      <div style={{ width: 56, height: 56, borderRadius: 18, background: `linear-gradient(135deg, ${ORANGE}22, ${ORANGE}11)`, border: `2px solid ${ORANGE}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, margin: "0 auto 16px" }}>{icon}</div>
       <div style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" }}>Step {num}</div>
       <h3 style={{ fontSize: 16, fontWeight: 800, color: "white", margin: "0 0 10px", lineHeight: 1.3 }}>{title}</h3>
       <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.65, margin: 0 }}>{body}</p>
@@ -269,19 +160,43 @@ function HowStep({ num, icon, title, body }) {
   );
 }
 
-/* ── Trust card (dark theme) ── */
-function TrustCard({ icon, title, body }) {
+/* ── Trust card ── */
+function TrustCard({ icon, title, body, accent }) {
+  const col = accent || ORANGE;
   return (
-    <div style={{
-      flex: "1 1 240px", minWidth: 0,
-      background: "#111827",
-      border: "1px solid rgba(255,255,255,0.07)",
-      borderRadius: 20,
-      padding: "28px 24px",
-    }}>
-      <div style={{ fontSize: 36, marginBottom: 14 }}>{icon}</div>
-      <h3 style={{ fontSize: 16, fontWeight: 800, color: "white", margin: "0 0 10px", lineHeight: 1.3 }}>{title}</h3>
-      <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.65, margin: 0 }}>{body}</p>
+    <div style={{ flex: "1 1 220px", minWidth: 0, background: "#111827", border: `1px solid ${col}18`, borderRadius: 20, padding: "28px 24px", borderTop: `3px solid ${col}55` }}>
+      <div style={{ fontSize: 34, marginBottom: 14 }}>{icon}</div>
+      <h3 style={{ fontSize: 15, fontWeight: 800, color: "white", margin: "0 0 10px", lineHeight: 1.3 }}>{title}</h3>
+      <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.65, margin: 0 }}>{body}</p>
+    </div>
+  );
+}
+
+/* ── Win card (competitive differentiator) ── */
+function WinCard({ icon, title, body, highlight }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        flex: "1 1 260px", minWidth: 0,
+        background: hov ? "#1a2436" : "#0f172a",
+        border: `1.5px solid ${hov ? ORANGE+"44" : "rgba(255,255,255,0.06)"}`,
+        borderRadius: 20, padding: "28px 24px",
+        transition: "all 0.2s",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 14, background: `${ORANGE}18`, border: `1px solid ${ORANGE}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{icon}</div>
+        <div>
+          <h3 style={{ fontSize: 14, fontWeight: 800, color: "white", margin: "0 0 6px", lineHeight: 1.3 }}>{title}</h3>
+          <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.65, margin: "0 0 10px" }}>{body}</p>
+          {highlight && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: ORANGE, background: `${ORANGE}15`, border: `1px solid ${ORANGE}33`, borderRadius: 20, padding: "3px 10px" }}>{highlight}</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -290,10 +205,11 @@ function TrustCard({ icon, title, body }) {
    LANDING PAGE ROOT
 ═══════════════════════════════════════════ */
 export default function LandingPage({ onGetStarted }) {
-  const howRef   = useRef(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const howRef      = useRef(null);
+  const servicesRef = useRef(null);
 
-  const scrollToHow = () => howRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const scrollToHow      = () => howRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const scrollToServices = () => servicesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
     <div style={{ minHeight: "100vh", background: DARK, fontFamily: "system-ui, -apple-system, sans-serif", overflowX: "hidden", color: "white" }}>
@@ -301,7 +217,7 @@ export default function LandingPage({ onGetStarted }) {
       {/* ══ NAVBAR ══ */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 50,
-        background: "rgba(10,15,26,0.90)", backdropFilter: "blur(20px)",
+        background: "rgba(10,15,26,0.92)", backdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
         padding: "0 24px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -312,10 +228,11 @@ export default function LandingPage({ onGetStarted }) {
           <span style={{ fontWeight: 900, fontSize: 20, color: "white" }}>
             PET<span style={{ color: ORANGE }}>club</span>
           </span>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#475569", background: "#1e293b", borderRadius: 6, padding: "2px 6px", marginLeft: 2 }}>v2.0</span>
         </div>
 
-        {/* Desktop nav links */}
-        <div style={{ display: "flex", alignItems: "center", gap: 28 }} className="desktop-nav">
+        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+          <button onClick={scrollToServices} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}>Services</button>
           <button onClick={scrollToHow} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}>How it works</button>
           <button onClick={() => onGetStarted("professional")} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}>For Pros</button>
         </div>
@@ -323,111 +240,51 @@ export default function LandingPage({ onGetStarted }) {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button
             onClick={() => onGetStarted("professional")}
-            style={{
-              padding: "8px 18px", borderRadius: 12,
-              background: "transparent", color: "white",
-              fontWeight: 700, fontSize: 13, border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer",
-            }}
-          >
-            Join as Pro
-          </button>
+            style={{ padding: "8px 18px", borderRadius: 12, background: "transparent", color: "white", fontWeight: 700, fontSize: 13, border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer" }}
+          >Join as Pro</button>
           <button
             onClick={() => onGetStarted("customer")}
-            style={{
-              padding: "8px 20px", borderRadius: 12,
-              background: ORANGE, color: "white",
-              fontWeight: 800, fontSize: 13, border: "none", cursor: "pointer",
-              boxShadow: `0 4px 16px ${ORANGE}44`,
-            }}
-          >
-            Sign In →
-          </button>
+            style={{ padding: "8px 20px", borderRadius: 12, background: ORANGE, color: "white", fontWeight: 800, fontSize: 13, border: "none", cursor: "pointer", boxShadow: `0 4px 16px ${ORANGE}44` }}
+          >Sign In →</button>
         </div>
       </nav>
 
       {/* ══ HERO ══ */}
-      <section style={{
-        position: "relative",
-        padding: "80px 24px 96px",
-        overflow: "hidden",
-      }}>
-        {/* Background radial glows */}
+      <section style={{ position: "relative", padding: "80px 24px 96px", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -120, left: "60%", width: 600, height: 600, borderRadius: "50%", background: `radial-gradient(circle, ${ORANGE}14 0%, transparent 65%)`, pointerEvents: "none" }}/>
         <div style={{ position: "absolute", bottom: -80, left: -80, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, #3b82f614 0%, transparent 65%)", pointerEvents: "none" }}/>
 
-        <div style={{
-          maxWidth: 1120, margin: "0 auto",
-          display: "flex", alignItems: "center", gap: 56,
-          flexWrap: "wrap", justifyContent: "center",
-        }}>
-
-          {/* LEFT */}
+        <div style={{ maxWidth: 1120, margin: "0 auto", display: "flex", alignItems: "center", gap: 56, flexWrap: "wrap", justifyContent: "center" }}>
           <div style={{ flex: "1 1 420px", maxWidth: 560, minWidth: 0 }}>
 
             {/* Live badge */}
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)",
-              borderRadius: 100, padding: "5px 14px", marginBottom: 28,
-            }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 100, padding: "5px 14px", marginBottom: 28 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 8px #22c55e" }}/>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>Now live in USA &amp; India</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>Now live · India &amp; USA · v2.0</span>
             </div>
 
-            <h1 style={{
-              fontSize: "clamp(36px, 5vw, 58px)",
-              fontWeight: 900, lineHeight: 1.08,
-              color: "white", margin: "0 0 22px",
-              letterSpacing: "-0.03em",
-            }}>
+            <h1 style={{ fontSize: "clamp(36px, 5vw, 58px)", fontWeight: 900, lineHeight: 1.08, color: "white", margin: "0 0 22px", letterSpacing: "-0.03em" }}>
               Real-Time Pet Care,{" "}
-              <span style={{
-                color: ORANGE,
-                textDecoration: "none",
-              }}>
-                At Your Door.
-              </span>
+              <span style={{ color: ORANGE }}>At Your Door.</span>
             </h1>
 
-            <p style={{
-              fontSize: 17, color: "#94a3b8", lineHeight: 1.75,
-              margin: "0 0 40px", maxWidth: 480,
-            }}>
-              Book verified groomers, trainers, and vets — then track them live on a real map until they arrive. No guessing, no anxiety.
+            <p style={{ fontSize: 17, color: "#94a3b8", lineHeight: 1.75, margin: "0 0 40px", maxWidth: 480 }}>
+              Book verified groomers, trainers, walkers, and vets — then watch them arrive live on a real map. 6 services, one platform, zero stress.
             </p>
 
-            {/* CTAs */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 44 }}>
               <button
                 onClick={() => onGetStarted("customer")}
-                style={{
-                  padding: "16px 34px",
-                  background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`,
-                  color: "white", fontWeight: 800, fontSize: 15,
-                  border: "none", borderRadius: 16, cursor: "pointer",
-                  boxShadow: `0 8px 28px ${ORANGE}44`,
-                  transition: "transform 0.15s, box-shadow 0.15s",
-                }}
+                style={{ padding: "16px 34px", background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`, color: "white", fontWeight: 800, fontSize: 15, border: "none", borderRadius: 16, cursor: "pointer", boxShadow: `0 8px 28px ${ORANGE}44`, transition: "transform 0.15s, box-shadow 0.15s" }}
                 onMouseOver={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 12px 36px ${ORANGE}55`; }}
                 onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 8px 28px ${ORANGE}44`; }}
-              >
-                Book a Service 🐾
-              </button>
+              >Book a Service 🐾</button>
               <button
                 onClick={scrollToHow}
-                style={{
-                  padding: "16px 28px",
-                  background: "rgba(255,255,255,0.05)",
-                  color: "white", fontWeight: 700, fontSize: 15,
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 16, cursor: "pointer",
-                  transition: "background 0.15s",
-                }}
+                style={{ padding: "16px 28px", background: "rgba(255,255,255,0.05)", color: "white", fontWeight: 700, fontSize: 15, border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, cursor: "pointer", transition: "background 0.15s" }}
                 onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.09)"}
                 onMouseOut={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-              >
-                See how it works ↓
-              </button>
+              >See how it works ↓</button>
             </div>
 
             {/* Stats */}
@@ -435,6 +292,7 @@ export default function LandingPage({ onGetStarted }) {
               {[
                 { v: "100%", l: "Verified Pros" },
                 { v: "Live GPS", l: "Real-Time Map" },
+                { v: "6", l: "Services" },
                 { v: "48 hr", l: "Approval SLA" },
               ].map(s => (
                 <div key={s.l}>
@@ -445,32 +303,80 @@ export default function LandingPage({ onGetStarted }) {
             </div>
           </div>
 
-          {/* RIGHT — Phone */}
           <div style={{ flex: "0 0 auto", display: "flex", justifyContent: "center" }}>
             <PhoneMockup />
           </div>
         </div>
       </section>
 
-      {/* ══ SERVICES STRIP ══ */}
-      <section style={{
-        background: DARK2,
-        borderTop: "1px solid rgba(255,255,255,0.05)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        padding: "64px 24px",
+      {/* ══ SOCIAL PROOF BAR ══ */}
+      <div style={{
+        background: `linear-gradient(90deg, #0f172a, #111827, #0f172a)`,
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        padding: "18px 24px",
+        overflow: "hidden",
       }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto", display: "flex", gap: 0, flexWrap: "wrap", justifyContent: "space-around", alignItems: "center" }}>
+          {[
+            { icon: "⭐", value: "4.9 / 5", label: "Average Rating" },
+            { icon: "✅", value: "100%", label: "Background Checked" },
+            { icon: "📍", value: "Live GPS", label: "Every Booking" },
+            { icon: "⚡", value: "Same-Day", label: "Bookings Available" },
+            { icon: "🇮🇳🇺🇸", value: "2 Countries", label: "India & USA" },
+          ].map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px" }}>
+              <span style={{ fontSize: 20 }}>{s.icon}</span>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "white" }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: "#475569", fontWeight: 600 }}>{s.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ══ SERVICES STRIP ══ */}
+      <section ref={servicesRef} style={{ background: DARK2, borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "72px 24px" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 2, textTransform: "uppercase", margin: "0 0 10px" }}>What we offer</p>
-            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: 0 }}>
+            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: "0 0 12px" }}>
               Every service your pet needs.
             </h2>
+            <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>All at-home or doorstep. No travel, no stress — for you or your pet.</p>
           </div>
 
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-            <ServiceCard icon="✂️" title="Dog Grooming" badge="Most Popular" desc="Professional bath, haircut, nail trim, and ear cleaning. Book at-home or mobile grooming sessions." />
-            <ServiceCard icon="🐕‍🦺" title="Dog Training" desc="Obedience, behavior correction, agility, and puppy socialization classes with certified trainers." />
-            <ServiceCard icon="🏥" title="Veterinary Visit" desc="At-home vet consultations, vaccinations, check-ups, and follow-up care. Coming soon." badge="Soon" />
+          {/* Row 1 */}
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 14 }}>
+            <ServiceCard
+              icon="✂️" title="Dog Grooming" badge="Most Popular"
+              desc="Professional bath, haircut, nail trim, and ear cleaning. At-home or mobile grooming sessions."
+            />
+            <ServiceCard
+              icon="🐕‍🦺" title="Dog Training"
+              desc="Obedience, behavior correction, agility, and puppy socialisation. Certified trainers at your home."
+            />
+            <ServiceCard
+              icon="🦮" title="Dog Walking" isNew
+              desc="GPS-tracked daily or scheduled walks by trained handlers. Live map so you see exactly where your dog is."
+            />
+          </div>
+
+          {/* Row 2 */}
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center" }}>
+            <ServiceCard
+              icon="🏠" title="Pet Boarding" isNew
+              desc="Cage-free home-based boarding with verified hosts. Your pet stays in a real home, not a kennel."
+            />
+            <ServiceCard
+              icon="🐈" title="Cat Grooming" isNew
+              desc="Gentle, specialist cat grooming at home. Calming environment — no stressful salon trips."
+            />
+            <ServiceCard
+              icon="🏥" title="Vet Consultation" badge="Soon" badgeColor="#3b82f6"
+              desc="At-home vet visits, vaccinations, and check-ups. Consult a verified vet without leaving your home."
+            />
           </div>
         </div>
       </section>
@@ -486,26 +392,111 @@ export default function LandingPage({ onGetStarted }) {
           </div>
 
           <div style={{ display: "flex", gap: 32, flexWrap: "wrap", justifyContent: "center", position: "relative" }}>
-            {/* Connecting line (desktop) */}
-            <div style={{
-              position: "absolute", top: 28, left: "16%", right: "16%",
-              height: 1, background: `linear-gradient(90deg, transparent, ${ORANGE}44, transparent)`,
-              pointerEvents: "none",
-            }}/>
+            <div style={{ position: "absolute", top: 28, left: "16%", right: "16%", height: 1, background: `linear-gradient(90deg, transparent, ${ORANGE}44, transparent)`, pointerEvents: "none" }}/>
+            <HowStep num={1} icon="🔍" title="Choose a service" body="Browse 6 certified service types near you. Filter by rating, availability, and specialty. No account needed to browse." />
+            <HowStep num={2} icon="📅" title="Confirm your booking" body="Pick a time, add your pet's health notes, and pay securely. Instant confirmation with pro contact details." />
+            <HowStep num={3} icon="📍" title="Track live until arrival" body="Watch your provider move on a real-time map. Get notified when they're 10 minutes out — then earn loyalty points." />
+          </div>
+        </div>
+      </section>
 
-            <HowStep num={1} icon="🔍" title="Choose a service" body="Browse certified groomers, trainers, or vets near you. Filter by rating, availability, and specialty." />
-            <HowStep num={2} icon="📅" title="Confirm your booking" body="Pick a time, share your pet's health notes, and pay securely. Instant confirmation every time." />
-            <HowStep num={3} icon="📍" title="Track in real time" body="Watch your provider's live location on the map. Get notified the moment they're 10 minutes out." />
+      {/* ══ WHY PETCLUB WINS ══ */}
+      <section style={{ background: DARK2, borderTop: "1px solid rgba(255,255,255,0.05)", padding: "80px 24px" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 52 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 2, textTransform: "uppercase", margin: "0 0 10px" }}>vs. the competition</p>
+            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: "0 0 12px" }}>
+              Why pet owners choose PETclub.
+            </h2>
+            <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>Features other platforms haven't built yet.</p>
+          </div>
+
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center" }}>
+            <WinCard
+              icon="📍"
+              title="Live GPS on every booking"
+              body="Not just for walking — every groomer, trainer, and vet visit shows a live map from the moment they leave. Other apps send a text. We show you a dot."
+              highlight="Unique to PETclub"
+            />
+            <WinCard
+              icon="🔒"
+              title="Verified reviews only"
+              body="Every rating on our platform comes from a completed, paid booking. No fake 5-star farms, no anonymous drops. What you read is what the pro actually delivered."
+              highlight="No fake ratings"
+            />
+            <WinCard
+              icon="💰"
+              title="Transparent earnings — 70% to pros"
+              body="We publish our rate openly: pros keep 70% of every booking. No hidden deductions, no surge penalties. Other platforms hide their cut. We don't."
+              highlight="70 / 30 split — published"
+            />
+            <WinCard
+              icon="🌐"
+              title="No app download required"
+              body="Works in any browser on any device. While PawSpace and PetJio require an app install, PETclub runs instantly — iPhone, Android, or desktop."
+              highlight="Book in 60 seconds"
+            />
+            <WinCard
+              icon="🐾"
+              title="Pet health profiles per booking"
+              body="Attach vaccination records, allergy notes, and vet history directly to every booking. Your pro arrives knowing your pet — not guessing."
+              highlight="Pre-loaded health notes"
+            />
+            <WinCard
+              icon="🏆"
+              title="Loyalty rewards on every service"
+              body="Earn PETclub points on every booking — grooming, walking, training, boarding. Redeem for discounts. Most platforms offer nothing after your payment clears."
+              highlight="Points on all 6 services"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ══ LOYALTY REWARDS TEASER ══ */}
+      <section style={{
+        padding: "72px 24px",
+        background: `linear-gradient(135deg, #0a0f1a 0%, #0f1a0a 50%, #0a0f1a 100%)`,
+        borderTop: "1px solid rgba(255,255,255,0.05)",
+        position: "relative", overflow: "hidden",
+      }}>
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 500, height: 300, background: "radial-gradient(ellipse at center, rgba(34,197,94,0.08) 0%, transparent 65%)", pointerEvents: "none" }}/>
+
+        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", gap: 48, flexWrap: "wrap", alignItems: "center", justifyContent: "center", position: "relative", zIndex: 1 }}>
+          <div style={{ flex: "1 1 320px", minWidth: 0 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", letterSpacing: 2, textTransform: "uppercase", margin: "0 0 12px" }}>Loyalty Rewards</p>
+            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: "0 0 16px", lineHeight: 1.2 }}>
+              Every booking earns you{" "}<span style={{ color: "#4ade80" }}>points.</span>
+            </h2>
+            <p style={{ fontSize: 15, color: "#64748b", margin: "0 0 24px", lineHeight: 1.7 }}>
+              Earn PETclub points automatically on every grooming, walking, training, or boarding session. Redeem them for money off your next booking — no codes, no faff.
+            </p>
+            <button
+              onClick={() => onGetStarted("customer")}
+              style={{ padding: "14px 30px", background: "rgba(34,197,94,0.12)", color: "#4ade80", fontWeight: 700, fontSize: 14, border: "1px solid rgba(34,197,94,0.3)", borderRadius: 14, cursor: "pointer", transition: "all 0.2s" }}
+              onMouseOver={e => { e.currentTarget.style.background = "rgba(34,197,94,0.2)"; e.currentTarget.style.borderColor = "rgba(34,197,94,0.5)"; }}
+              onMouseOut={e => { e.currentTarget.style.background = "rgba(34,197,94,0.12)"; e.currentTarget.style.borderColor = "rgba(34,197,94,0.3)"; }}
+            >Start Earning Points →</button>
+          </div>
+
+          <div style={{ flex: "1 1 280px", minWidth: 0, display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+            {[
+              { icon: "✂️", label: "Grooming", pts: "+50 pts" },
+              { icon: "🦮", label: "Dog Walking", pts: "+20 pts" },
+              { icon: "🐕‍🦺", label: "Training", pts: "+40 pts" },
+              { icon: "🏠", label: "Boarding", pts: "+60 pts" },
+            ].map(item => (
+              <div key={item.label} style={{ flex: "1 1 120px", background: "#111827", border: "1px solid rgba(34,197,94,0.12)", borderRadius: 16, padding: "18px 14px", textAlign: "center" }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>{item.icon}</div>
+                <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, marginBottom: 6 }}>{item.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "#4ade80" }}>{item.pts}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ══ TRUST SECTION ══ */}
-      <section style={{
-        background: DARK2,
-        borderTop: "1px solid rgba(255,255,255,0.05)",
-        padding: "72px 24px",
-      }}>
+      <section style={{ background: DARK, borderTop: "1px solid rgba(255,255,255,0.05)", padding: "72px 24px" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 2, textTransform: "uppercase", margin: "0 0 10px" }}>Built for trust</p>
@@ -514,21 +505,18 @@ export default function LandingPage({ onGetStarted }) {
             </h2>
           </div>
 
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
-            <TrustCard
-              icon="🛡️"
-              title="Rigorous Verification"
-              body="Every professional submits a government ID plus their certification license. Our admin team manually reviews and approves within 48 hours — no shortcuts."
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
+            <TrustCard icon="🛡️" title="Rigorous Verification" accent={ORANGE}
+              body="Every professional submits a government ID plus their certification licence. Our admin team manually reviews and approves within 48 hours — no shortcuts, ever."
             />
-            <TrustCard
-              icon="📍"
-              title="Live GPS Tracking"
-              body="The moment your provider starts their journey, you see them move on a real-time map. Distance, ETA, and a direct call button — all in one glance."
+            <TrustCard icon="📍" title="Live GPS Tracking" accent="#3b82f6"
+              body="From the moment your provider starts their journey, you watch them move on a real-time map. Distance, ETA, and a direct call button — all one tap away."
             />
-            <TrustCard
-              icon="📋"
-              title="Pet Health Profiles"
-              body="Attach vaccination records, behavior notes, and vet history directly to your booking so the provider arrives fully prepared — not guessing."
+            <TrustCard icon="📋" title="Pet Health Profiles" accent="#8b5cf6"
+              body="Attach vaccination records, allergy notes, and vet history to every booking. Your provider arrives fully briefed — no forms to fill in on the doorstep."
+            />
+            <TrustCard icon="🔐" title="Booking Protection" accent="#22c55e"
+              body="Every completed booking is covered. If a session is cut short for safety or a pro cancels on the day, you get a full refund — automatically, no questions asked."
             />
           </div>
         </div>
@@ -542,38 +530,27 @@ export default function LandingPage({ onGetStarted }) {
         position: "relative", overflow: "hidden",
       }}>
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 300, background: `radial-gradient(ellipse at center, ${ORANGE}18 0%, transparent 65%)`, pointerEvents: "none" }}/>
-
         <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🐾</div>
           <h2 style={{ fontSize: "clamp(26px, 3.5vw, 40px)", fontWeight: 900, color: "white", margin: "0 0 16px", lineHeight: 1.15 }}>
             Are you a groomer, trainer,{" "}
-            <span style={{ color: ORANGE }}>or vet?</span>
+            <span style={{ color: ORANGE }}>walker, or vet?</span>
           </h2>
           <p style={{ fontSize: 16, color: "#94a3b8", margin: "0 0 40px", lineHeight: 1.7, maxWidth: 520, marginInline: "auto" }}>
-            Join PETclub's verified professional network. Set your own schedule, reach pet owners near you, and receive payouts directly — no middleman fees beyond our transparent 30% platform rate.
+            Join PETclub's verified professional network. Set your own schedule, reach pet owners near you, and receive payouts directly — transparent 30% platform rate, published openly.
           </p>
 
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 14, marginBottom: 32 }}>
             <button
               onClick={() => onGetStarted("professional")}
-              style={{
-                padding: "17px 40px",
-                background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`,
-                color: "white", fontWeight: 900, fontSize: 15,
-                border: "none", borderRadius: 16, cursor: "pointer",
-                boxShadow: `0 10px 32px ${ORANGE}44`,
-                transition: "transform 0.15s",
-              }}
+              style={{ padding: "17px 40px", background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`, color: "white", fontWeight: 900, fontSize: 15, border: "none", borderRadius: 16, cursor: "pointer", boxShadow: `0 10px 32px ${ORANGE}44`, transition: "transform 0.15s" }}
               onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"}
               onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              Apply as a Professional →
-            </button>
+            >Apply as a Professional →</button>
           </div>
 
-          {/* Mini feature list */}
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 20 }}>
-            {["✓ Keep 70% of earnings", "✓ Set your own schedule", "✓ ID verified badge", "✓ Free to join"].map(f => (
+            {["✓ Keep 70% of earnings", "✓ Set your own schedule", "✓ ID verified badge", "✓ Free to join", "✓ Earn on 6 service types"].map(f => (
               <span key={f} style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>{f}</span>
             ))}
           </div>
@@ -588,62 +565,32 @@ export default function LandingPage({ onGetStarted }) {
             <span style={{ color: ORANGE }}>Book in 60 seconds.</span>
           </h2>
           <p style={{ fontSize: 15, color: "#64748b", margin: "0 0 36px", lineHeight: 1.7 }}>
-            No app download needed. Works right in your browser — USA &amp; India.
+            No app download needed. Works right in your browser — India &amp; USA.
           </p>
           <button
             onClick={() => onGetStarted("customer")}
-            style={{
-              padding: "18px 48px",
-              background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`,
-              color: "white", fontWeight: 900, fontSize: 16,
-              border: "none", borderRadius: 18, cursor: "pointer",
-              boxShadow: `0 12px 36px ${ORANGE}44`,
-              transition: "transform 0.15s",
-            }}
+            style={{ padding: "18px 48px", background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`, color: "white", fontWeight: 900, fontSize: 16, border: "none", borderRadius: 18, cursor: "pointer", boxShadow: `0 12px 36px ${ORANGE}44`, transition: "transform 0.15s" }}
             onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"}
             onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}
-          >
-            Open Web App — Free 🐾
-          </button>
-          <p style={{ fontSize: 11, color: "#1e293b", marginTop: 20 }}>
-            <span style={{ color: "#475569" }}>Secure · No credit card required · Available everywhere</span>
+          >Open Web App — Free 🐾</button>
+          <p style={{ fontSize: 11, color: "#475569", marginTop: 20 }}>
+            Secure · No credit card required · Available everywhere
           </p>
         </div>
       </section>
 
       {/* ══ LET'S CONNECT ══ */}
-      <section style={{
-        padding: "72px 24px",
-        background: DARK2,
-        borderTop: "1px solid rgba(255,255,255,0.05)",
-      }}>
+      <section style={{ padding: "72px 24px", background: DARK2, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 2, textTransform: "uppercase", margin: "0 0 10px" }}>Get in touch</p>
-            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: "0 0 12px" }}>
-              Let's Connect
-            </h2>
-            <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>
-              Questions? Partnerships? We're here — reach us on WhatsApp or email.
-            </p>
+            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: "0 0 12px" }}>Let's Connect</h2>
+            <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>Questions? Partnerships? We're here — WhatsApp or email.</p>
           </div>
 
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
-
-            {/* India WhatsApp */}
-            <a
-              href="https://wa.me/919347411132"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                flex: "1 1 240px", maxWidth: 300,
-                background: "#111827",
-                border: "1.5px solid rgba(34,197,94,0.25)",
-                borderRadius: 20, padding: "28px 24px",
-                textDecoration: "none", color: "white",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-                transition: "all 0.2s", cursor: "pointer",
-              }}
+            <a href="https://wa.me/919347411132" target="_blank" rel="noopener noreferrer"
+              style={{ flex: "1 1 240px", maxWidth: 300, background: "#111827", border: "1.5px solid rgba(34,197,94,0.25)", borderRadius: 20, padding: "28px 24px", textDecoration: "none", color: "white", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, transition: "all 0.2s" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(34,197,94,0.6)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(34,197,94,0.12)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(34,197,94,0.25)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
             >
@@ -655,18 +602,8 @@ export default function LandingPage({ onGetStarted }) {
               </div>
             </a>
 
-            {/* Email support */}
-            <a
-              href="mailto:support@mypetclub.app"
-              style={{
-                flex: "1 1 240px", maxWidth: 300,
-                background: "#111827",
-                border: `1.5px solid ${ORANGE}33`,
-                borderRadius: 20, padding: "28px 24px",
-                textDecoration: "none", color: "white",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-                transition: "all 0.2s", cursor: "pointer",
-              }}
+            <a href="mailto:support@mypetclub.app"
+              style={{ flex: "1 1 240px", maxWidth: 300, background: "#111827", border: `1.5px solid ${ORANGE}33`, borderRadius: 20, padding: "28px 24px", textDecoration: "none", color: "white", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, transition: "all 0.2s" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = `${ORANGE}88`; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 12px 32px ${ORANGE}18`; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = `${ORANGE}33`; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
             >
@@ -678,18 +615,8 @@ export default function LandingPage({ onGetStarted }) {
               </div>
             </a>
 
-            {/* Pro enquiries */}
-            <a
-              href="mailto:pro@mypetclub.app"
-              style={{
-                flex: "1 1 240px", maxWidth: 300,
-                background: "#111827",
-                border: "1.5px solid rgba(139,92,246,0.25)",
-                borderRadius: 20, padding: "28px 24px",
-                textDecoration: "none", color: "white",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-                transition: "all 0.2s", cursor: "pointer",
-              }}
+            <a href="mailto:pro@mypetclub.app"
+              style={{ flex: "1 1 240px", maxWidth: 300, background: "#111827", border: "1.5px solid rgba(139,92,246,0.25)", borderRadius: 20, padding: "28px 24px", textDecoration: "none", color: "white", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, transition: "all 0.2s" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.6)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(139,92,246,0.12)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.25)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
             >
@@ -697,22 +624,15 @@ export default function LandingPage({ onGetStarted }) {
               <div style={{ textAlign: "center" }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>Join as a Pro</p>
                 <p style={{ fontSize: 15, fontWeight: 800, color: "white", margin: "0 0 4px" }}>pro@mypetclub.app</p>
-                <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Groomers · Trainers · Vets</p>
+                <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Groomers · Trainers · Walkers · Vets</p>
               </div>
             </a>
-
           </div>
         </div>
       </section>
 
       {/* ══ FOOTER ══ */}
-      <footer style={{
-        borderTop: "1px solid rgba(255,255,255,0.06)",
-        padding: "24px 24px",
-        display: "flex", flexWrap: "wrap", alignItems: "center",
-        justifyContent: "space-between", gap: 12,
-        background: "#060b14",
-      }}>
+      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "24px 24px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#060b14" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <PawMark size={22} />
           <span style={{ fontSize: 13, fontWeight: 800, color: "white" }}>
@@ -721,16 +641,18 @@ export default function LandingPage({ onGetStarted }) {
         </div>
         <div style={{ fontSize: 11, color: "#374151" }}>
           © {new Date().getFullYear()} PETclub · United States &amp; India · All rights reserved
-          <span style={{ marginLeft: 8, color: "#1f2937", fontFamily: "monospace" }}>v{__APP_VERSION__}</span>
+          <span style={{ marginLeft: 8, color: "#1f2937", fontFamily: "monospace" }}>
+            v{__APP_VERSION__} · 27 May 2026
+          </span>
         </div>
         <div style={{ display: "flex", gap: 16 }}>
           <a href="/terms.html" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 11, color: "#6b7280", textDecoration: "none", cursor: "pointer" }}
+            style={{ fontSize: 11, color: "#6b7280", textDecoration: "none" }}
             onMouseEnter={e => e.target.style.color = ORANGE}
             onMouseLeave={e => e.target.style.color = "#6b7280"}>
             Terms of Service
           </a>
-          <span style={{ fontSize: 11, color: "#374151", cursor: "default" }}>Privacy Policy</span>
+          <span style={{ fontSize: 11, color: "#374151" }}>Privacy Policy</span>
         </div>
       </footer>
 
