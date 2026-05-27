@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.16.0...v1.17.0) (2026-05-27)
+
+
+### Features
+
+* **app:** v2.0 E2E functionality upgrade — 6 services, booking flows, filters ([4386fed](https://github.com/Kolanupaka92/petclub-app/commit/4386fedea46b47cdb4fad761f3d58d186f667ab9))
+
 # [1.16.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.15.0...v1.16.0) (2026-05-27)
 
 
