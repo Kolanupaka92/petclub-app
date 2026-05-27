@@ -53,6 +53,22 @@ const TRAINING_PACKAGES = [
   { name: "Basic Obedience (10 Sessions)",  price: 10000, icon: "🎓", desc: "Full package — sit, stay, recall & leash basics" },
 ];
 
+// Dog Walking — duration-based packages
+const WALKING_PACKAGES = [
+  { name: "30-min Walk",             price: 250,  icon: "🦮", desc: "GPS-tracked 30-minute walk, solo" },
+  { name: "60-min Walk",             price: 400,  icon: "🐕", desc: "GPS-tracked 60-minute walk, solo" },
+  { name: "5-Walk Weekly Pack",      price: 1600, icon: "📅", desc: "5 x 30-min walks, Mon–Fri (save ₹650)" },
+  { name: "Monthly Pack (22 Walks)", price: 5500, icon: "🏆", desc: "22 daily walks — best value per walk" },
+];
+
+// Pet Boarding — cage-free, home-based
+const BOARDING_PACKAGES = [
+  { name: "Overnight Stay",         price: 800,  icon: "🌙", desc: "1 night · cage-free home · updates sent" },
+  { name: "Weekend Stay",           price: 1400, icon: "📅", desc: "Fri eve to Sun eve · 2 nights" },
+  { name: "5-Night Stay",           price: 3200, icon: "🏠", desc: "5 nights · daily photo updates" },
+  { name: "Weekly Stay (7 Nights)", price: 4200, icon: "⭐", desc: "7 nights · best rate · holiday special" },
+];
+
 // SVC_OPTS — used for pet health RECORDS only (not booking flow)
 const SVC_OPTS = {
   grooming: ["Basic Bath","Trimming & Hygiene","Complete Makeover","De-matting","Tick & Flea Treatment","Anal Gland Expression","Puppy/Kitten First Groom","Herbal Bath","Spa Treatment"],
@@ -69,10 +85,12 @@ const TAB_META = {
 };
 
 const SERVICES = [
-  { id:"grooming", icon:"✂️",  label:"Grooming", bg:"bg-blue-50",   tc:"text-blue-600",   desc:"Doorstep grooming" },
-  { id:"training", icon:"🐕‍🦺", label:"Training", bg:"bg-purple-50", tc:"text-purple-600", desc:"Certified trainers" },
-  { id:"vet",      icon:"🏥",  label:"Vet Care",  bg:"bg-rose-50",   tc:"text-rose-600",   desc:"In-home vet visits" },
-  { id:"food",     icon:"🍖",  label:"Pet Food",  bg:"bg-green-50",  tc:"text-green-600",  desc:"Free delivery" },
+  { id:"grooming", icon:"✂️",  label:"Grooming",   bg:"bg-blue-50",   tc:"text-blue-600",   desc:"Doorstep grooming",    role:"Groomer"  },
+  { id:"walking",  icon:"🦮",  label:"Dog Walking", bg:"bg-green-50",  tc:"text-green-600",  desc:"GPS-tracked walks",    role:"Walker"   },
+  { id:"training", icon:"🐕‍🦺", label:"Training",   bg:"bg-purple-50", tc:"text-purple-600", desc:"Certified trainers",   role:"Trainer"  },
+  { id:"boarding", icon:"🏠",  label:"Boarding",   bg:"bg-amber-50",  tc:"text-amber-600",  desc:"Cage-free home stays", role:"Boarding" },
+  { id:"vet",      icon:"🏥",  label:"Vet Care",   bg:"bg-rose-50",   tc:"text-rose-600",   desc:"In-home vet visits",   role:"Vet"      },
+  { id:"food",     icon:"🍖",  label:"Pet Food",   bg:"bg-orange-50", tc:"text-orange-600", desc:"Free delivery",        role:null       },
 ];
 
 /* ── Shared UI ── */
@@ -419,6 +437,16 @@ export default function PetclubApp({ session, onLogout }) {
       if (!pkg) return null;
       return { base: pkg.price, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, pkg.price - activePlatformDiscount) };
     }
+    if (form.service_type === "Walker") {
+      const pkg = WALKING_PACKAGES.find(p => p.name === form.service_name);
+      if (!pkg) return null;
+      return { base: pkg.price, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, pkg.price - activePlatformDiscount) };
+    }
+    if (form.service_type === "Boarding") {
+      const pkg = BOARDING_PACKAGES.find(p => p.name === form.service_name);
+      if (!pkg) return null;
+      return { base: pkg.price, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, pkg.price - activePlatformDiscount) };
+    }
     return null; // Vet — quoted on-site
   };
 
@@ -525,6 +553,7 @@ export default function PetclubApp({ session, onLogout }) {
 
   /* ── BOOKINGS VIEW ── */
   const BookingsView = () => {
+    const [bookFilter, setBookFilter] = useState("all");
     const statusMap = {
       searching:         { icon:"🔍", label:"Finding Pro…",      cls:"bg-blue-50 text-blue-700 border-blue-200" },
       offered:           { icon:"⏳", label:"Pro Notified",       cls:"bg-amber-50 text-amber-700 border-amber-200" },
@@ -560,11 +589,28 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
         </div>
 
+        {/* Filter tabs */}
+        {myBookings.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {[
+              { id:"all",    label:"All",      count: myBookings.length },
+              { id:"active", label:"Active",   count: myBookings.filter(b => ["searching","offered","confirmed","on_the_way","in_progress"].includes(b.assignment_status)).length },
+              { id:"done",   label:"Completed",count: myBookings.filter(b => b.status === "completed" || b.assignment_status === "completed").length },
+            ].map(f => (
+              <button key={f.id} onClick={() => setBookFilter(f.id)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 border transition-all ${bookFilter === f.id ? "bg-orange-500 text-white border-orange-500" : "bg-white border-gray-200 text-gray-600"}`}>
+                {f.label}
+                {f.count > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${bookFilter === f.id ? "bg-white/25 text-white" : "bg-gray-100 text-gray-500"}`}>{f.count}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
         {myBookings.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-5xl mb-4">📅</div>
             <div className="font-bold text-gray-700 text-base mb-1">No bookings yet</div>
-            <div className="text-sm text-gray-400 mb-5">Book grooming, training, or vet care for your pet</div>
+            <div className="text-sm text-gray-400 mb-5">Book grooming, walking, training, boarding, or vet care</div>
             <button onClick={() => { setBookingStep(1); setModal("bookService"); }}
               className="bg-orange-500 text-white font-bold px-6 py-3 rounded-2xl text-sm hover:bg-orange-600 transition">
               Book First Service
@@ -572,11 +618,15 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
         ) : (
           <div className="space-y-3">
-            {myBookings.map(b => {
+            {myBookings.filter(b => {
+              if (bookFilter === "active") return ["searching","offered","confirmed","on_the_way","in_progress"].includes(b.assignment_status);
+              if (bookFilter === "done")   return b.status === "completed" || b.assignment_status === "completed";
+              return true;
+            }).map(b => {
               const s = statusMap[b.assignment_status] || statusMap[b.status] || statusMap.pending;
-              const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[b.service_type] || "📋";
-              const svcAccent = ({ Groomer:"border-l-violet-500", Trainer:"border-l-blue-500", Vet:"border-l-emerald-500" })[b.service_type] || "border-l-orange-400";
-              const svcBg = ({ Groomer:"bg-violet-50", Trainer:"bg-blue-50", Vet:"bg-emerald-50" })[b.service_type] || "bg-orange-50";
+              const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Walker:"🦮", Boarding:"🏠", Vet:"🏥" })[b.service_type] || "📋";
+              const svcAccent = ({ Groomer:"border-l-violet-500", Trainer:"border-l-blue-500", Walker:"border-l-green-500", Boarding:"border-l-amber-500", Vet:"border-l-emerald-500" })[b.service_type] || "border-l-orange-400";
+              const svcBg = ({ Groomer:"bg-violet-50", Trainer:"bg-blue-50", Walker:"bg-green-50", Boarding:"bg-amber-50", Vet:"bg-emerald-50" })[b.service_type] || "bg-orange-50";
               return (
                 <div key={b.id} className={`bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden border-l-4 ${svcAccent}`}>
                   {/* Status bar */}
@@ -650,6 +700,19 @@ export default function PetclubApp({ session, onLogout }) {
                     {ratedBookings.has(b.id) && (
                       <div className="mt-3 text-center text-xs text-gray-400 font-medium">✅ Thanks for your review!</div>
                     )}
+                    {/* Book Again for completed */}
+                    {(b.status === "completed" || b.assignment_status === "completed") && (
+                      <button
+                        onClick={() => {
+                          const svc = SERVICES.find(s => s.role === b.service_type);
+                          setBookingForm(f => ({ ...f, service_type: b.service_type, service_name: b.service_name || "", pet_id: b.pet_id || "", city: b.city || "", address: "" }));
+                          setBookingStep(svc ? 2 : 1);
+                          setModal("bookService");
+                        }}
+                        className="mt-2 w-full text-center text-xs font-bold text-orange-600 border border-orange-200 bg-orange-50 rounded-xl py-2 hover:bg-orange-100 transition">
+                        🔁 Book Again
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -690,31 +753,75 @@ export default function PetclubApp({ session, onLogout }) {
       </div>
 
       <div className="p-4 -mt-5 space-y-4">
-        {/* Book a Service — raised card overlapping hero */}
+
+        {/* Loyalty snapshot — shown when user has credits */}
+        {loyaltyData && loyaltyData.balance > 0 && (
+          <div
+            onClick={() => goTo("profile")}
+            className="bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-100 rounded-2xl px-4 py-3 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all shadow-sm">
+            <span className="text-2xl">🏆</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-orange-600 uppercase tracking-wide">PETclub Credits</p>
+              <p className="text-sm font-black text-gray-900">
+                {loyaltyData.balance.toLocaleString("en-IN")} pts
+                <span className="text-xs font-semibold text-gray-400 ml-2">
+                  / {loyaltyData.threshold?.toLocaleString("en-IN") || "1,000"} for free groom
+                </span>
+              </p>
+            </div>
+            <div className="w-10 h-10 shrink-0">
+              <svg viewBox="0 0 40 6" className="w-full">
+                <rect x="0" y="0" width="40" height="6" rx="3" fill="#f3f4f6"/>
+                <rect x="0" y="0" width={Math.min(40, Math.round((loyaltyData.balance / (loyaltyData.threshold || 1000)) * 40))} height="6" rx="3" fill="#f97316"/>
+              </svg>
+            </div>
+            <span className="text-orange-400 text-sm">→</span>
+          </div>
+        )}
+
+        {/* Next upcoming booking card */}
+        {(() => {
+          const next = myBookings.find(b => b.assignment_status === "confirmed" || b.assignment_status === "on_the_way" || b.assignment_status === "searching");
+          if (!next) return null;
+          const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Walker:"🦮", Boarding:"🏠", Vet:"🏥" })[next.service_type] || "📋";
+          const isLive = next.assignment_status === "on_the_way";
+          return (
+            <button onClick={() => goTo("bookings")}
+              className={`w-full rounded-2xl p-4 text-left flex items-center gap-3 border-2 transition-all active:scale-[0.98] ${isLive ? "bg-orange-50 border-orange-300 shadow-orange-100 shadow-md" : "bg-emerald-50 border-emerald-200"}`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 ${isLive ? "bg-orange-100" : "bg-emerald-100"}`}>{svcIcon}</div>
+              <div className="flex-1 min-w-0">
+                <p className={`font-bold text-sm ${isLive ? "text-orange-700" : "text-emerald-700"}`}>
+                  {isLive ? "🚗 Pro on the way!" : "✅ Upcoming Booking"}
+                </p>
+                <p className="text-xs text-gray-600 truncate mt-0.5">{next.service_name || next.service_type}{next.scheduled_at ? ` · ${fmtDate(next.scheduled_at)}` : ""}</p>
+              </div>
+              {isLive && <span className="inline-block w-2 h-2 bg-orange-500 rounded-full animate-bounce shrink-0"/>}
+              <span className="text-gray-400 text-sm shrink-0">→</span>
+            </button>
+          );
+        })()}
+
+        {/* Book a Service — 3×2 grid, all 6 services */}
         <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.10)] border border-gray-100 p-4">
           <h2 className="font-extrabold text-gray-900 mb-3 text-[13px] uppercase tracking-wide">Book a Service</h2>
-          <div className="grid grid-cols-2 gap-2.5">
-            {SERVICES.map(s => {
-              const svcRole = s.id === "grooming" ? "Groomer" : s.id === "training" ? "Trainer" : s.id === "vet" ? "Vet" : null;
-              return (
-                <button key={s.id}
-                  onClick={() => {
-                    if (svcRole) {
-                      setBookingForm(f => ({ ...f, service_type: svcRole, service_name: "" }));
-                      setBookingStep(2);
-                    } else {
-                      setBookingStep(1);
-                    }
-                    setModal("bookService");
-                  }}
-                  className={`${s.bg} rounded-2xl p-4 text-left transition-all active:scale-[0.96] hover:opacity-90 relative overflow-hidden group`}>
-                  <div className="text-2xl mb-2 leading-none">{s.icon}</div>
-                  <div className={`font-extrabold text-sm ${s.tc}`}>{s.label}</div>
-                  <div className="text-[11px] text-gray-500 mt-0.5 leading-snug">{s.desc}</div>
-                  <span className={`absolute bottom-3 right-3.5 text-base ${s.tc} opacity-30 group-hover:opacity-70 transition-opacity`}>→</span>
-                </button>
-              );
-            })}
+          <div className="grid grid-cols-3 gap-2">
+            {SERVICES.map(s => (
+              <button key={s.id}
+                onClick={() => {
+                  if (s.role) {
+                    setBookingForm(f => ({ ...f, service_type: s.role, service_name: "" }));
+                    setBookingStep(2);
+                  } else {
+                    setBookingStep(1);
+                  }
+                  setModal("bookService");
+                }}
+                className={`${s.bg} rounded-2xl p-3 text-left transition-all active:scale-[0.96] hover:opacity-90 relative overflow-hidden group`}>
+                <div className="text-xl mb-1.5 leading-none">{s.icon}</div>
+                <div className={`font-extrabold text-[11px] leading-tight ${s.tc}`}>{s.label}</div>
+                <div className="text-[10px] text-gray-400 mt-0.5 leading-snug">{s.desc}</div>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -727,8 +834,8 @@ export default function PetclubApp({ session, onLogout }) {
             </div>
             <div className="space-y-2">
               {myBookings.slice(0, 2).map(b => {
-                const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Vet:"🏥" })[b.service_type] || "📋";
-                const svcColor = ({ Groomer:"bg-violet-100", Trainer:"bg-blue-100", Vet:"bg-emerald-100" })[b.service_type] || "bg-orange-100";
+                const svcIcon = ({ Groomer:"✂️", Trainer:"🐕‍🦺", Walker:"🦮", Boarding:"🏠", Vet:"🏥" })[b.service_type] || "📋";
+                const svcColor = ({ Groomer:"bg-violet-100", Trainer:"bg-blue-100", Walker:"bg-green-100", Boarding:"bg-amber-100", Vet:"bg-emerald-100" })[b.service_type] || "bg-orange-100";
                 const st = b.assignment_status;
                 const stCls = st==="confirmed" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                             : st==="searching" ? "bg-blue-50 text-blue-700 border-blue-200"
@@ -791,12 +898,19 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
         )}
 
-        {/* Upcoming reminders */}
+        {/* Upcoming vet reminders */}
         {allUpcoming.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-lg">💉</span>
-              <h2 className="font-extrabold text-gray-900">Upcoming ({allUpcoming.length})</h2>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">💉</span>
+                <h2 className="font-extrabold text-gray-900">Upcoming ({allUpcoming.length})</h2>
+              </div>
+              <button
+                onClick={() => { setBookingForm(f => ({ ...f, service_type: "Vet", service_name: "" })); setBookingStep(2); setModal("bookService"); }}
+                className="text-xs font-bold text-amber-700 bg-amber-200 px-3 py-1 rounded-xl hover:bg-amber-300 transition-all">
+                Book Vet →
+              </button>
             </div>
             {allUpcoming.slice(0, 3).map((v, i) => (
               <button key={i} onClick={() => openPet(v.petId)}
@@ -901,14 +1015,25 @@ export default function PetclubApp({ session, onLogout }) {
               )}
             </div>
           </div>
-          <button
-            onClick={() => {
-              setForm({ name: pet.name, species: pet.species, breed: pet.breed, age: pet.age, dob: pet.dob, weight: pet.weight, gender: pet.gender, color: pet.color, chip: pet.chip, insurance: pet.insurance, health_notes: pet.health_notes || "" });
-              setModal("editPet");
-            }}
-            className="mt-3 w-full bg-white/60 hover:bg-white/80 text-gray-700 font-bold py-2 rounded-xl text-xs transition-all border border-white/40">
-            ✏️ Edit Pet Details
-          </button>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={() => {
+                setForm({ name: pet.name, species: pet.species, breed: pet.breed, age: pet.age, dob: pet.dob, weight: pet.weight, gender: pet.gender, color: pet.color, chip: pet.chip, insurance: pet.insurance, health_notes: pet.health_notes || "" });
+                setModal("editPet");
+              }}
+              className="flex-1 bg-white/60 hover:bg-white/80 text-gray-700 font-bold py-2 rounded-xl text-xs transition-all border border-white/40">
+              ✏️ Edit
+            </button>
+            <button
+              onClick={() => {
+                setBookingForm(f => ({ ...f, service_type: "", service_name: "", pet_id: pet.id, pet_size: "" }));
+                setBookingStep(1);
+                setModal("bookService");
+              }}
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-xl text-xs transition-all shadow-sm">
+              📅 Book for {pet.name}
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -1300,14 +1425,27 @@ export default function PetclubApp({ session, onLogout }) {
                 <p className="text-xs font-bold text-gray-700 mb-1">Your referral code</p>
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-black text-orange-600 text-base tracking-widest">{loyaltyData.referral_code}</span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard?.writeText(loyaltyData.referral_code);
-                      showToast("Referral code copied!", "success");
-                    }}
-                    className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded-lg hover:bg-orange-200 transition-colors">
-                    Copy
-                  </button>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard?.writeText(loyaltyData.referral_code);
+                        showToast("Referral code copied!", "success");
+                      }}
+                      className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded-lg hover:bg-orange-200 transition-colors">
+                      Copy
+                    </button>
+                    {navigator.share && (
+                      <button
+                        onClick={() => navigator.share({
+                          title: "Join PETclub!",
+                          text: `Use my referral code ${loyaltyData.referral_code} on PETclub and get ₹150 off your first booking!`,
+                          url: "https://app.mypetclub.app",
+                        }).catch(() => {})}
+                        className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded-lg hover:bg-orange-200 transition-colors">
+                        Share 🔗
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <p className="text-[10px] text-orange-500 mt-1">Share this with friends — you earn +200 credits when they complete their first booking.</p>
               </div>
@@ -1444,19 +1582,18 @@ export default function PetclubApp({ session, onLogout }) {
 
           {/* STEP 1: Service type */}
           {bookingStep === 1 && (
-            <div className="space-y-3">
-              {SERVICES.filter(s => s.id !== "food").map(s => {
-                const subRole = s.id === "grooming" ? "Groomer" : s.id === "training" ? "Trainer" : "Vet";
-                const selected = bookingForm.service_type === subRole;
+            <div className="space-y-2">
+              {SERVICES.filter(s => s.role !== null).map(s => {
+                const selected = bookingForm.service_type === s.role;
                 return (
-                  <button key={s.id} onClick={() => bsf("service_type")(subRole)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${selected ? "border-orange-400 bg-orange-50" : `border-gray-100 ${s.bg}`}`}>
-                    <div className="text-2xl">{s.icon}</div>
+                  <button key={s.id} onClick={() => bsf("service_type")(s.role)}
+                    className={`w-full flex items-center gap-4 p-3.5 rounded-2xl border-2 transition-all ${selected ? "border-orange-400 bg-orange-50" : `border-gray-100 ${s.bg}`}`}>
+                    <div className="text-2xl w-8 shrink-0">{s.icon}</div>
                     <div className="text-left flex-1">
-                      <div className={`font-bold ${selected ? "text-orange-600" : s.tc}`}>{s.label}</div>
+                      <div className={`font-bold text-sm ${selected ? "text-orange-600" : s.tc}`}>{s.label}</div>
                       <div className="text-xs text-gray-500">{s.desc}</div>
                     </div>
-                    {selected && <span className="text-orange-500 font-bold">✓</span>}
+                    {selected && <span className="text-orange-500 font-bold text-lg">✓</span>}
                   </button>
                 );
               })}
@@ -1563,6 +1700,64 @@ export default function PetclubApp({ session, onLogout }) {
                 </div>
               </>)}
 
+              {/* ── WALKING: package cards ── */}
+              {bookingForm.service_type === "Walker" && (<>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Choose Walk Package *</p>
+                <div className="space-y-2 mb-4">
+                  {WALKING_PACKAGES.map(pkg => {
+                    const sel = bookingForm.service_name === pkg.name;
+                    return (
+                      <button key={pkg.name} onClick={() => setBookingForm(f => ({ ...f, service_name: pkg.name }))}
+                        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all ${sel ? "border-orange-400 bg-orange-50" : "border-gray-100 bg-white hover:border-gray-200"}`}>
+                        <span className="text-xl">{pkg.icon}</span>
+                        <div className="flex-1 text-left">
+                          <div className={`font-bold text-sm ${sel ? "text-orange-700" : "text-gray-800"}`}>{pkg.name}</div>
+                          <div className="text-xs text-gray-400">{pkg.desc}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>₹{pkg.price.toLocaleString("en-IN")}</div>
+                          <div className="text-[10px] text-emerald-600 font-semibold">Save ₹{activePlatformDiscount}</div>
+                        </div>
+                        {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="bg-green-50 border border-green-100 rounded-xl px-3 py-2 mb-3 flex items-start gap-2">
+                  <span className="text-green-500 mt-0.5">📍</span>
+                  <p className="text-xs text-green-700 font-medium">Every walk is GPS-tracked live. You'll see your dog's route in real time on the map.</p>
+                </div>
+              </>)}
+
+              {/* ── BOARDING: package cards ── */}
+              {bookingForm.service_type === "Boarding" && (<>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Choose Stay Package *</p>
+                <div className="space-y-2 mb-4">
+                  {BOARDING_PACKAGES.map(pkg => {
+                    const sel = bookingForm.service_name === pkg.name;
+                    return (
+                      <button key={pkg.name} onClick={() => setBookingForm(f => ({ ...f, service_name: pkg.name }))}
+                        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all ${sel ? "border-orange-400 bg-orange-50" : "border-gray-100 bg-white hover:border-gray-200"}`}>
+                        <span className="text-xl">{pkg.icon}</span>
+                        <div className="flex-1 text-left">
+                          <div className={`font-bold text-sm ${sel ? "text-orange-700" : "text-gray-800"}`}>{pkg.name}</div>
+                          <div className="text-xs text-gray-400">{pkg.desc}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>₹{pkg.price.toLocaleString("en-IN")}</div>
+                          <div className="text-[10px] text-emerald-600 font-semibold">Save ₹{activePlatformDiscount}</div>
+                        </div>
+                        {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-3 flex items-start gap-2">
+                  <span className="text-amber-500 mt-0.5">🏠</span>
+                  <p className="text-xs text-amber-700 font-medium">Cage-free home boarding with a verified host. Daily photo updates sent directly to you.</p>
+                </div>
+              </>)}
+
               {/* ── VET: dropdown (quoted on-site) ── */}
               {bookingForm.service_type === "Vet" && (
                 <Fld label="Service Type *">
@@ -1633,7 +1828,9 @@ export default function PetclubApp({ session, onLogout }) {
                 <button onClick={() => setBookingStep(1)} className="flex-1 border border-gray-200 text-gray-600 font-bold py-3 rounded-2xl text-sm hover:bg-gray-50">← Back</button>
                 <button
                   disabled={!bookingForm.service_name || !bookingForm.date || !(bookingForm.city || userInfo.city)
-                    || (bookingForm.service_type === "Groomer" && !bookingForm.pet_size)}
+                    || (bookingForm.service_type === "Groomer" && !bookingForm.pet_size)
+                    || (bookingForm.service_type === "Walker"  && !bookingForm.service_name)
+                    || (bookingForm.service_type === "Boarding" && !bookingForm.service_name)}
                   onClick={() => {
                     // Require verified address (geocoded from dropdown) if any address was typed
                     if (bookingForm.address?.trim() && !bookingAddrMeta.lat) {
