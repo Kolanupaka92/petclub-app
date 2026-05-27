@@ -50,50 +50,31 @@
       color: var(--text);
     }
     header .logo-icon {
-      width: 36px;
-      height: 36px;
+      width: 36px; height: 36px;
       border-radius: 10px;
       background: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       font-size: 20px;
     }
-    header .logo-text {
-      font-weight: 800;
-      font-size: 20px;
-      letter-spacing: -0.3px;
-    }
+    header .logo-text { font-weight: 800; font-size: 20px; letter-spacing: -0.3px; }
     header .logo-text span { color: var(--brand); }
 
     /* ── Layout ── */
-    .page {
-      max-width: 780px;
-      margin: 0 auto;
-      padding: 48px 24px 96px;
-    }
+    .page { max-width: 780px; margin: 0 auto; padding: 48px 24px 96px; }
 
     /* ── Hero ── */
-    .hero {
-      margin-bottom: 48px;
-    }
+    .hero { margin-bottom: 48px; }
     .hero h1 {
       font-size: clamp(28px, 5vw, 38px);
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      line-height: 1.2;
-      margin-bottom: 12px;
+      font-weight: 800; letter-spacing: -0.5px;
+      line-height: 1.2; margin-bottom: 12px;
     }
     .hero h1 span {
       background: linear-gradient(135deg, #f97316, #fbbf24);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .hero .meta {
-      color: var(--muted);
-      font-size: 14px;
-    }
+    .hero .meta { color: var(--muted); font-size: 14px; }
 
     /* ── Card ── */
     .card {
@@ -103,84 +84,79 @@
       padding: 32px;
       margin-bottom: 24px;
     }
-    .card + .card { margin-top: 0; }
 
     /* ── Section heading ── */
     h2 {
-      font-size: 20px;
-      font-weight: 700;
+      font-size: 20px; font-weight: 700;
       margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      display: flex; align-items: center; gap: 10px;
     }
     h2 .num {
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
+      width: 30px; height: 30px; border-radius: 8px;
       background: linear-gradient(135deg, #f97316, #fbbf24);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      color: #fff; font-size: 13px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
 
-    p { margin-bottom: 14px; color: var(--text); }
+    p { margin-bottom: 14px; }
     p:last-child { margin-bottom: 0; }
 
-    ul, ol {
-      padding-left: 22px;
-      margin-bottom: 14px;
-      color: var(--text);
-    }
+    ul, ol { padding-left: 22px; margin-bottom: 14px; }
     li { margin-bottom: 6px; }
 
-    /* ── Highlight box (Loyalty Programme) ── */
+    /* ── Highlight box ── */
     .highlight {
       background: #fff7ed;
       border: 1px solid #fed7aa;
       border-left: 4px solid var(--brand);
       border-radius: var(--radius);
-      padding: 20px 24px;
-      margin: 16px 0;
+      padding: 20px 24px; margin: 16px 0;
     }
-    .highlight .hl-title {
-      font-weight: 700;
-      color: var(--brand-dark);
-      margin-bottom: 10px;
-      font-size: 15px;
-    }
+    .highlight .hl-title { font-weight: 700; color: var(--brand-dark); margin-bottom: 10px; font-size: 15px; }
     .highlight p { color: #7c2d12; margin-bottom: 10px; }
     .highlight p:last-child { margin-bottom: 0; }
+
+    /* ── Info box ── */
+    .info-box {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-left: 4px solid #0ea5e9;
+      border-radius: var(--radius);
+      padding: 16px 20px; margin: 12px 0;
+      font-size: 14px; color: #0c4a6e;
+    }
+
+    /* ── Warning box ── */
+    .warn-box {
+      background: #fefce8;
+      border: 1px solid #fde047;
+      border-left: 4px solid #eab308;
+      border-radius: var(--radius);
+      padding: 16px 20px; margin: 12px 0;
+      font-size: 14px; color: #713f12;
+    }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th { background: #f1f5f9; font-weight: 700; padding: 10px 14px; text-align: left; border: 1px solid var(--border); }
+    td { padding: 10px 14px; border: 1px solid var(--border); }
+    tr:nth-child(even) td { background: #f8fafc; }
 
     /* ── Contact box ── */
     .contact {
       background: linear-gradient(135deg, #f97316 0%, #fbbf24 100%);
       border-radius: var(--radius);
-      padding: 28px 32px;
-      color: #fff;
-      text-align: center;
-      margin-top: 32px;
+      padding: 28px 32px; color: #fff;
+      text-align: center; margin-top: 32px;
     }
     .contact h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
     .contact p { color: rgba(255,255,255,0.9); margin-bottom: 4px; }
     .contact a { color: #fff; font-weight: 600; }
 
-    /* ── Footer ── */
-    footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 13px;
-      padding: 0 24px 40px;
-    }
+    footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 24px 40px; }
 
-    @media (max-width: 600px) {
-      .card { padding: 20px; }
-      .page { padding-top: 32px; }
-    }
+    @media (max-width: 600px) { .card { padding: 20px; } .page { padding-top: 32px; } }
   </style>
 </head>
 <body>
@@ -199,128 +175,246 @@
       <p class="meta">Effective date: 1 May 2025 &nbsp;·&nbsp; Last updated: May 2026 &nbsp;·&nbsp; PETclub India</p>
     </div>
 
-    <!-- 1. Acceptance -->
+    <!-- 1. About PETclub -->
     <div class="card">
-      <h2><span class="num">1</span> Acceptance of Terms</h2>
-      <p>By downloading, installing, or using the PETclub application ("App") or visiting <strong>mypetclub.app</strong>, you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App.</p>
-      <p>These Terms constitute a legally binding agreement between you and <strong>PETclub India</strong> ("PETclub", "we", "us", or "our"). We may update these Terms at any time. Continued use of the App after changes are posted constitutes your acceptance of the revised Terms.</p>
+      <h2><span class="num">1</span> About PETclub &amp; Acceptance of Terms</h2>
+      <p><strong>PETclub India</strong> ("PETclub", "we", "us", "our") operates an on-demand pet services marketplace at <strong>mypetclub.app</strong> and through our mobile-optimised web application ("App"). The platform connects pet owners ("Customers") with independent, verified service providers including dog groomers, dog trainers, and veterinary professionals ("Professionals" or "Pros").</p>
+      <p>By accessing or using the App, you agree to be bound by these Terms of Service ("Terms"). If you do not agree, do not use the App. We may update these Terms at any time; continued use after an update constitutes acceptance of the revised Terms. We will make reasonable efforts to notify you of material changes via email or in-app notification.</p>
+      <div class="info-box">
+        <strong>PETclub is a marketplace intermediary.</strong> We do not directly employ Professionals, and we do not directly provide grooming, training, or veterinary services. Our role is to facilitate connections, process payments, and maintain platform safety standards.
+      </div>
     </div>
 
     <!-- 2. Eligibility -->
     <div class="card">
       <h2><span class="num">2</span> Eligibility</h2>
-      <p>You must be at least 18 years old and a resident of India to use the App. By using the App, you represent and warrant that you meet these requirements.</p>
+      <ul>
+        <li>You must be at least <strong>18 years old</strong> to use the App.</li>
+        <li>You must be a <strong>resident of India</strong> for customer bookings; Professional accounts are currently India-only.</li>
+        <li>You must provide accurate personal information when registering. Accounts created with false information may be suspended without notice.</li>
+        <li>You are responsible for all activity that occurs under your account. Notify us immediately at <a href="mailto:support@mypetclub.app">support@mypetclub.app</a> if you suspect unauthorised access.</li>
+      </ul>
     </div>
 
-    <!-- 3. Services -->
+    <!-- 3. Bookings & Payments -->
     <div class="card">
-      <h2><span class="num">3</span> Description of Services</h2>
-      <p>PETclub is an on-demand pet services marketplace that connects pet owners with verified service providers including veterinarians, groomers, and trainers. PETclub is a platform intermediary — we do not directly employ service providers.</p>
-      <p>Services available through the App include, but are not limited to: veterinary consultations, grooming appointments, and pet training sessions.</p>
+      <h2><span class="num">3</span> Bookings &amp; Payments</h2>
+
+      <p>All prices are displayed and charged in <strong>Indian Rupees (INR)</strong>. Payments are processed securely via <strong>Razorpay</strong>; by completing a payment you also agree to Razorpay's terms of service.</p>
+
+      <p>PETclub charges a <strong>platform fee</strong> on each transaction. This fee is included in the price shown to you and covers payment processing, insurance support, and platform maintenance.</p>
+
+      <h3 style="font-size:16px;font-weight:700;margin:20px 0 10px;">Cancellation &amp; Refund Policy</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Cancellation Timing</th>
+            <th>Refund</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>More than <strong>24 hours</strong> before the scheduled service</td>
+            <td>100% refund to original payment method</td>
+          </tr>
+          <tr>
+            <td><strong>4 – 24 hours</strong> before the scheduled service</td>
+            <td>50% refund</td>
+          </tr>
+          <tr>
+            <td>Less than <strong>4 hours</strong> before, or no-show</td>
+            <td>No refund</td>
+          </tr>
+          <tr>
+            <td>Cancellation by the Professional</td>
+            <td>100% refund + priority rebooking assistance</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>Refunds are processed within <strong>5–7 business days</strong> to the original payment method. PETclub platform fees are non-refundable except where the Professional cancels.</p>
+
+      <div class="warn-box">
+        <strong>Non-groomable / Non-trainable pets:</strong> If a Professional determines your pet is unsafe to handle during the appointment, the session may be ended early. In such cases, the full session fee is charged. See Section 5 for pet owner responsibilities.
+      </div>
     </div>
 
-    <!-- 4. Bookings & Payments -->
+    <!-- 4. Professional Services & Independent Contractor Status -->
     <div class="card">
-      <h2><span class="num">4</span> Bookings and Payments</h2>
-      <p>All payments are processed in Indian Rupees (INR) through our payment partner, Razorpay. By making a payment, you agree to Razorpay's terms of service.</p>
-      <p>PETclub charges a platform fee on each transaction. This fee is included in the price displayed to you and is non-refundable except where required by law.</p>
-      <p>Cancellation and refund policies vary by service type and are displayed at the time of booking. PETclub reserves the right to modify cancellation policies at any time.</p>
+      <h2><span class="num">4</span> Professionals &amp; Independent Contractor Status</h2>
+      <p>All Professionals on PETclub are <strong>independent contractors</strong>, not employees or agents of PETclub. PETclub verifies identity documents and professional credentials at onboarding, but does not guarantee the quality, outcome, or safety of any individual service.</p>
+
+      <p><strong>Professional obligations include:</strong></p>
+      <ul>
+        <li>Maintaining valid certifications relevant to their service category.</li>
+        <li>Carrying appropriate personal liability insurance (we recommend a minimum of ₹10 lakh cover).</li>
+        <li>Complying with all applicable laws, including local municipal pet-handling regulations.</li>
+        <li>Treating all animals and customers with professional care and respect.</li>
+        <li>Disclosing any conflict of interest or capacity limitation before confirming a booking.</li>
+      </ul>
+
+      <p>PETclub reserves the right to suspend or permanently remove any Professional from the platform for violations of these obligations, customer complaints, or at our sole discretion.</p>
     </div>
 
     <!-- 5. Loyalty Programme -->
     <div class="card">
       <h2><span class="num">5</span> PETclub Rewards Programme</h2>
-      <p>PETclub operates a loyalty credits programme for eligible users ("Rewards").</p>
+      <p>PETclub operates a loyalty credits programme for eligible Customers ("Rewards").</p>
 
       <div class="highlight">
         <div class="hl-title">🏅 PETclub Rewards Programme</div>
-        <p><strong>PETclub India ("PETclub") operates a loyalty credits programme ("Rewards"). Credits have no cash value, are non-transferable, and may only be redeemed as described in the app.</strong> PETclub reserves the right to modify, suspend, or terminate the Rewards programme, including point values, earn rules, and redemption thresholds, at any time and without prior notice. Credits that have not been redeemed at the time of any programme change or account termination will be forfeited. PETclub's decisions regarding credits disputes are final.</p>
+        <p><strong>Credits have no cash value, are non-transferable, and may only be redeemed as described in the App.</strong> PETclub reserves the right to modify, suspend, or terminate the Rewards programme, including point values, earn rules, and redemption thresholds, at any time and without prior notice. Credits that have not been redeemed at the time of any programme change or account termination will be forfeited. PETclub's decisions regarding credits disputes are final.</p>
       </div>
 
-      <p>Additional Rewards terms:</p>
       <ul>
-        <li>Credits are awarded automatically upon eligible transactions as described in the App.</li>
-        <li>Credits may only be redeemed through the App for eligible services and cannot be exchanged for cash, transferred to another account, or combined with other promotional offers unless expressly stated.</li>
-        <li>Fraudulent earning of credits — including through fake bookings, fake reviews, or referral abuse — will result in immediate forfeiture of all credits and suspension or permanent termination of your account.</li>
+        <li>Credits are awarded automatically on eligible transactions as described in the App.</li>
+        <li>Credits may only be redeemed via the App for eligible services; they cannot be exchanged for cash, transferred, or combined with other promotions unless expressly stated.</li>
         <li>Referral credits are awarded to the referring user only after the referred user completes their first paid booking.</li>
+        <li>Fraudulent earning of credits — including through fake bookings, fake reviews, or referral abuse — will result in immediate forfeiture of all credits and may lead to account termination.</li>
         <li>Credits expire as specified in the App. PETclub is not liable for expired credits.</li>
-        <li>PETclub may add, remove, or change earn categories at any time.</li>
       </ul>
     </div>
 
-    <!-- 6. User Conduct -->
+    <!-- 6. Pet Owner Responsibilities -->
     <div class="card">
-      <h2><span class="num">6</span> User Conduct</h2>
+      <h2><span class="num">6</span> Pet Owner Responsibilities</h2>
+      <p>As a pet owner using PETclub, you represent and warrant the following at the time of each booking:</p>
+      <ul>
+        <li><strong>Accurate health disclosure:</strong> You have disclosed all known medical conditions, allergies, behavioural issues, and vaccination status in your pet's profile. PETclub is not liable for injuries or complications arising from undisclosed health information.</li>
+        <li><strong>Vaccinations:</strong> Your pet is up to date on core vaccinations, including <strong>rabies</strong>. Proof of vaccination may be requested by the Professional before commencing service.</li>
+        <li><strong>Behavioural history:</strong> You have disclosed any history of biting, aggression, or resource guarding. A Professional may decline to service or end a session if a pet presents a safety risk, and no refund will be issued in such cases.</li>
+        <li><strong>Licensing:</strong> Your pet is licensed as required by your local municipal authority.</li>
+        <li><strong>Suitable environment:</strong> For at-home services, you will provide adequate space, access to water, and a safe working environment for the Professional.</li>
+        <li><strong>Presence or authorised representative:</strong> You or an authorised adult (18+) will be present at the premises for the duration of the service, unless expressly agreed otherwise in writing.</li>
+      </ul>
+      <div class="warn-box">
+        <strong>Dangerous or exotic animals:</strong> Professionals reserve the right to refuse service to any pet they consider a safety risk, without obligation to justify refusal. PETclub does not facilitate bookings for animals classified as dangerous or exotic under applicable Indian law.
+      </div>
+    </div>
+
+    <!-- 7. Liability & Pet Safety -->
+    <div class="card">
+      <h2><span class="num">7</span> Liability, Pet Safety &amp; Disclaimer</h2>
+
+      <p>PETclub takes pet safety seriously. All Professionals are verified before onboarding. However, by using the App you acknowledge the following:</p>
+
+      <ul>
+        <li><strong>Inherent risk:</strong> Pet grooming, training, and veterinary procedures carry inherent risks. Animals may react unpredictably despite normal professional care.</li>
+        <li><strong>PETclub's liability is limited to its role as an intermediary.</strong> We are not liable for injuries, illness, death, property damage, or other harm arising directly from a Professional's services.</li>
+        <li><strong>Lost or escaped pets:</strong> PETclub will assist in making reasonable efforts to locate a lost or escaped pet but accepts no financial liability for the pet's recovery, replacement, or associated veterinary costs.</li>
+        <li><strong>Veterinary advice:</strong> Information provided through the App does not substitute for a formal in-person consultation. Always consult a qualified and registered veterinarian for medical decisions.</li>
+      </ul>
+
+      <p><strong>Liability cap:</strong> To the maximum extent permitted under applicable Indian law, PETclub's total aggregate liability to you for any claim arising from these Terms or your use of the App shall not exceed the <strong>amount you paid to PETclub in the 30 days immediately preceding the event giving rise to the claim</strong>, or ₹5,000, whichever is greater.</p>
+
+      <p>Nothing in these Terms limits liability for death or personal injury caused by our negligence, fraud, or any other liability that cannot be excluded under applicable law.</p>
+    </div>
+
+    <!-- 8. User Conduct -->
+    <div class="card">
+      <h2><span class="num">8</span> User Conduct</h2>
       <p>You agree not to:</p>
       <ul>
-        <li>Use the App for any unlawful purpose or in violation of any applicable law or regulation.</li>
-        <li>Provide false, inaccurate, or misleading information when creating an account or making a booking.</li>
-        <li>Harass, abuse, or harm service providers or other users.</li>
-        <li>Attempt to gain unauthorised access to any portion of the App or its related systems.</li>
-        <li>Post or transmit content that is defamatory, obscene, or otherwise objectionable.</li>
+        <li>Use the App for any unlawful purpose or in violation of any applicable Indian law or regulation.</li>
+        <li>Provide false, inaccurate, or misleading information in your account, pet profiles, or reviews.</li>
+        <li>Harass, threaten, or abuse Professionals, other users, or PETclub staff.</li>
+        <li>Post fraudulent reviews or artificially manipulate ratings.</li>
+        <li>Attempt to solicit Professionals to transact outside the PETclub platform (circumventing fees).</li>
+        <li>Attempt to gain unauthorised access to any part of the App or its backend systems.</li>
+        <li>Use automated bots, scrapers, or scripts to interact with the App.</li>
+        <li>Upload or share content that is defamatory, obscene, or otherwise unlawful.</li>
       </ul>
-      <p>PETclub reserves the right to suspend or terminate your account for violations of this section, at our sole discretion, without notice or liability.</p>
+      <p>PETclub reserves the right to suspend or permanently terminate accounts for violations, at our sole discretion, without notice or liability.</p>
     </div>
 
-    <!-- 7. Service Providers -->
+    <!-- 9. Reviews & Content -->
     <div class="card">
-      <h2><span class="num">7</span> Service Provider Conduct</h2>
-      <p>PETclub verifies service providers at onboarding; however, PETclub does not guarantee the quality, safety, or legality of services offered. Service providers are independent professionals and are not employees or agents of PETclub.</p>
-      <p>PETclub is not liable for any injury, loss, or damage resulting from the actions or omissions of service providers. Any disputes between users and service providers must be resolved directly between the parties, though PETclub may, at its discretion, assist in mediation.</p>
+      <h2><span class="num">9</span> Reviews &amp; User-Generated Content</h2>
+      <p>By submitting a review or any content on the App, you grant PETclub a non-exclusive, royalty-free, worldwide licence to use, display, and reproduce that content on the platform and in marketing materials.</p>
+      <p>Reviews must be based on genuine first-hand experience. PETclub reserves the right to remove reviews that violate these Terms, contain personal information, are defamatory, or appear to be fraudulent — without prior notice.</p>
+      <p>You remain solely responsible for the accuracy of any content you post. PETclub does not endorse user-submitted reviews.</p>
     </div>
 
-    <!-- 8. Privacy -->
+    <!-- 10. Privacy & Data -->
     <div class="card">
-      <h2><span class="num">8</span> Privacy</h2>
-      <p>Your use of the App is subject to our Privacy Policy, which is incorporated into these Terms by reference. By using the App, you consent to the collection and use of your information as described in the Privacy Policy.</p>
-      <p>We collect and process data in accordance with applicable Indian data protection laws, including the Digital Personal Data Protection Act, 2023 (DPDP Act).</p>
+      <h2><span class="num">10</span> Privacy &amp; Data Protection</h2>
+      <p>Your use of the App is governed by our Privacy Policy (coming soon at <strong>mypetclub.app/privacy</strong>). We collect and process personal data in accordance with the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong> and other applicable Indian data protection laws.</p>
+      <p>We use your data to operate the platform, facilitate bookings, process payments, send service notifications, and improve our services. We do not sell your personal data to third parties.</p>
+      <p>By using the App, you consent to the collection and use of your information as described in the Privacy Policy.</p>
     </div>
 
-    <!-- 9. Intellectual Property -->
+    <!-- 11. Intellectual Property -->
     <div class="card">
-      <h2><span class="num">9</span> Intellectual Property</h2>
-      <p>All content in the App — including logos, text, graphics, and software — is the property of PETclub India or its licensors and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works without our express written permission.</p>
+      <h2><span class="num">11</span> Intellectual Property</h2>
+      <p>All content on the App — including the PETclub name, logo, design, text, software, and graphics — is owned by or licensed to PETclub India and is protected under the <strong>Trade Marks Act, 1999</strong> and <strong>Copyright Act, 1957</strong>. You may not reproduce, distribute, or create derivative works without our express written consent.</p>
+      <p>User-submitted content (reviews, pet photos, etc.) remains your intellectual property, subject to the licence granted in Section 9.</p>
     </div>
 
-    <!-- 10. Disclaimer -->
+    <!-- 12. Platform Availability -->
     <div class="card">
-      <h2><span class="num">10</span> Disclaimer of Warranties</h2>
-      <p>The App is provided "as is" and "as available" without any warranty of any kind, express or implied. PETclub does not warrant that the App will be uninterrupted, error-free, or free of viruses or other harmful components.</p>
-      <p>Veterinary advice provided through the App does not replace a formal in-person consultation. Always consult a qualified veterinarian for medical decisions about your pet.</p>
+      <h2><span class="num">12</span> Platform Availability &amp; Disclaimer of Warranties</h2>
+      <p>The App is provided <strong>"as is"</strong> and <strong>"as available"</strong> without warranties of any kind, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, or non-infringement.</p>
+      <p>PETclub does not warrant that the App will be uninterrupted, error-free, or free of viruses. We reserve the right to modify, suspend, or discontinue any part of the App at any time without notice.</p>
+      <p>Service availability by Professionals depends on their own schedules and location. PETclub does not guarantee the availability of any specific Professional.</p>
     </div>
 
-    <!-- 11. Limitation of Liability -->
+    <!-- 13. Indemnification -->
     <div class="card">
-      <h2><span class="num">11</span> Limitation of Liability</h2>
-      <p>To the maximum extent permitted by applicable law, PETclub shall not be liable for any indirect, incidental, special, consequential, or punitive damages — including loss of profits, goodwill, or data — arising out of or in connection with your use of the App.</p>
-      <p>PETclub's total liability to you for any claim arising out of or relating to these Terms or your use of the App shall not exceed the amount paid by you to PETclub in the 30 days immediately preceding the event giving rise to the claim.</p>
+      <h2><span class="num">13</span> Indemnification</h2>
+      <p>You agree to indemnify, defend, and hold harmless PETclub India, its officers, directors, employees, and agents from any claims, damages, losses, liabilities, costs, or expenses (including reasonable legal fees) arising from:</p>
+      <ul>
+        <li>Your use of the App in violation of these Terms.</li>
+        <li>Any inaccurate information you provided about yourself or your pet.</li>
+        <li>Any injury, property damage, or third-party claim caused by your pet during a booked service.</li>
+        <li>Your violation of any applicable law or regulation.</li>
+      </ul>
     </div>
 
-    <!-- 12. Governing Law -->
+    <!-- 14. Governing Law & Disputes -->
     <div class="card">
-      <h2><span class="num">12</span> Governing Law and Disputes</h2>
-      <p>These Terms are governed by and construed in accordance with the laws of India. Any disputes arising from or in connection with these Terms shall be subject to the exclusive jurisdiction of the courts located in <strong>Bengaluru, Karnataka, India</strong>.</p>
-      <p>Before initiating any legal action, you agree to attempt to resolve the dispute informally by contacting us at the address below. We will endeavour to resolve disputes within 30 days of written notice.</p>
+      <h2><span class="num">14</span> Governing Law &amp; Dispute Resolution</h2>
+      <p>These Terms are governed by and construed in accordance with the <strong>laws of India</strong>, including the <strong>Consumer Protection Act, 2019</strong>, the <strong>Information Technology Act, 2000</strong>, and the <strong>Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021</strong>.</p>
+      <p>Any dispute arising out of or in connection with these Terms shall first be attempted to be resolved through good-faith negotiation by contacting us at <a href="mailto:support@mypetclub.app">support@mypetclub.app</a>. We will endeavour to respond within 15 business days.</p>
+      <p>If the dispute is not resolved through negotiation within 30 days, it shall be subject to the <strong>exclusive jurisdiction of the competent courts located in Bengaluru, Karnataka, India</strong>.</p>
+      <div class="info-box">
+        <strong>Consumer grievance:</strong> In accordance with the Consumer Protection Act, 2019, you may also raise a complaint through the National Consumer Helpline (1800-11-4000) or the INGRAM portal (consumerhelpline.gov.in).
+      </div>
     </div>
 
-    <!-- 13. Termination -->
+    <!-- 15. Termination -->
     <div class="card">
-      <h2><span class="num">13</span> Termination</h2>
-      <p>PETclub may terminate or suspend your access to the App at any time, with or without cause, with or without notice, effective immediately. Upon termination, your right to use the App ceases immediately. All provisions of these Terms that by their nature should survive termination shall survive, including ownership provisions, warranty disclaimers, and limitations of liability.</p>
-      <p>Any unredeemed Rewards credits in your account will be forfeited upon account termination.</p>
+      <h2><span class="num">15</span> Termination</h2>
+      <p>PETclub may suspend or terminate your account at any time, with or without cause, effective immediately. Reasons may include (but are not limited to): violation of these Terms, fraudulent activity, or inactivity for more than 12 consecutive months.</p>
+      <p>You may close your account at any time by contacting <a href="mailto:support@mypetclub.app">support@mypetclub.app</a>. Any pending bookings must be cancelled or completed before account closure.</p>
+      <p>On termination: all unredeemed Rewards credits are forfeited, pending payouts to Professionals will be processed per the standard weekly schedule, and provisions of these Terms that by their nature survive termination shall continue to apply.</p>
     </div>
 
-    <!-- 14. Contact -->
+    <!-- 16. Miscellaneous -->
+    <div class="card">
+      <h2><span class="num">16</span> Miscellaneous</h2>
+      <ul>
+        <li><strong>Entire agreement:</strong> These Terms, together with the Privacy Policy, constitute the entire agreement between you and PETclub regarding use of the App.</li>
+        <li><strong>Severability:</strong> If any provision of these Terms is found to be unenforceable, the remaining provisions will continue in full force.</li>
+        <li><strong>Waiver:</strong> Our failure to enforce any right or provision shall not constitute a waiver of that right.</li>
+        <li><strong>No assignment:</strong> You may not assign your rights under these Terms without our prior written consent.</li>
+        <li><strong>Language:</strong> These Terms are written in English. In the event of any conflict with a translated version, the English version prevails.</li>
+        <li><strong>Force majeure:</strong> PETclub is not liable for delays or failures caused by circumstances beyond our reasonable control, including natural disasters, strikes, or government actions.</li>
+      </ul>
+    </div>
+
+    <!-- Contact -->
     <div class="contact">
       <h3>Questions about these Terms?</h3>
-      <p>Reach us at any time — we're happy to help.</p>
-      <p><a href="mailto:support@mypetclub.app">support@mypetclub.app</a></p>
+      <p>We're happy to help — reach us any time.</p>
+      <p>📧 <a href="mailto:support@mypetclub.app">support@mypetclub.app</a></p>
+      <p>💬 WhatsApp India: <a href="https://wa.me/919347411132">+91 93474 11132</a></p>
     </div>
 
   </main>
 
   <footer>
-    <p>&copy; 2025 PETclub India. All rights reserved.</p>
+    <p>&copy; 2025 PETclub India. All rights reserved. &nbsp;·&nbsp; Bengaluru, Karnataka, India</p>
   </footer>
 
 </body>

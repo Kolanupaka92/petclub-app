@@ -611,6 +611,100 @@ export default function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
+      {/* ══ LET'S CONNECT ══ */}
+      <section style={{
+        padding: "72px 24px",
+        background: DARK2,
+        borderTop: "1px solid rgba(255,255,255,0.05)",
+      }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 2, textTransform: "uppercase", margin: "0 0 10px" }}>Get in touch</p>
+            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: "0 0 12px" }}>
+              Let's Connect
+            </h2>
+            <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>
+              Questions? Partnerships? We're here — reach us on WhatsApp or email.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
+
+            {/* India WhatsApp */}
+            <a
+              href="https://wa.me/919347411132"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                flex: "1 1 240px", maxWidth: 300,
+                background: "#111827",
+                border: "1.5px solid rgba(34,197,94,0.25)",
+                borderRadius: 20, padding: "28px 24px",
+                textDecoration: "none", color: "white",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+                transition: "all 0.2s", cursor: "pointer",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(34,197,94,0.6)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(34,197,94,0.12)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(34,197,94,0.25)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+            >
+              <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(34,197,94,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>💬</div>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>WhatsApp · India</p>
+                <p style={{ fontSize: 16, fontWeight: 800, color: "white", margin: "0 0 4px" }}>+91 93474 11132</p>
+                <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Mon – Sat · 9 AM – 8 PM IST</p>
+              </div>
+            </a>
+
+            {/* Email support */}
+            <a
+              href="mailto:support@mypetclub.app"
+              style={{
+                flex: "1 1 240px", maxWidth: 300,
+                background: "#111827",
+                border: `1.5px solid ${ORANGE}33`,
+                borderRadius: 20, padding: "28px 24px",
+                textDecoration: "none", color: "white",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+                transition: "all 0.2s", cursor: "pointer",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = `${ORANGE}88`; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 12px 32px ${ORANGE}18`; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = `${ORANGE}33`; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+            >
+              <div style={{ width: 52, height: 52, borderRadius: 16, background: `${ORANGE}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>✉️</div>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>Email Support</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: "white", margin: "0 0 4px" }}>support@mypetclub.app</p>
+                <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>We reply within 24 hours</p>
+              </div>
+            </a>
+
+            {/* Pro enquiries */}
+            <a
+              href="mailto:pro@mypetclub.app"
+              style={{
+                flex: "1 1 240px", maxWidth: 300,
+                background: "#111827",
+                border: "1.5px solid rgba(139,92,246,0.25)",
+                borderRadius: 20, padding: "28px 24px",
+                textDecoration: "none", color: "white",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+                transition: "all 0.2s", cursor: "pointer",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.6)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(139,92,246,0.12)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.25)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+            >
+              <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(139,92,246,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🐾</div>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>Join as a Pro</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: "white", margin: "0 0 4px" }}>pro@mypetclub.app</p>
+                <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Groomers · Trainers · Vets</p>
+              </div>
+            </a>
+
+          </div>
+        </div>
+      </section>
+
       {/* ══ FOOTER ══ */}
       <footer style={{
         borderTop: "1px solid rgba(255,255,255,0.06)",
