@@ -46,6 +46,22 @@ const ROLES = [
     desc: "Reach pet owners in your city and offer in-clinic or home visit care.",
     perks: ["In-clinic & home visit bookings", "Digital prescription records", "Verified vet badge"],
   },
+  {
+    id: "Walker", icon: "🦮", label: "Dog Walker",
+    color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0", textColor: "#15803d",
+    instant: false,
+    tagline: "GPS-tracked walks for dogs",
+    desc: "Join PETclub's verified walker network and get booked by local pet owners.",
+    perks: ["GPS-tracked walk reports sent to owners", "Flexible daily schedule", "Verified walker badge"],
+  },
+  {
+    id: "Boarding", icon: "🏠", label: "Pet Boarder",
+    color: "#d97706", bg: "#fffbeb", border: "#fde68a", textColor: "#b45309",
+    instant: false,
+    tagline: "Cage-free home stays for pets",
+    desc: "Host pets in your home and offer a safe, cage-free alternative to kennels.",
+    perks: ["Cage-free home environment", "Daily photo & video updates", "Verified boarder badge"],
+  },
 ];
 
 const SPECIES = ["Dog","Cat","Bird","Rabbit","Fish","Hamster","Other"];
@@ -87,6 +103,20 @@ const getCertTypes = (role) => ({
     "NAVLE License (USA)",
     "State Veterinary Practice License",
     "Other Veterinary License",
+  ],
+  Walker: [
+    "Professional Dog Walker Certificate",
+    "Pet First Aid & CPR",
+    "Animal Behaviour Fundamentals",
+    "Karen Pryor Academy — Dog Walking Professional",
+    "Other Walking / Pet Care Certification",
+  ],
+  Boarding: [
+    "Pet Boarding & Daycare Certificate",
+    "Pet First Aid & CPR",
+    "Home Boarding Inspection Certificate",
+    "Animal Husbandry / Care Certificate",
+    "Other Boarding / Pet Sitting Certification",
   ],
 })[role] || ["Professional Certificate", "Other"];
 
