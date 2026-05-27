@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.15.0...v1.16.0) (2026-05-27)
+
+
+### Features
+
+* v2.0 landing page — competitor research upgrade (27 May 2026) ([ac5fc8f](https://github.com/Kolanupaka92/petclub-app/commit/ac5fc8fee4fd5df16b56ea55d7aa41d175bddc7e))
+
 # [1.15.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.14.0...v1.15.0) (2026-05-27)
 
 
