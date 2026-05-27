@@ -1,3 +1,10 @@
+## [1.19.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.19.0...v1.19.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* full E2E audit — Walker/Boarding wired across all views, nothing hardcoded ([8025ed9](https://github.com/Kolanupaka92/petclub-app/commit/8025ed92740c5f60848af1faf0839efa10fc294f))
+
 # [1.19.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.18.0...v1.19.0) (2026-05-27)
 
 
