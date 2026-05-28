@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.22.0...v1.23.0) (2026-05-28)
+
+
+### Features
+
+* warm golden-hour gradient redesign for landing page ([d4ec0e8](https://github.com/Kolanupaka92/petclub-app/commit/d4ec0e80bb445fe90c55ce47406534a138eaf00e)), closes [#0c0500](https://github.com/Kolanupaka92/petclub-app/issues/0c0500) [#120700](https://github.com/Kolanupaka92/petclub-app/issues/120700) [#1c0e00](https://github.com/Kolanupaka92/petclub-app/issues/1c0e00) [#fff8f0](https://github.com/Kolanupaka92/petclub-app/issues/fff8f0) [#fff1e0](https://github.com/Kolanupaka92/petclub-app/issues/fff1e0) [#f97316](https://github.com/Kolanupaka92/petclub-app/issues/f97316) [#ea580c](https://github.com/Kolanupaka92/petclub-app/issues/ea580c) [#f59e0b](https://github.com/Kolanupaka92/petclub-app/issues/f59e0b) [#0c0500](https://github.com/Kolanupaka92/petclub-app/issues/0c0500) [#3b0d00](https://github.com/Kolanupaka92/petclub-app/issues/3b0d00) [#7c2d12](https://github.com/Kolanupaka92/petclub-app/issues/7c2d12) [#c2410c](https://github.com/Kolanupaka92/petclub-app/issues/c2410c) [#f97316](https://github.com/Kolanupaka92/petclub-app/issues/f97316)
+
 # [1.22.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.21.3...v1.22.0) (2026-05-28)
 
 
