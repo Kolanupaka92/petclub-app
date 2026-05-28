@@ -1,3 +1,10 @@
+# [1.22.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.21.3...v1.22.0) (2026-05-28)
+
+
+### Features
+
+* landing page — mobile nav, FAQ section, bug fixes ([bdfe46a](https://github.com/Kolanupaka92/petclub-app/commit/bdfe46aad2dab633b21d4b83bfdc9661d5bb66ce))
+
 ## [1.21.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.21.2...v1.21.3) (2026-05-28)
 
 
