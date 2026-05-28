@@ -22,12 +22,64 @@ const DARK3   = "#1e293b";
 
 const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '919347411132';
 
-/* ── Inline SVG paw logo ── */
+/* ── FAQ accordion ── */
+const FAQS = [
+  { q: "How does booking work?", a: "Choose your service, pick a time, add your pet's details — done. You'll get instant confirmation with your pro's photo, rating, and contact number. The whole thing takes under 2 minutes." },
+  { q: "Can I cancel or reschedule?", a: "Yes — free cancellation up to 2 hours before the booking. Reschedule anytime with no fee. If a pro cancels on the day, you get a full refund automatically." },
+  { q: "How are professionals verified?", a: "Every pro submits a government-issued photo ID plus their professional certification. Our team manually reviews and approves each application — no shortcuts. The ✅ Verified badge only shows after that review is complete (typically 24–48 hours)." },
+  { q: "What does it cost? Are there hidden fees?", a: "Prices are shown upfront at checkout — no surprises. There's no subscription or platform fee for customers. For professionals, PETclub takes 30% and pays out 70% every Saturday." },
+  { q: "Is there a live GPS on every booking?", a: "Yes — not just for dog walking. Every groomer, trainer, and boarding drop-off shows a live map from the moment they start their journey. You also get a push notification when they're 10 minutes away." },
+  { q: "How do loyalty points work?", a: "You earn points automatically on every completed booking. Grooming = 50 pts, Boarding = 60 pts, Training = 40 pts, Walking = 20 pts per session. Redeem them for money off future bookings — no codes needed." },
+];
+
+function FaqAccordion() {
+  const [open, setOpen] = useState(null);
+  return (
+    <div style={{ maxWidth: 720, margin: "0 auto" }}>
+      {FAQS.map((faq, i) => (
+        <div
+          key={i}
+          style={{
+            borderBottom: "1px solid rgba(255,255,255,0.07)",
+            overflow: "hidden",
+          }}
+        >
+          <button
+            onClick={() => setOpen(open === i ? null : i)}
+            style={{
+              width: "100%", textAlign: "left", background: "none", border: "none",
+              padding: "20px 4px", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+            }}
+          >
+            <span style={{ fontSize: 15, fontWeight: 700, color: open === i ? ORANGE : "white", lineHeight: 1.4, transition: "color 0.2s" }}>
+              {faq.q}
+            </span>
+            <span style={{
+              fontSize: 20, color: open === i ? ORANGE : "#475569",
+              transform: open === i ? "rotate(45deg)" : "rotate(0deg)",
+              transition: "transform 0.2s, color 0.2s",
+              flexShrink: 0, lineHeight: 1,
+            }}>+</span>
+          </button>
+          <div style={{
+            maxHeight: open === i ? 200 : 0,
+            overflow: "hidden",
+            transition: "max-height 0.3s ease",
+          }}>
+            <p style={{ fontSize: 14, color: "#94a3b8", lineHeight: 1.75, margin: "0 0 20px 0", paddingRight: 32 }}>
+              {faq.a}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Brand logo — uses the same /icon.svg as every other screen ── */
 const PawMark = ({ size = 30 }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-    <rect width="32" height="32" rx="8" fill={ORANGE}/>
-    <text x="16" y="22" textAnchor="middle" fontSize="17" fill="white">🐾</text>
-  </svg>
+  <img src="/icon.svg" alt="PETclub" width={size} height={size} style={{ borderRadius: size * 0.25, display: "block" }} />
 );
 
 /* ── Animated phone mockup ── */
@@ -207,11 +259,12 @@ function WinCard({ icon, title, body, highlight }) {
    LANDING PAGE ROOT
 ═══════════════════════════════════════════ */
 export default function LandingPage({ onGetStarted }) {
-  const howRef      = useRef(null);
-  const servicesRef = useRef(null);
+  const howRef        = useRef(null);
+  const servicesRef   = useRef(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const scrollToHow      = () => howRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  const scrollToServices = () => servicesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const scrollToHow      = () => { howRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); setMobileOpen(false); };
+  const scrollToServices = () => { servicesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); setMobileOpen(false); };
 
   return (
     <div style={{ minHeight: "100vh", background: DARK, fontFamily: "system-ui, -apple-system, sans-serif", overflowX: "hidden", color: "white" }}>
@@ -219,36 +272,86 @@ export default function LandingPage({ onGetStarted }) {
       {/* ══ NAVBAR ══ */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 50,
-        background: "rgba(10,15,26,0.92)", backdropFilter: "blur(20px)",
+        background: "rgba(10,15,26,0.95)", backdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        padding: "0 24px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        height: 62,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <PawMark size={32} />
-          <span style={{ fontWeight: 900, fontSize: 20, color: "white" }}>
-            PET<span style={{ color: ORANGE }}>club</span>
-          </span>
-          <span style={{ fontSize: 9, fontWeight: 700, color: "#475569", background: "#1e293b", borderRadius: 6, padding: "2px 6px", marginLeft: 2 }}>v2.0</span>
+        {/* Main bar */}
+        <div style={{ padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 62 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <PawMark size={32} />
+            <span style={{ fontWeight: 900, fontSize: 20, color: "white" }}>
+              PET<span style={{ color: ORANGE }}>club</span>
+            </span>
+          </div>
+
+          {/* Desktop nav links */}
+          <div className="nav-desktop-links" style={{ display: "flex", alignItems: "center", gap: 28 }}>
+            <button onClick={scrollToServices} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}>Services</button>
+            <button onClick={scrollToHow} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}>How it works</button>
+            <button onClick={() => onGetStarted("professional")} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}>For Pros</button>
+          </div>
+
+          {/* Desktop CTA buttons */}
+          <div className="nav-desktop-ctas" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={() => onGetStarted("professional")}
+              style={{ padding: "8px 18px", borderRadius: 12, background: "transparent", color: "white", fontWeight: 700, fontSize: 13, border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer" }}>
+              Join as Pro
+            </button>
+            <button onClick={() => onGetStarted("customer")}
+              style={{ padding: "8px 20px", borderRadius: 12, background: ORANGE, color: "white", fontWeight: 800, fontSize: 13, border: "none", cursor: "pointer", boxShadow: `0 4px 16px ${ORANGE}44` }}>
+              Sign In →
+            </button>
+          </div>
+
+          {/* Mobile: Sign In + Hamburger */}
+          <div className="nav-mobile-controls" style={{ display: "none", alignItems: "center", gap: 10 }}>
+            <button onClick={() => onGetStarted("customer")}
+              style={{ padding: "7px 16px", borderRadius: 10, background: ORANGE, color: "white", fontWeight: 800, fontSize: 13, border: "none", cursor: "pointer" }}>
+              Sign In
+            </button>
+            <button onClick={() => setMobileOpen(o => !o)}
+              style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, width: 38, height: 38, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "8px" }}>
+              {[0,1,2].map(i => (
+                <span key={i} style={{ display: "block", width: 18, height: 2, background: "white", borderRadius: 2,
+                  transform: mobileOpen ? (i === 0 ? "rotate(45deg) translate(3px, 3px)" : i === 2 ? "rotate(-45deg) translate(3px, -3px)" : "scale(0)") : "none",
+                  transition: "transform 0.2s",
+                }}/>
+              ))}
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          <button onClick={scrollToServices} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}>Services</button>
-          <button onClick={scrollToHow} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}>How it works</button>
-          <button onClick={() => onGetStarted("professional")} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}>For Pros</button>
+        {/* Mobile dropdown */}
+        <div style={{
+          overflow: "hidden", maxHeight: mobileOpen ? 280 : 0, transition: "max-height 0.3s ease",
+          borderTop: mobileOpen ? "1px solid rgba(255,255,255,0.07)" : "none",
+          background: "rgba(10,15,26,0.98)",
+        }}>
+          <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: 4 }}>
+            {[
+              { label: "Services", action: scrollToServices },
+              { label: "How it works", action: scrollToHow },
+              { label: "For Pros", action: () => { onGetStarted("professional"); setMobileOpen(false); } },
+            ].map(({ label, action }) => (
+              <button key={label} onClick={action}
+                style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 15, fontWeight: 600, cursor: "pointer", padding: "12px 0", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                {label}
+              </button>
+            ))}
+            <button onClick={() => { onGetStarted("professional"); setMobileOpen(false); }}
+              style={{ marginTop: 12, padding: "13px 20px", borderRadius: 12, background: "rgba(255,255,255,0.06)", color: "white", fontWeight: 700, fontSize: 14, border: "1px solid rgba(255,255,255,0.12)", cursor: "pointer" }}>
+              Join as a Pro →
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button
-            onClick={() => onGetStarted("professional")}
-            style={{ padding: "8px 18px", borderRadius: 12, background: "transparent", color: "white", fontWeight: 700, fontSize: 13, border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer" }}
-          >Join as Pro</button>
-          <button
-            onClick={() => onGetStarted("customer")}
-            style={{ padding: "8px 20px", borderRadius: 12, background: ORANGE, color: "white", fontWeight: 800, fontSize: 13, border: "none", cursor: "pointer", boxShadow: `0 4px 16px ${ORANGE}44` }}
-          >Sign In →</button>
-        </div>
+        <style>{`
+          @media (max-width: 700px) {
+            .nav-desktop-links { display: none !important; }
+            .nav-desktop-ctas  { display: none !important; }
+            .nav-mobile-controls { display: flex !important; }
+          }
+        `}</style>
       </nav>
 
       {/* ══ HERO ══ */}
@@ -292,10 +395,10 @@ export default function LandingPage({ onGetStarted }) {
             {/* Stats */}
             <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
               {[
-                { v: "100%", l: "Verified Pros" },
-                { v: "Live GPS", l: "Real-Time Map" },
-                { v: "6", l: "Services" },
-                { v: "48 hr", l: "Approval SLA" },
+                { v: "50K+", l: "Happy Pets" },
+                { v: "4.9★", l: "Avg Rating" },
+                { v: "Same-day", l: "Bookings" },
+                { v: "🇮🇳🇺🇸", l: "India & USA" },
               ].map(s => (
                 <div key={s.l}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: "white" }}>{s.v}</div>
@@ -349,7 +452,7 @@ export default function LandingPage({ onGetStarted }) {
             <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>All at-home or doorstep. No travel, no stress — for you or your pet.</p>
           </div>
 
-          {/* Row 1 */}
+          {/* 5 live services */}
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 14 }}>
             <ServiceCard
               icon="✂️" title="Dog Grooming" badge="Most Popular"
@@ -363,20 +466,12 @@ export default function LandingPage({ onGetStarted }) {
               icon="🦮" title="Dog Walking" isNew
               desc="GPS-tracked daily or scheduled walks by trained handlers. Live map so you see exactly where your dog is."
             />
-          </div>
-
-          {/* Row 2 */}
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center" }}>
             <ServiceCard
               icon="🏠" title="Pet Boarding" isNew
               desc="Cage-free home-based boarding with verified hosts. Your pet stays in a real home, not a kennel."
             />
             <ServiceCard
-              icon="🐈" title="Cat Grooming" isNew
-              desc="Gentle, specialist cat grooming at home. Calming environment — no stressful salon trips."
-            />
-            <ServiceCard
-              icon="🏥" title="Vet Consultation" badge="Soon" badgeColor="#3b82f6"
+              icon="🏥" title="Vet Consultation" badge="Coming Soon" badgeColor="#3b82f6"
               desc="At-home vet visits, vaccinations, and check-ups. Consult a verified vet without leaving your home."
             />
           </div>
@@ -581,6 +676,20 @@ export default function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
+      {/* ══ FAQ ══ */}
+      <section style={{ padding: "80px 24px", background: DARK, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 52 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 2, textTransform: "uppercase", margin: "0 0 10px" }}>Got questions?</p>
+            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: "0 0 12px" }}>
+              Frequently asked questions.
+            </h2>
+            <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>Everything you need to know before your first booking.</p>
+          </div>
+          <FaqAccordion />
+        </div>
+      </section>
+
       {/* ══ LET'S CONNECT ══ */}
       <section style={{ padding: "72px 24px", background: DARK2, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
@@ -644,18 +753,19 @@ export default function LandingPage({ onGetStarted }) {
         </div>
         <div style={{ fontSize: 11, color: "#374151" }}>
           © {new Date().getFullYear()} PETclub · United States &amp; India · All rights reserved
-          <span style={{ marginLeft: 8, color: "#1f2937", fontFamily: "monospace" }}>
-            v{__APP_VERSION__} · 27 May 2026
-          </span>
         </div>
         <div style={{ display: "flex", gap: 16 }}>
-          <a href="/terms.html" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 11, color: "#6b7280", textDecoration: "none" }}
-            onMouseEnter={e => e.target.style.color = ORANGE}
-            onMouseLeave={e => e.target.style.color = "#6b7280"}>
-            Terms of Service
-          </a>
-          <span style={{ fontSize: 11, color: "#374151" }}>Privacy Policy</span>
+          {[
+            { label: "Terms of Service", href: "/terms.html" },
+            { label: "Privacy Policy",   href: "/privacy.html" },
+          ].map(({ label, href }) => (
+            <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 11, color: "#6b7280", textDecoration: "none" }}
+              onMouseEnter={e => e.target.style.color = ORANGE}
+              onMouseLeave={e => e.target.style.color = "#6b7280"}>
+              {label}
+            </a>
+          ))}
         </div>
       </footer>
 
