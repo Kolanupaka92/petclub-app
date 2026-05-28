@@ -1,3 +1,10 @@
+# [1.24.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.23.0...v1.24.0) (2026-05-28)
+
+
+### Features
+
+* sync UI/UX across all 4 surfaces — LandingPage + Login aligned with www ([3c1be67](https://github.com/Kolanupaka92/petclub-app/commit/3c1be675cf8ac3b235893527a719056550325d88)), closes [#3d1f00](https://github.com/Kolanupaka92/petclub-app/issues/3d1f00) [#f97316](https://github.com/Kolanupaka92/petclub-app/issues/f97316) [#f97316](https://github.com/Kolanupaka92/petclub-app/issues/f97316)
+
 # [1.23.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.22.0...v1.23.0) (2026-05-28)
 
 
