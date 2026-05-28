@@ -1,3 +1,10 @@
+## [1.20.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.20.1...v1.20.2) (2026-05-28)
+
+
+### Bug Fixes
+
+* escape apostrophe in WhatsAppFAB professional message string ([55433bd](https://github.com/Kolanupaka92/petclub-app/commit/55433bdbf007e6b4eb166524a980f9d8b9424082))
+
 ## [1.20.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.20.0...v1.20.1) (2026-05-28)
 
 
