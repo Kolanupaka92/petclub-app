@@ -1,3 +1,10 @@
+## [1.20.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.20.0...v1.20.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* replace deleted Unsplash hero photo on login page ([a1d52e0](https://github.com/Kolanupaka92/petclub-app/commit/a1d52e07940f0de3889ad7e85b8731d49cbdf709))
+
 # [1.20.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.19.1...v1.20.0) (2026-05-28)
 
 
