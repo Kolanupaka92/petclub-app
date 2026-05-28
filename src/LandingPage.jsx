@@ -20,6 +20,8 @@ const DARK    = "#0a0f1a";
 const DARK2   = "#111827";
 const DARK3   = "#1e293b";
 
+const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '919347411132';
+
 /* ── Inline SVG paw logo ── */
 const PawMark = ({ size = 30 }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
@@ -589,7 +591,7 @@ export default function LandingPage({ onGetStarted }) {
           </div>
 
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
-            <a href="https://wa.me/919347411132" target="_blank" rel="noopener noreferrer"
+            <a href={`https://wa.me/${WA_NUMBER}`} target="_blank" rel="noopener noreferrer"
               style={{ flex: "1 1 240px", maxWidth: 300, background: "#111827", border: "1.5px solid rgba(34,197,94,0.25)", borderRadius: 20, padding: "28px 24px", textDecoration: "none", color: "white", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, transition: "all 0.2s" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(34,197,94,0.6)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(34,197,94,0.12)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(34,197,94,0.25)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}

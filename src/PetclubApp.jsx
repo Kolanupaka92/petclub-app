@@ -4,6 +4,7 @@ import { loadPets, savePets } from "./utils/storage.js";
 import { TC, fmtDate } from "./data/mockData.js";
 import { AddressInput, getEmailSuggestion } from "./Login.jsx";
 import { AddressPicker } from "./components/AddressPicker.jsx";
+import WhatsAppFAB from "./components/WhatsAppFAB.jsx";
 
 // Lazy-load heavy map component (Mapbox GL is ~500 KB)
 const TrackingMap = lazy(() => import("./components/TrackingMap.jsx"));
@@ -2239,6 +2240,9 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
         </Modal>
       )}
+
+      {/* WhatsApp support chat */}
+      <WhatsAppFAB role="customer" />
     </div>
   );
 }

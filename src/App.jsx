@@ -3,6 +3,7 @@ import { api } from "./api.js";
 import { AddressInput } from "./Login.jsx";
 import { AddressPicker } from "./components/AddressPicker.jsx";
 import { bufferPosition, saveTokenToGpsDb } from "./utils/gpsBuffer.js";
+import WhatsAppFAB from "./components/WhatsAppFAB.jsx";
 
 /* ── Helpers ── */
 const fmtDate = s => { try { return new Date(s).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }); } catch { return s || "—"; } };
@@ -1789,6 +1790,9 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
           </button>
         </Modal>
       )}
+
+      {/* WhatsApp support chat */}
+      <WhatsAppFAB role="professional" />
     </div>
   );
 };
