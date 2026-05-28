@@ -1,3 +1,10 @@
+## [1.20.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.20.2...v1.20.3) (2026-05-28)
+
+
+### Bug Fixes
+
+* replace login hero with confirmed-loading Pexels image ([f8fb3c9](https://github.com/Kolanupaka92/petclub-app/commit/f8fb3c914a5c676023c8cae884716a1a07629ee6))
+
 ## [1.20.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.20.1...v1.20.2) (2026-05-28)
 
 
