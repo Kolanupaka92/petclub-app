@@ -1,3 +1,10 @@
+## [1.26.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.26.1...v1.26.2) (2026-05-28)
+
+
+### Bug Fixes
+
+* **e2e:** replace clipboard paste with per-digit fill() for OTP entry ([208abcd](https://github.com/Kolanupaka92/petclub-app/commit/208abcdf22438f16796a72a3a1f716bb85fb3643))
+
 ## [1.26.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.26.0...v1.26.1) (2026-05-28)
 
 
