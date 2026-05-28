@@ -617,7 +617,8 @@ export default function LandingPage({ onGetStarted }) {
               </div>
             </a>
 
-            <a href="mailto:pro@mypetclub.app"
+            <a href={`${import.meta.env.VITE_APP_URL || 'https://app.mypetclub.app'}?signin=1&role=professional`}
+              target="_blank" rel="noreferrer"
               style={{ flex: "1 1 240px", maxWidth: 300, background: "#111827", border: "1.5px solid rgba(139,92,246,0.25)", borderRadius: 20, padding: "28px 24px", textDecoration: "none", color: "white", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, transition: "all 0.2s" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.6)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(139,92,246,0.12)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.25)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
@@ -625,7 +626,7 @@ export default function LandingPage({ onGetStarted }) {
               <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(139,92,246,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🐾</div>
               <div style={{ textAlign: "center" }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>Join as a Pro</p>
-                <p style={{ fontSize: 15, fontWeight: 800, color: "white", margin: "0 0 4px" }}>pro@mypetclub.app</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: "white", margin: "0 0 4px" }}>Sign Up Free →</p>
                 <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Groomers · Trainers · Walkers · Vets</p>
               </div>
             </a>

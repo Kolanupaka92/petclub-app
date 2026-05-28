@@ -142,17 +142,23 @@ function PendingApproval({ session, onLogout, onApproved }) {
 
 function Root() {
   const [session, setSession]       = useState(loadSession);
-  // Skip landing page if URL contains ?signin=1 (deep-link from www.mypetclub.app)
-  const [showLanding, setShowLanding] = useState(() => {
-    const skip = new URLSearchParams(window.location.search).get('signin') === '1';
+  // Parse deep-link params once — before replaceState cleans the URL.
+  // ?signin=1            → skip landing page
+  // ?role=professional   → pre-select professional signup flow
+  const [_deepLink] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const skip = params.get('signin') === '1';
+    const role = params.get('role'); // "professional" | null
     if (skip) {
-      // Clean the param from the address bar without a page reload
       const clean = window.location.pathname + window.location.hash;
       window.history.replaceState(null, '', clean);
     }
-    return !skip;
+    return { skip, role };
   });
-  const [loginHint, setLoginHint]    = useState(null); // "customer" | "professional"
+  const [showLanding, setShowLanding] = useState(() => !_deepLink.skip);
+  const [loginHint, setLoginHint]     = useState(() =>
+    _deepLink.role === 'professional' ? 'professional' : null
+  ); // "customer" | "professional"
   const [warnVisible, setWarnVisible] = useState(false);
   const [countdown, setCountdown]   = useState(60);
 
