@@ -103,33 +103,24 @@ export async function loginWithPhone(page, user) {
 
   // ── Step: "otp" — fill OTP ───────────────────────────────────────────────
   // OTP is rendered as 6 individual single-char boxes (maxLength=1 each).
-  // The container div has an onPaste handler that splits the pasted string.
-  // Strategy: wait for the first box, focus it, then paste the full 6-digit code.
+  // NOTE: clipboard paste via JS ClipboardEvent is "non-trusted" — browsers
+  // return empty clipboardData, so React's onPaste handler gets nothing.
+  // Strategy: fill each box individually via Playwright's fill(), which fires
+  // native input events that React's onChange handler picks up.
+  // The component auto-verifies when all 6 digits are entered (no Verify click needed).
   const firstOtpBox = page.locator('input[maxlength="1"][inputmode="numeric"]').first();
   await firstOtpBox.waitFor({ state: 'visible', timeout: 20000 });
 
   const otp = await fetchOTP(user.phone, user.cc);
 
-  // Click the first box to focus it, then paste the full code
-  await firstOtpBox.click();
-  // Use clipboard paste — the onPaste handler splits digits across the 6 boxes
-  await page.evaluate((code) => {
-    const dt = new DataTransfer();
-    dt.setData('text', code);
-    const el = document.querySelector('input[maxlength="1"][inputmode="numeric"]');
-    if (el) {
-      el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
-    }
-  }, otp);
+  // Fill each digit box — React's handleBox auto-advances focus and auto-submits at digit 6
+  const boxes = page.locator('input[maxlength="1"][inputmode="numeric"]');
+  for (let i = 0; i < otp.length; i++) {
+    await boxes.nth(i).fill(otp[i]);
+  }
 
-  // Allow React to re-render all 6 boxes
+  // Allow auto-verify to fire and navigation to complete
   await page.waitForTimeout(500);
-
-  // ── Click "Verify" ───────────────────────────────────────────────────────
-  const verifyBtn = page.locator('button:has-text("Verify"), button:has-text("Submit"), button:has-text("Confirm")').first();
-  await verifyBtn.click();
-
-  // Wait for navigation to home / role selection
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1500);
 }
