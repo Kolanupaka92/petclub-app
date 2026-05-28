@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.24.0...v1.25.0) (2026-05-28)
+
+
+### Features
+
+* **admin:** complete dashboard overhaul — user mix, reports tab, bookings UX ([bf5761c](https://github.com/Kolanupaka92/petclub-app/commit/bf5761c3b4cf260189064139c51d36dbf1a3976c))
+
 # [1.24.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.23.0...v1.24.0) (2026-05-28)
 
 
