@@ -1191,10 +1191,10 @@ export default function Login({ onLogin, initialHint }) {
                     <div className="pt-3">
                       <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-2">1. Earnings & Compensation</p>
                       <div className="bg-gray-900 rounded-xl px-4 py-2.5 mb-2">
-                        <p className="text-xs text-white font-semibold">Total Partner Earnings = 45% Commission + Travel Allowance + 100% of Tips</p>
+                        <p className="text-xs text-white font-semibold">Total Partner Earnings = 70% Commission + Travel Allowance + 100% of Tips</p>
                       </div>
                       <div className="space-y-1.5 text-xs text-orange-800">
-                        <p>• <strong>45% Service Commission</strong> — you retain 45% of the base service value, including any add-ons upsold at the customer's doorstep.</p>
+                        <p>• <strong>70% Service Commission</strong> — you retain 70% of the base service value, including any add-ons upsold at the customer's doorstep. PETclub retains 30%.</p>
                         <p>• <strong>100% Gratuity</strong> — all tips (cash or in-app) go entirely to you. PETclub takes zero commission on tips.</p>
                       </div>
                       {/* Travel allowance table */}
@@ -1227,7 +1227,7 @@ export default function Login({ onLogin, initialHint }) {
                       <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-1.5">3. Weekly Settlement</p>
                       <p className="text-xs text-orange-800 mb-2">Earnings are transferred to your bank account <strong>every Saturday</strong>. You will receive an itemized statement via WhatsApp/App showing:</p>
                       <div className="space-y-1 text-xs text-orange-800">
-                        {["Jobs completed during the week","Total gross service value","Your exact 45% commission","Travel allowances & performance bonuses"].map(item => (
+                        {["Jobs completed during the week","Total gross service value","Your exact 70% commission","Travel allowances & performance bonuses"].map(item => (
                           <p key={item} className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span>{item}</p>
                         ))}
                       </div>
@@ -1268,7 +1268,7 @@ export default function Login({ onLogin, initialHint }) {
                     className="mt-0.5 w-4 h-4 accent-orange-500 shrink-0 cursor-pointer"
                   />
                   <span className="text-xs text-gray-700 leading-relaxed">
-                    I have read and agree to the <strong>PETclub Partner Network Agreement</strong> — including the 45% commission structure, travel allowance tiers, weekly settlement terms, operational standards, and insurance policy.
+                    I have read and agree to the <strong>PETclub Partner Network Agreement</strong> — including the 70% commission structure, travel allowance tiers, weekly settlement terms, operational standards, and insurance policy.
                   </span>
                 </label>
               </div>

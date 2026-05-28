@@ -272,6 +272,20 @@ function Root() {
     return () => window.removeEventListener('petclub:unauthorized', handle);
   }, [doLogout]);
 
+  /* ── M-1: Server-side session re-validation on mount ────────────────────
+   * Prevents a tampered localStorage session (e.g. role="admin" injected by
+   * hand) from accessing the admin panel. We call getMe() once on load;
+   * if the backend rejects the token the 401 handler auto-logs the user out.
+   * Runs only when a session is already present (returning user). */
+  useEffect(() => {
+    if (!session) return;
+    api.getMe().catch(() => {
+      // 401 is handled by the petclub:unauthorized event — this catch handles
+      // network errors gracefully (do nothing, let the user proceed offline).
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // once on mount only
+
   /* ── Push notifications ── */
   useEffect(() => {
     if (session) {

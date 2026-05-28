@@ -1218,7 +1218,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                             <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-right">
                               <div className="text-xs text-emerald-600 font-medium">Your Earning</div>
                               <div className="font-extrabold text-emerald-700 text-base">{currencySymbol}{parseFloat(bk.provider_earnings).toFixed(2)}</div>
-                              <div className="text-[10px] text-emerald-500">45% of booking</div>
+                              <div className="text-[10px] text-emerald-500">70% of booking</div>
                             </div>
                           )}
                         </div>
@@ -1313,7 +1313,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                           </span>
                           <div className="text-right">
                             <span className="text-sm font-extrabold text-emerald-600">
-                              {currencySymbol}{parseFloat(b.provider_earnings || b.amount * 0.45 || 0).toFixed(2)}
+                              {currencySymbol}{parseFloat(b.provider_earnings || b.amount * 0.70 || 0).toFixed(2)}
                             </span>
                             {b.payout_status && (
                               <span className={`ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${b.payout_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -1436,8 +1436,108 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
         {/* ── EARNINGS ── */}
         {view === "earnings" && (
           <div className="max-w-2xl mx-auto px-5 py-6 space-y-4">
+
+            {/* ── Weekly earnings widget ── */}
+            {(() => {
+              const now        = new Date();
+              const todayDow   = now.getDay(); // 0=Sun … 6=Sat
+              const daysFromMon = todayDow === 0 ? 6 : todayDow - 1;
+              const thisMonday = new Date(now);
+              thisMonday.setDate(now.getDate() - daysFromMon);
+              thisMonday.setHours(0, 0, 0, 0);
+              const thisSat = new Date(thisMonday);
+              thisSat.setDate(thisMonday.getDate() + 5);
+              thisSat.setHours(23, 59, 59, 999);
+              const lastMonday = new Date(thisMonday);
+              lastMonday.setDate(thisMonday.getDate() - 7);
+              const lastSat = new Date(thisMonday);
+              lastSat.setDate(thisMonday.getDate() - 1);
+              lastSat.setHours(23, 59, 59, 999);
+              const daysUntilSat = todayDow === 6 ? 0 : (6 - todayDow);
+              const nextPayout = new Date(now);
+              nextPayout.setDate(now.getDate() + daysUntilSat);
+              const fmtShort = d => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+              const allBkgs  = earnings?.bookings || [];
+              const thisWeekBkgs = allBkgs.filter(b => { const d = new Date(b.scheduled_at || b.completed_at || 0); return d >= thisMonday && d <= thisSat; });
+              const lastWeekBkgs = allBkgs.filter(b => { const d = new Date(b.scheduled_at || b.completed_at || 0); return d >= lastMonday && d <= lastSat; });
+              const weekTotal = thisWeekBkgs.reduce((s, b) => s + parseFloat(b.provider_earnings || 0), 0);
+              const lastTotal = lastWeekBkgs.reduce((s, b) => s + parseFloat(b.provider_earnings || 0), 0);
+              const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+              const dayEarn = Array(6).fill(0);
+              thisWeekBkgs.forEach(b => {
+                const dow = new Date(b.scheduled_at || b.completed_at || 0).getDay();
+                const idx = dow === 0 ? -1 : dow - 1;
+                if (idx >= 0 && idx < 6) dayEarn[idx] += parseFloat(b.provider_earnings || 0);
+              });
+              const maxDay   = Math.max(...dayEarn, 1);
+              const todayIdx = todayDow === 0 ? -1 : todayDow - 1;
+              return (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-white font-bold text-sm">📅 This Week's Earnings</p>
+                      <p className="text-emerald-100 text-xs mt-0.5">{fmtShort(thisMonday)} – {fmtShort(thisSat)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-emerald-200 font-semibold uppercase tracking-wide">Next Payout</p>
+                      <p className="text-white font-extrabold text-sm">
+                        {daysUntilSat === 0 ? 'Today 🎉' : `${fmtShort(nextPayout)} (${daysUntilSat}d)`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    {/* This week vs last week tiles */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wide mb-1">This Week</p>
+                        <p className="text-xl font-extrabold text-emerald-700">{currencySymbol}{weekTotal.toFixed(2)}</p>
+                        <p className="text-[10px] text-emerald-500 mt-0.5">{thisWeekBkgs.length} job{thisWeekBkgs.length !== 1 ? 's' : ''}</p>
+                      </div>
+                      <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-1">Last Sat Paid</p>
+                        <p className="text-xl font-extrabold text-gray-700">{currencySymbol}{lastTotal.toFixed(2)}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{lastWeekBkgs.length} job{lastWeekBkgs.length !== 1 ? 's' : ''}</p>
+                      </div>
+                    </div>
+                    {/* Daily bar chart Mon→Sat */}
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Daily Breakdown</p>
+                    <div className="flex items-end gap-1.5" style={{ height: 68 }}>
+                      {DAY_LABELS.map((day, i) => {
+                        const barH = dayEarn[i] > 0 ? Math.max(Math.round((dayEarn[i] / maxDay) * 44), 6) : 4;
+                        const isToday = i === todayIdx;
+                        const hasPay  = dayEarn[i] > 0;
+                        return (
+                          <div key={day} className="flex-1 flex flex-col items-center justify-end gap-1">
+                            {hasPay && <span className="text-[8px] font-bold text-emerald-600 leading-none">{currencySymbol}{dayEarn[i] >= 1000 ? (dayEarn[i]/1000).toFixed(1)+'k' : Math.round(dayEarn[i])}</span>}
+                            <div className={`w-full rounded-t-md ${isToday ? 'bg-orange-500' : hasPay ? 'bg-emerald-500' : 'bg-gray-100'}`} style={{ height: barH }} />
+                            <span className={`text-[9px] font-bold ${isToday ? 'text-orange-500' : 'text-gray-400'}`}>{day}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center gap-3 mt-2 mb-3">
+                      {[['bg-orange-500','Today'],['bg-emerald-500','Earned'],['bg-gray-200','No jobs']].map(([c,l]) => (
+                        <div key={l} className="flex items-center gap-1"><div className={`w-2 h-2 rounded-full ${c}`}/><span className="text-[10px] text-gray-400">{l}</span></div>
+                      ))}
+                    </div>
+                    {/* Payout countdown */}
+                    <div className="bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                      <span className="text-lg shrink-0">💸</span>
+                      <div>
+                        <p className="text-xs font-bold text-violet-800">
+                          {daysUntilSat === 0 ? '🎉 Payout processing today — check your bank by 6 PM!' : `Payout in ${daysUntilSat} day${daysUntilSat !== 1 ? 's' : ''} — ${nextPayout.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' })}`}
+                        </p>
+                        <p className="text-[10px] text-violet-600 mt-0.5">This week's 70% share transferred directly to your bank. Every Saturday.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── All-time summary tiles ── */}
             <div className={`bg-gradient-to-br ${grad} rounded-2xl p-5 text-white`}>
-              <div className="text-sm font-semibold text-white/70 mb-1">My Earnings</div>
+              <div className="text-sm font-semibold text-white/70 mb-1">All-Time Summary</div>
               {earningsLoad ? (
                 <div className="flex items-center gap-2 text-white/60 text-sm"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Loading…</div>
               ) : (
@@ -1454,7 +1554,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                   ))}
                 </div>
               )}
-              <p className="text-[11px] text-white/50 mt-3">Payouts are processed T+2 days after service completion.</p>
+              <p className="text-[11px] text-white/50 mt-3">Settled every Saturday via direct bank transfer. 70% of every completed service.</p>
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -1496,7 +1596,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
               {/* Total earnings formula */}
               <div className="bg-orange-500 px-4 py-2.5 flex items-center justify-between">
                 <p className="text-white text-xs font-bold">Total Earnings =</p>
-                <p className="text-white text-xs font-extrabold">45% Commission + Travel Allowance + 100% Tips</p>
+                <p className="text-white text-xs font-extrabold">70% Commission + Travel Allowance + 100% Tips</p>
               </div>
 
               <div className="p-4 space-y-4">
@@ -1504,10 +1604,10 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center text-lg shrink-0">💰</div>
                   <div className="flex-1">
-                    <p className="font-bold text-sm text-gray-800">45% Service Commission</p>
-                    <p className="text-xs text-gray-500 mt-0.5">You keep 45% of every service including upsells at the customer's doorstep.</p>
+                    <p className="font-bold text-sm text-gray-800">70% Service Commission</p>
+                    <p className="text-xs text-gray-500 mt-0.5">You keep 70% of every service including upsells at the customer's doorstep. PETclub retains 30%.</p>
                     <div className="bg-gray-50 rounded-lg px-3 py-2 mt-1.5 text-xs text-gray-600">
-                      <strong>Example:</strong> ₹1,500 grooming → you earn <strong className="text-emerald-600">₹675</strong>. ₹300 add-on shampoo → +<strong className="text-emerald-600">₹135</strong> more.
+                      <strong>Example:</strong> ₹1,500 grooming → you earn <strong className="text-emerald-600">₹1,050</strong>. ₹300 add-on shampoo → +<strong className="text-emerald-600">₹210</strong> more.
                     </div>
                   </div>
                 </div>
