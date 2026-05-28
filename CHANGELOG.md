@@ -1,3 +1,10 @@
+## [1.20.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.20.3...v1.20.4) (2026-05-28)
+
+
+### Bug Fixes
+
+* apiMode bug + login hero service pills (audit fixes) ([ab62d8a](https://github.com/Kolanupaka92/petclub-app/commit/ab62d8a1e83330314e9d6a27d4ccf8974d7086de))
+
 ## [1.20.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.20.2...v1.20.3) (2026-05-28)
 
 
