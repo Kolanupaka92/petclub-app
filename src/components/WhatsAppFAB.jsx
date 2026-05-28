@@ -7,7 +7,7 @@ const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '919347411132';
 
 const MESSAGES = {
   customer:     'Hi PETclub! I need help with my booking. 🐾',
-  professional: 'Hi PETclub! I'm a verified professional and need support.',
+  professional: "Hi PETclub! I'm a verified professional and need support.",
   default:      'Hi PETclub! I need some help.',
 };
 
