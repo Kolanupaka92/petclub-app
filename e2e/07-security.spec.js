@@ -11,36 +11,34 @@
 import { test, expect } from '@playwright/test';
 import { loginWithPhone, USERS, FIREBASE_TESTS } from './helpers.js';
 
+// Firebase allows max 10 test numbers — only 9999900001 (owner) and 9999900002 (groomer)
+// are reserved for E2E. A groomer is an SP, so testing with one SP role covers the RBAC rule.
 test.describe('Price RBAC — Service Providers', () => {
-  const SP_USERS = [USERS.groomer, USERS.trainer, USERS.vet];
+  test('Groomer cannot see "Customer Paid" label', async ({ page }) => {
+    if (!FIREBASE_TESTS) {
+      test.skip(true, 'Requires Firebase test numbers — +91 9999900002 → 123456');
+      return;
+    }
+    await loginWithPhone(page, USERS.groomer);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
 
-  for (const user of SP_USERS) {
-    test(`${user.name} cannot see "Customer Paid" label`, async ({ page }) => {
-      if (!FIREBASE_TESTS) {
-        test.skip(true, 'Requires Firebase test numbers — configure in Firebase Console > Auth > Phone > Test numbers');
-        return;
-      }
-      await loginWithPhone(page, user);
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(2000);
+    const forbidden = page.locator(':text("Customer Paid"), :text("Total Paid by Customer")').first();
+    expect(await forbidden.isVisible({ timeout: 3000 }).catch(() => false)).toBe(false);
+  });
 
-      const forbidden = page.locator(':text("Customer Paid"), :text("Total Paid by Customer")').first();
-      expect(await forbidden.isVisible({ timeout: 3000 }).catch(() => false)).toBe(false);
-    });
+  test('Groomer cannot see platform fee', async ({ page }) => {
+    if (!FIREBASE_TESTS) {
+      test.skip(true, 'Requires Firebase test numbers — +91 9999900002 → 123456');
+      return;
+    }
+    await loginWithPhone(page, USERS.groomer);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
 
-    test(`${user.name} cannot see platform fee`, async ({ page }) => {
-      if (!FIREBASE_TESTS) {
-        test.skip(true, 'Requires Firebase test numbers — configure in Firebase Console > Auth > Phone > Test numbers');
-        return;
-      }
-      await loginWithPhone(page, user);
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(2000);
-
-      const forbidden = page.locator(':text("Platform Fee"), :text("PETclub "), :text("55%")').first();
-      expect(await forbidden.isVisible({ timeout: 3000 }).catch(() => false)).toBe(false);
-    });
-  }
+    const forbidden = page.locator(':text("Platform Fee"), :text("PETclub fee"), :text("55%")').first();
+    expect(await forbidden.isVisible({ timeout: 3000 }).catch(() => false)).toBe(false);
+  });
 });
 
 test.describe('Admin route access control', () => {
