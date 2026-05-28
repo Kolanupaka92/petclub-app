@@ -1,3 +1,10 @@
+## [1.21.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.21.1...v1.21.2) (2026-05-28)
+
+
+### Bug Fixes
+
+* consistent icon.svg logo across all 4 missing screens ([9ddc654](https://github.com/Kolanupaka92/petclub-app/commit/9ddc65416845d7c3e15076b6de9b9b90d8499c72))
+
 ## [1.21.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.21.0...v1.21.1) (2026-05-28)
 
 
