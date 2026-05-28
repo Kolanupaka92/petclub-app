@@ -540,7 +540,7 @@ export default function PetclubApp({ session, onLogout }) {
       <div className="absolute top-0 inset-x-0 h-[3px] bg-brand-gradient" />
       <div className="flex items-center justify-between gap-3 pt-0.5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-brand-gradient flex items-center justify-center text-white text-lg font-black shadow-orange shrink-0">🐾</div>
+          <img src="/icon.svg" alt="PETclub" className="w-10 h-10 rounded-2xl shadow-orange shrink-0" />
           <div>
             <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">PETclub</p>
             <p className="text-sm font-extrabold text-gray-900 leading-tight">{firstName}</p>

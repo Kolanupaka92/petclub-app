@@ -82,7 +82,12 @@ function PendingApproval({ session, onLogout, onApproved }) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm text-center">
-        <div className="text-6xl mb-4">⏳</div>
+        {/* Logo */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <img src="/icon.svg" alt="PETclub" className="w-9 h-9 rounded-xl" />
+          <span className="font-extrabold text-gray-900 text-xl tracking-tight">PET<span className="text-orange-500">club</span></span>
+        </div>
+        <div className="text-5xl mb-4">⏳</div>
         <h1 className="text-2xl font-extrabold text-gray-800 mb-2">Application Submitted!</h1>
         <p className="text-gray-500 text-sm mb-6 leading-relaxed">
           Your {subRole} profile is under review by the PETclub team.
