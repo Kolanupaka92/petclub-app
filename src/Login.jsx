@@ -120,7 +120,8 @@ const getCertTypes = (role) => ({
   ],
 })[role] || ["Professional Certificate", "Other"];
 
-const HERO = "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=900&auto=format&fit=crop&q=85";
+// Free Unsplash License — golden retriever on rock, outdoors. Verified 2025-05-27.
+const HERO = "https://images.unsplash.com/photo-1612774412771-005ed8e861d2?w=900&auto=format&fit=crop&q=85";
 
 
 /* ── OTP single digit box ── */
