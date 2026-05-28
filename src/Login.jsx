@@ -120,8 +120,7 @@ const getCertTypes = (role) => ({
   ],
 })[role] || ["Professional Certificate", "Other"];
 
-// Pexels free license (CC0) — two golden retriever puppies in field with orange flowers. Verified 2025-05-27.
-const HERO = "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=900";
+// Hero panel is CSS-only — no external image dependency (CDNs block hotlinking).
 
 
 /* ── OTP single digit box ── */
@@ -589,10 +588,40 @@ export default function Login({ onLogin, initialHint }) {
   return (
     <div className="min-h-screen min-h-[100dvh] flex">
 
-      {/* ── LEFT: Hero panel (desktop) ── */}
-      <div className="hidden lg:flex lg:w-[45%] xl:w-1/2 relative overflow-hidden">
-        <img src={HERO} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/70" />
+      {/* ── LEFT: Hero panel (desktop) — CSS-only, no external image ── */}
+      <div className="hidden lg:flex lg:w-[45%] xl:w-1/2 relative overflow-hidden"
+           style={{ background: "linear-gradient(145deg, #7c2d12 0%, #b45309 30%, #c2410c 60%, #ea580c 85%, #f97316 100%)" }}>
+
+        {/* Large decorative paw — bottom-right anchor */}
+        <svg className="absolute -bottom-10 -right-10 w-80 h-80 opacity-[0.12]" fill="white" viewBox="0 0 100 100" aria-hidden="true">
+          <ellipse cx="26" cy="18" rx="9" ry="11" />
+          <ellipse cx="52" cy="13" rx="9" ry="11" />
+          <ellipse cx="76" cy="20" rx="8" ry="10" />
+          <ellipse cx="14" cy="38" rx="7"  ry="9"  />
+          <path d="M50 38 C72 38 86 52 86 68 C86 84 70 95 50 95 C30 95 14 84 14 68 C14 52 28 38 50 38Z" />
+        </svg>
+
+        {/* Medium paw — top-left */}
+        <svg className="absolute -top-6 -left-6 w-44 h-44 opacity-[0.08] rotate-12" fill="white" viewBox="0 0 100 100" aria-hidden="true">
+          <ellipse cx="26" cy="18" rx="9" ry="11" />
+          <ellipse cx="52" cy="13" rx="9" ry="11" />
+          <ellipse cx="76" cy="20" rx="8" ry="10" />
+          <ellipse cx="14" cy="38" rx="7"  ry="9"  />
+          <path d="M50 38 C72 38 86 52 86 68 C86 84 70 95 50 95 C30 95 14 84 14 68 C14 52 28 38 50 38Z" />
+        </svg>
+
+        {/* Small paw — mid right */}
+        <svg className="absolute top-1/3 right-8 w-20 h-20 opacity-[0.10] -rotate-20" fill="white" viewBox="0 0 100 100" aria-hidden="true">
+          <ellipse cx="26" cy="18" rx="9" ry="11" />
+          <ellipse cx="52" cy="13" rx="9" ry="11" />
+          <ellipse cx="76" cy="20" rx="8" ry="10" />
+          <ellipse cx="14" cy="38" rx="7"  ry="9"  />
+          <path d="M50 38 C72 38 86 52 86 68 C86 84 70 95 50 95 C30 95 14 84 14 68 C14 52 28 38 50 38Z" />
+        </svg>
+
+        {/* Subtle top-to-bottom shadow for text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50" />
+
         <div className="relative z-10 flex flex-col justify-between p-10 w-full">
           <div className="flex items-center gap-2">
             <img src="/icon.svg" alt="PETclub" className="w-10 h-10 rounded-xl" />
