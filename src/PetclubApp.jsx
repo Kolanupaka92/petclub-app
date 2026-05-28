@@ -232,8 +232,11 @@ export default function PetclubApp({ session, onLogout }) {
     api.getPets().then(r => {
       if (r.pets?.length) {
         setPets(r.pets.map(p => ({ id: p.id, name: p.name, species: p.species || "dog", breed: p.breed || "Mixed", age: p.age || "", dob: p.dob || "", weight: p.weight || "", gender: p.gender || "", color: p.color || "", chip: p.chip || "", records: { grooming:[], training:[], food:[], vet:[] } })));
-        setApiMode(true);
       }
+      // Always enable API mode once the server responds — even for users with no pets yet.
+      // Without this, new users' pet add/edit operations stay localStorage-only and never
+      // reach the database.
+      setApiMode(true);
     }).catch(() => {}).finally(() => setLoadingPets(false));
     api.getBookings().then(r => setMyBookings(r.bookings || [])).catch(() => {});
     // Load loyalty data (only for customers — graceful on 403)

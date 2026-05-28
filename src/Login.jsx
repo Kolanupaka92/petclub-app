@@ -600,7 +600,7 @@ export default function Login({ onLogin, initialHint }) {
           </div>
           <div>
             <div className="flex flex-wrap gap-2 mb-6">
-              {["✂️ Grooming","🐕‍🦺 Training","🏥 Vet Care","🍖 Pet Food"].map(s => (
+              {["✂️ Grooming","🐕‍🦺 Training","🏥 Vet Care","🦮 Dog Walking","🏠 Boarding"].map(s => (
                 <span key={s} className="text-xs font-semibold text-white bg-white/15 border border-white/20 px-3 py-1.5 rounded-full backdrop-blur-sm">{s}</span>
               ))}
             </div>
