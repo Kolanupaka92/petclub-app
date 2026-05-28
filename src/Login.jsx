@@ -120,8 +120,8 @@ const getCertTypes = (role) => ({
   ],
 })[role] || ["Professional Certificate", "Other"];
 
-// Free Unsplash License — golden retriever on rock, outdoors. Verified 2025-05-27.
-const HERO = "https://images.unsplash.com/photo-1612774412771-005ed8e861d2?w=900&auto=format&fit=crop&q=85";
+// Pexels free license (CC0) — two golden retriever puppies in field with orange flowers. Verified 2025-05-27.
+const HERO = "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=900";
 
 
 /* ── OTP single digit box ── */
