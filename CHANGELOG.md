@@ -1,3 +1,10 @@
+## [1.26.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.26.0...v1.26.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* **e2e:** adapt tests for 10-slot Firebase limit — only 2 numbers needed ([719c2bd](https://github.com/Kolanupaka92/petclub-app/commit/719c2bdb9f445ccdb304f8f36988d360ccc986b9))
+
 # [1.26.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.25.0...v1.26.0) (2026-05-28)
 
 
