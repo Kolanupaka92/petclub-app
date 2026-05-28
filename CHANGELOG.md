@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.20.4...v1.21.0) (2026-05-28)
+
+
+### Features
+
+* 70/30 commission, weekly earnings dashboard + security fixes ([5882438](https://github.com/Kolanupaka92/petclub-app/commit/5882438c58d537049930be241dab523fabf596ba))
+
 ## [1.20.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.20.3...v1.20.4) (2026-05-28)
 
 
