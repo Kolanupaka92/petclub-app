@@ -590,7 +590,7 @@ export default function Login({ onLogin, initialHint }) {
 
       {/* ── LEFT: Hero panel (desktop) — CSS-only, no external image ── */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-1/2 relative overflow-hidden"
-           style={{ background: "linear-gradient(145deg, #7c2d12 0%, #b45309 30%, #c2410c 60%, #ea580c 85%, #f97316 100%)" }}>
+           style={{ background: "linear-gradient(150deg, #0c0500 0%, #3b0d00 28%, #7c2d12 55%, #c2410c 78%, #f97316 100%)" }}>
 
         {/* Large decorative paw — bottom-right anchor */}
         <svg className="absolute -bottom-10 -right-10 w-80 h-80 opacity-[0.12]" fill="white" viewBox="0 0 100 100" aria-hidden="true">
@@ -628,6 +628,21 @@ export default function Login({ onLogin, initialHint }) {
             <span className="text-white font-extrabold text-2xl tracking-tight">PET<span className="text-orange-400">club</span></span>
           </div>
           <div>
+            {/* Trust stats strip */}
+            <div className="flex flex-wrap gap-x-6 gap-y-2 mb-6">
+              {[
+                { icon: "🐾", val: "50,000+", label: "Pets Served" },
+                { icon: "✅", val: "1,200+",  label: "Verified Pros" },
+                { icon: "📍", val: "100+",    label: "Cities" },
+                { icon: "⭐", val: "4.9",     label: "Rating" },
+              ].map(s => (
+                <div key={s.label} className="flex items-center gap-1.5">
+                  <span className="text-base">{s.icon}</span>
+                  <span className="text-white font-black text-sm">{s.val}</span>
+                  <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>{s.label}</span>
+                </div>
+              ))}
+            </div>
             <div className="flex flex-wrap gap-2 mb-6">
               {["✂️ Grooming","🐕‍🦺 Training","🏥 Vet Care","🦮 Dog Walking","🏠 Boarding"].map(s => (
                 <span key={s} className="text-xs font-semibold text-white bg-white/15 border border-white/20 px-3 py-1.5 rounded-full backdrop-blur-sm">{s}</span>

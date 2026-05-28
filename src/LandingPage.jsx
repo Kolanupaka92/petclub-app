@@ -264,7 +264,7 @@ export default function LandingPage({ onGetStarted }) {
   const scrollToServices = () => { servicesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); setMobileOpen(false); };
 
   return (
-    <div style={{ minHeight: "100vh", background: DARK, fontFamily: "system-ui, -apple-system, sans-serif", overflowX: "hidden", color: "white" }}>
+    <div style={{ minHeight: "100vh", background: DARK, fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", overflowX: "hidden", color: "white" }}>
 
       {/* ══ NAVBAR ══ */}
       <nav style={{
@@ -365,9 +365,12 @@ export default function LandingPage({ onGetStarted }) {
 
         <div style={{ maxWidth: 1120, margin: "0 auto", display: "flex", alignItems: "center", gap: 56, flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 1 }}>
           <div style={{ flex: "1 1 420px", maxWidth: 560, minWidth: 0 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 100, padding: "5px 14px", marginBottom: 28 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 8px #22c55e" }}/>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>Now live · India &amp; USA</span>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.20)", borderRadius: 100, padding: "5px 14px", marginBottom: 28, backdropFilter: "blur(8px)" }}>
+              <img src="https://flagcdn.com/20x15/in.png" alt="India" style={{ borderRadius: 2 }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,220,180,1)" }}>India's #1 Pet Care Platform</span>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>·</span>
+              <img src="https://flagcdn.com/20x15/us.png" alt="USA" style={{ borderRadius: 2 }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,220,180,1)" }}>Now in USA</span>
             </div>
 
             <h1 style={{ fontSize: "clamp(36px, 5vw, 58px)", fontWeight: 900, lineHeight: 1.08, color: "white", margin: "0 0 22px", letterSpacing: "-0.03em", textShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
@@ -382,9 +385,9 @@ export default function LandingPage({ onGetStarted }) {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 44 }}>
               <button
                 onClick={() => onGetStarted("customer")}
-                style={{ padding: "16px 34px", background: "white", color: ORANGE2, fontWeight: 900, fontSize: 15, border: "none", borderRadius: 16, cursor: "pointer", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", transition: "transform 0.15s, box-shadow 0.15s" }}
-                onMouseOver={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 14px 40px rgba(0,0,0,0.35)"; }}
-                onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.25)"; }}
+                style={{ padding: "16px 34px", background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`, color: "white", fontWeight: 900, fontSize: 15, border: "none", borderRadius: 16, cursor: "pointer", boxShadow: `0 8px 32px ${ORANGE}55`, transition: "transform 0.15s, box-shadow 0.15s" }}
+                onMouseOver={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 14px 40px ${ORANGE}77`; }}
+                onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 8px 32px ${ORANGE}55`; }}
               >Book a Service 🐾</button>
               <button
                 onClick={scrollToHow}
@@ -396,10 +399,10 @@ export default function LandingPage({ onGetStarted }) {
 
             <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
               {[
-                { v: "50K+",     l: "Happy Pets" },
-                { v: "4.9★",    l: "Avg Rating" },
-                { v: "Same-day", l: "Bookings" },
-                { v: "🇮🇳🇺🇸",  l: "India & USA" },
+                { v: "50,000+", l: "Happy Pets" },
+                { v: "1,200+",  l: "Verified Pros" },
+                { v: "100+",    l: "Cities" },
+                { v: "4.9★",    l: "App Rating" },
               ].map(s => (
                 <div key={s.l}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: "white" }}>{s.v}</div>
@@ -424,11 +427,11 @@ export default function LandingPage({ onGetStarted }) {
       }}>
         <div style={{ maxWidth: 1120, margin: "0 auto", display: "flex", gap: 0, flexWrap: "wrap", justifyContent: "space-around", alignItems: "center" }}>
           {[
-            { icon: "⭐", value: "4.9 / 5", label: "Average Rating" },
-            { icon: "✅", value: "100%", label: "Background Checked" },
-            { icon: "📍", value: "Live GPS", label: "Every Booking" },
-            { icon: "⚡", value: "Same-Day", label: "Bookings Available" },
-            { icon: "🇮🇳🇺🇸", value: "2 Countries", label: "India & USA" },
+            { icon: "🐾", value: "50,000+",  label: "Pets Served" },
+            { icon: "✅", value: "1,200+",   label: "Verified Pros" },
+            { icon: "📍", value: "100+",     label: "Cities" },
+            { icon: "⭐", value: "4.9 / 5",  label: "App Rating" },
+            { icon: "🗺️", value: "Live GPS", label: "Every Booking" },
           ].map((s, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px" }}>
               <span style={{ fontSize: 20 }}>{s.icon}</span>
@@ -452,16 +455,16 @@ export default function LandingPage({ onGetStarted }) {
             <p style={{ fontSize: 14, color: "#92400e", margin: 0 }}>All at-home or doorstep. No travel, no stress — for you or your pet.</p>
           </div>
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center" }}>
-            <ServiceCard icon="✂️" title="Dog Grooming" badge="Most Popular"
-              desc="Professional bath, haircut, nail trim, and ear cleaning. At-home or mobile grooming sessions." />
+            <ServiceCard icon="✂️" title="Grooming" badge="Most Popular"
+              desc="Professional bath, haircut, nail trim & ear cleaning — for dogs AND cats. Certified groomers at your doorstep." />
             <ServiceCard icon="🐕‍🦺" title="Dog Training"
-              desc="Obedience, behavior correction, agility, and puppy socialisation. Certified trainers at your home." />
+              desc="Obedience, behaviour correction, agility & puppy socialisation by certified trainers. At-home sessions." />
             <ServiceCard icon="🦮" title="Dog Walking" isNew
-              desc="GPS-tracked daily or scheduled walks by trained handlers. Live map so you see exactly where your dog is." />
+              desc="GPS-tracked daily or scheduled walks by verified handlers. Live map so you watch exactly where your dog is." />
             <ServiceCard icon="🏠" title="Pet Boarding" isNew
-              desc="Cage-free home-based boarding with verified hosts. Your pet stays in a real home, not a kennel." />
-            <ServiceCard icon="🏥" title="Vet Consultation" badge="Coming Soon" badgeColor="#3b82f6"
-              desc="At-home vet visits, vaccinations, and check-ups. Consult a verified vet without leaving your home." />
+              desc="Cage-free home boarding with verified hosts — for dogs & cats. Daily photo updates guaranteed." />
+            <ServiceCard icon="🏥" title="Vet Care" badge="Cats too!" badgeColor="#8b5cf6"
+              desc="In-home vet visits, vaccinations & digital health records for cats and dogs. No clinic trip needed." />
           </div>
         </div>
       </section>
@@ -715,7 +718,7 @@ export default function LandingPage({ onGetStarted }) {
             PET<span style={{ color: ORANGE }}>club</span>
           </span>
         </div>
-        <div style={{ fontSize: 11, color: "#3d1f00" }}>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
           © {new Date().getFullYear()} PETclub · United States &amp; India · All rights reserved
         </div>
         <div style={{ display: "flex", gap: 16 }}>
@@ -724,9 +727,9 @@ export default function LandingPage({ onGetStarted }) {
             { label: "Privacy Policy",   href: "/privacy.html" },
           ].map(({ label, href }) => (
             <a key={label} href={href} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 11, color: "#6b4c2a", textDecoration: "none" }}
+              style={{ fontSize: 11, color: "rgba(255,255,255,0.40)", textDecoration: "none" }}
               onMouseEnter={e => e.target.style.color = ORANGE}
-              onMouseLeave={e => e.target.style.color = "#6b4c2a"}>
+              onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.40)"}>
               {label}
             </a>
           ))}
