@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.25.0...v1.26.0) (2026-05-28)
+
+
+### Features
+
+* **e2e:** add full Playwright test suite with graceful Firebase skip ([78c5e09](https://github.com/Kolanupaka92/petclub-app/commit/78c5e09a2707821635d901b6f12774a17ce89309))
+
 # [1.25.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.24.0...v1.25.0) (2026-05-28)
 
 
