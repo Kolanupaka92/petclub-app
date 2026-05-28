@@ -1,3 +1,10 @@
+## [1.21.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.21.2...v1.21.3) (2026-05-28)
+
+
+### Bug Fixes
+
+* JOIN AS A PRO card opens professional sign-up instead of mailto ([7f28fab](https://github.com/Kolanupaka92/petclub-app/commit/7f28fabfc468bbcfda581c07d1f07883d105d56b))
+
 ## [1.21.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.21.1...v1.21.2) (2026-05-28)
 
 
