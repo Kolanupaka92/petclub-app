@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.21.0...v1.21.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* replace external hero image with CSS gradient + SVG paw art ([3a5f2dc](https://github.com/Kolanupaka92/petclub-app/commit/3a5f2dc8907e1dbface1bd6f75eaa09b310e578d))
+
 # [1.21.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.20.4...v1.21.0) (2026-05-28)
 
 
