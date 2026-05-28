@@ -1928,6 +1928,12 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [loyaltySubmitting,   setLoyaltySubmitting]   = useState(false);
   const [loyaltyStats,        setLoyaltyStats]        = useState(null);
   const [loyaltyStatsLoading, setLoyaltyStatsLoading] = useState(false);
+
+  /* ── Revenue Reports state ── */
+  const [revenueData,    setRevenueData]    = useState(null);
+  const [revenueLoading, setRevenueLoading] = useState(false);
+  const [revenueFrom,    setRevenueFrom]    = useState(() => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0,10); });
+  const [revenueTo,      setRevenueTo]      = useState(() => new Date().toISOString().slice(0,10));
   // PETclub operates exclusively in India — all platform revenue is in INR.
   // Admin's phone may be a non-Indian number but the currency is always ₹.
   const currencySymbol = "₹";
@@ -2145,12 +2151,13 @@ const AdminDashboard = ({ session, onLogout }) => {
 
   const NAV = [
     { id:"overview", icon:"📊", label:"Overview" },
-    { id:"live",     icon:"🗺️", label:"Live Trips", badge: bookings.filter(b=>["on_the_way","in_progress"].includes(b.assignment_status)).length || 0 },
+    { id:"live",     icon:"🗺️", label:"Live",     badge: bookings.filter(b=>["on_the_way","in_progress"].includes(b.assignment_status)).length || 0 },
     { id:"verify",   icon:"🔍", label:"Verify",   badge: pending.length },
     { id:"users",    icon:"👥", label:"Users" },
     { id:"bookings", icon:"📅", label:"Bookings" },
+    { id:"reports",  icon:"📈", label:"Reports" },
     { id:"loyalty",  icon:"🎁", label:"Loyalty" },
-    { id:"dbhealth", icon:"🗄️", label:"DB Health" },
+    { id:"dbhealth", icon:"🗄️", label:"DB" },
   ];
 
   if (loading) return <Spinner full/>;
@@ -2223,9 +2230,13 @@ const AdminDashboard = ({ session, onLogout }) => {
               {/* ── KPI Cards ── */}
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <StatCard icon="👥" label="Total Users"    value={stats?.users ?? users.length}  gradient="bg-gradient-to-br from-blue-500 to-blue-700"     onClick={() => setView("users")}/>
-                <StatCard icon="✅" label="Verified Pros"  value={stats?.verified_pros ?? 0}     gradient="bg-gradient-to-br from-emerald-500 to-teal-600"/>
+                <StatCard icon="✅" label="Verified Pros"  value={stats?.verified_pros ?? 0}     gradient="bg-gradient-to-br from-emerald-500 to-teal-600"  onClick={() => setView("users")}/>
                 <StatCard icon="⏳" label="Pending Review" value={pending.length} sub={pending.length > 0 ? "Needs action" : "All clear!"} gradient="bg-gradient-to-br from-amber-500 to-orange-500" onClick={() => pending.length && setView("verify")}/>
-                <StatCard icon="📅" label="Total Bookings" value={bookings.length}                gradient="bg-gradient-to-br from-violet-500 to-purple-600"  onClick={() => setView("bookings")}/>
+                <StatCard icon="🗺️" label="Live Trips"     value={bookings.filter(b=>["on_the_way","in_progress"].includes(b.assignment_status)).length} sub={bookings.filter(b=>["on_the_way","in_progress"].includes(b.assignment_status)).length > 0 ? "Active now" : "All quiet"} gradient="bg-gradient-to-br from-violet-500 to-purple-600" onClick={() => setView("live")}/>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <StatCard icon="📅" label="Total Bookings" value={bookings.length}  gradient="bg-gradient-to-br from-gray-600 to-gray-800" onClick={() => setView("bookings")}/>
+                <StatCard icon="🏁" label="Completion Rate" value={bookings.length ? `${Math.round(bookings.filter(b=>b.status==="completed").length/bookings.length*100)}%` : "—"} sub={`${bookings.filter(b=>b.status==="completed").length} done`} gradient="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={() => setView("bookings")}/>
               </div>
               {/* Revenue card — full width */}
               <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-4 mb-5">
@@ -2261,21 +2272,33 @@ const AdminDashboard = ({ session, onLogout }) => {
                 const groomers   = users.filter(u => u.professional_profiles?.[0]?.sub_role === "Groomer").length;
                 const trainers   = users.filter(u => u.professional_profiles?.[0]?.sub_role === "Trainer").length;
                 const vets       = users.filter(u => u.professional_profiles?.[0]?.sub_role === "Vet").length;
+                const walkers    = users.filter(u => u.professional_profiles?.[0]?.sub_role === "Walker").length;
+                const boarders   = users.filter(u => u.professional_profiles?.[0]?.sub_role === "Boarding").length;
                 const total      = users.length || 1;
+                const pros       = groomers + trainers + vets + walkers + boarders;
                 return (
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4">
-                    <h2 className="font-bold text-gray-800 mb-3">User Mix</h2>
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="font-bold text-gray-800">User Mix</h2>
+                      <div className="flex gap-3 text-xs text-gray-500">
+                        <span><span className="font-bold text-blue-600">{customers}</span> owners</span>
+                        <span><span className="font-bold text-violet-600">{pros}</span> pros</span>
+                        <span className="font-bold text-gray-700">{total} total</span>
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       {[
                         { label:"🐕 Pet Owners", count:customers,  color:"bg-blue-400",   pct:Math.round(customers/total*100) },
                         { label:"✂️ Groomers",   count:groomers,   color:"bg-violet-400", pct:Math.round(groomers/total*100) },
                         { label:"🐕‍🦺 Trainers",   count:trainers,   color:"bg-indigo-400", pct:Math.round(trainers/total*100) },
                         { label:"🏥 Vets",        count:vets,       color:"bg-emerald-400",pct:Math.round(vets/total*100) },
+                        { label:"🦮 Walkers",     count:walkers,    color:"bg-green-400",  pct:Math.round(walkers/total*100) },
+                        { label:"🏠 Boarders",    count:boarders,   color:"bg-amber-400",  pct:Math.round(boarders/total*100) },
                       ].map(row => (
                         <div key={row.label} className="flex items-center gap-3">
                           <span className="text-xs font-medium text-gray-600 w-28 shrink-0">{row.label}</span>
                           <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                            <div className={`h-2 rounded-full ${row.color} transition-all duration-500`} style={{ width: `${row.pct}%` }}/>
+                            <div className={`h-2 rounded-full ${row.color} transition-all duration-500`} style={{ width: `${row.pct || 0}%` }}/>
                           </div>
                           <span className="text-xs font-bold text-gray-700 w-8 text-right">{row.count}</span>
                         </div>
@@ -2751,38 +2774,94 @@ const AdminDashboard = ({ session, onLogout }) => {
           </div>
         )}
 
-        {view === "bookings" && (
+        {view === "bookings" && (() => {
+          const [bSearch,     setBSearch]     = React.useState("");
+          const [bStatus,     setBStatus]     = React.useState("All");
+          const [bService,    setBService]    = React.useState("All");
+          const SERVICE_TYPES = ["All","Groomer","Trainer","Vet","Walker","Boarding"];
+          const STATUS_TABS   = ["All","upcoming","completed","cancelled"];
+          const filtered = bookings.filter(b => {
+            const matchStatus  = bStatus  === "All" || b.status === bStatus;
+            const matchService = bService === "All" || b.service_type === bService;
+            const q = bSearch.trim().toLowerCase();
+            const matchSearch  = !q || (b.users?.name || "").toLowerCase().includes(q) ||
+                                 (b.service_name || b.service_type || "").toLowerCase().includes(q) ||
+                                 (b.users?.phone || "").includes(q);
+            return matchStatus && matchService && matchSearch;
+          });
+          const revenue = filtered.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.total_amount||b.amount||0),0);
+          return (
           <div className="max-w-2xl mx-auto px-5 py-6">
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-extrabold text-gray-800">Bookings</h1>
-              <span className="text-sm text-gray-400">{bookings.length} total</span>
+              <span className="text-sm text-gray-400">{filtered.length} / {bookings.length}</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
+
+            {/* Status summary chips — clickable filters */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
               {[
-                { l:"Upcoming",  v:bookings.filter(b=>b.status==="upcoming").length,                   c:"bg-blue-50 text-blue-700" },
-                { l:"Completed", v:bookings.filter(b=>b.status==="completed").length,                  c:"bg-emerald-50 text-emerald-700" },
-                { l:"Searching", v:bookings.filter(b=>b.assignment_status==="searching").length,       c:"bg-orange-50 text-orange-700" },
-                { l:"Confirmed", v:bookings.filter(b=>b.assignment_status==="confirmed").length,       c:"bg-violet-50 text-violet-700" },
-                { l:"🚗 En Route",v:bookings.filter(b=>["on_the_way","in_progress"].includes(b.assignment_status)).length, c:"bg-amber-50 text-amber-700" },
+                { l:"Upcoming",   v:bookings.filter(b=>b.status==="upcoming").length,   c:"bg-blue-50 text-blue-700",    s:"upcoming" },
+                { l:"Completed",  v:bookings.filter(b=>b.status==="completed").length,  c:"bg-emerald-50 text-emerald-700", s:"completed" },
+                { l:"Searching",  v:bookings.filter(b=>b.assignment_status==="searching").length, c:"bg-orange-50 text-orange-700", s:"All" },
+                { l:"Confirmed",  v:bookings.filter(b=>b.assignment_status==="confirmed").length, c:"bg-violet-50 text-violet-700", s:"All" },
+                { l:"🚗 En Route",v:bookings.filter(b=>["on_the_way","in_progress"].includes(b.assignment_status)).length, c:"bg-amber-50 text-amber-700", s:"All" },
               ].map(s => (
-                <div key={s.l} className={`rounded-xl p-3 text-center ${s.c}`}>
+                <button key={s.l} onClick={() => setBStatus(s.s === bStatus ? "All" : s.s)}
+                  className={`rounded-xl p-3 text-center transition ${s.c} ${bStatus === s.s && s.s !== "All" ? "ring-2 ring-offset-1 ring-current" : ""}`}>
                   <div className="text-lg font-extrabold">{s.v}</div>
                   <div className="text-xs font-semibold opacity-70">{s.l}</div>
-                </div>
+                </button>
               ))}
             </div>
-            {bookings.length === 0 ? <EmptyState icon="📅" title="No bookings yet" desc="Bookings appear here once users start booking."/> : (
+
+            {/* Search */}
+            <div className="relative mb-3">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+              <input value={bSearch} onChange={e => setBSearch(e.target.value)}
+                placeholder="Search by customer name, phone, or service…"
+                className="w-full border border-gray-200 rounded-2xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white transition"/>
+            </div>
+
+            {/* Service type filter */}
+            <div className="flex gap-2 mb-5 overflow-x-auto pb-1 -mx-1 px-1">
+              {SERVICE_TYPES.map(t => (
+                <button key={t} onClick={() => setBService(t)}
+                  className={`text-xs font-semibold px-3 py-2 rounded-full whitespace-nowrap transition shrink-0 ${bService === t ? "bg-orange-500 text-white shadow-sm" : "bg-white border border-gray-200 text-gray-600"}`}>
+                  {t === "All" ? "All Services" : `${({Groomer:"✂️",Trainer:"🐕‍🦺",Vet:"🏥",Walker:"🦮",Boarding:"🏠"})[t]} ${t}`}
+                </button>
+              ))}
+            </div>
+
+            {/* Revenue summary for filtered view */}
+            {filtered.some(b=>b.status==="completed") && (
+              <div className="bg-gray-900 rounded-2xl p-4 mb-4 grid grid-cols-3 gap-3 text-center">
+                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Gross Revenue</div><div className="text-white font-extrabold text-sm mt-0.5">₹{revenue.toLocaleString()}</div></div>
+                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">PETclub (55%)</div><div className="text-orange-400 font-extrabold text-sm mt-0.5">₹{(revenue*0.55).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Providers (45%)</div><div className="text-emerald-400 font-extrabold text-sm mt-0.5">₹{(revenue*0.45).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+              </div>
+            )}
+
+            {filtered.length === 0 ? <EmptyState icon="📅" title="No bookings match" desc="Try adjusting your search or filters."/> : (
               <div className="space-y-3">
-                {bookings.map((b,i) => {
+                {filtered.map((b,i) => {
                   const assignBadge = {
                     confirmed:"✅ Confirmed", searching:"🔍 Searching", offered:"📤 Offered",
                     no_pros_available:"⚠️ No Pros", cancelled:"❌ Cancelled"
                   }[b.assignment_status] || b.assignment_status;
+                  const custName = b.users?.name || b.users?.phone || null;
                   return (
                   <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="font-bold text-sm text-gray-800">{b.service_name || b.service_type || "Service"}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-base">{({Groomer:"✂️",Trainer:"🐕‍🦺",Vet:"🏥",Walker:"🦮",Boarding:"🏠"})[b.service_type] || "🐕"}</span>
+                          <div className="font-bold text-sm text-gray-800 truncate">{b.service_name || b.service_type || "Service"}</div>
+                        </div>
+                        {custName && (
+                          <div className="flex items-center gap-1 text-xs text-blue-600 font-medium mt-0.5">
+                            <span>👤</span><span>{custName}</span>
+                          </div>
+                        )}
                         <div className="text-xs text-gray-400 mt-0.5">{b.scheduled_at ? `${fmtDate(b.scheduled_at)} · ${fmtTime(b.scheduled_at)}` : "—"}</div>
                         {b.assignment_status && (
                           <div className="text-xs text-gray-500 mt-0.5">{assignBadge}</div>
@@ -2820,7 +2899,8 @@ const AdminDashboard = ({ session, onLogout }) => {
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {/* ── 🗺️ LIVE TRIPS OVERVIEW ── */}
         {view === "live" && (() => {
@@ -2958,6 +3038,135 @@ const AdminDashboard = ({ session, onLogout }) => {
             </div>
           );
         })()}
+
+        {/* ══ 📈 REPORTS ═══════════════════════════════════════════════════ */}
+        {view === "reports" && (
+          <div className="max-w-2xl mx-auto px-5 py-6 space-y-5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h1 className="text-xl font-extrabold text-gray-800">📈 Revenue Report</h1>
+                <p className="text-sm text-gray-400 mt-0.5">Earnings by professional — platform vs provider split</p>
+              </div>
+            </div>
+
+            {/* Date range picker */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <h2 className="text-sm font-bold text-gray-700 mb-3">Date Range</h2>
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex-1 min-w-[140px]">
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">From</label>
+                  <input type="date" value={revenueFrom} onChange={e => setRevenueFrom(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"/>
+                </div>
+                <div className="flex-1 min-w-[140px]">
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">To</label>
+                  <input type="date" value={revenueTo} onChange={e => setRevenueTo(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"/>
+                </div>
+                <div className="flex items-end">
+                  <button disabled={revenueLoading}
+                    onClick={async () => {
+                      setRevenueLoading(true);
+                      try { const r = await api.revenueReport(revenueFrom, revenueTo); setRevenueData(r); }
+                      catch (e) { showToast("❌ " + e.message, "error"); }
+                      finally { setRevenueLoading(false); }
+                    }}
+                    className="px-5 py-2.5 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-gray-700 disabled:opacity-60 transition flex items-center gap-2">
+                    {revenueLoading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Loading…</> : "Run Report"}
+                  </button>
+                </div>
+              </div>
+              {/* Quick range presets */}
+              <div className="flex gap-2 mt-3 flex-wrap">
+                {[
+                  { l:"This Month",   fn: () => { const d = new Date(); d.setDate(1); setRevenueFrom(d.toISOString().slice(0,10)); setRevenueTo(new Date().toISOString().slice(0,10)); } },
+                  { l:"Last 7 Days",  fn: () => { const d = new Date(); d.setDate(d.getDate()-7); setRevenueFrom(d.toISOString().slice(0,10)); setRevenueTo(new Date().toISOString().slice(0,10)); } },
+                  { l:"Last 30 Days", fn: () => { const d = new Date(); d.setDate(d.getDate()-30); setRevenueFrom(d.toISOString().slice(0,10)); setRevenueTo(new Date().toISOString().slice(0,10)); } },
+                  { l:"All Time",     fn: () => { setRevenueFrom("2024-01-01"); setRevenueTo(new Date().toISOString().slice(0,10)); } },
+                ].map(p => (
+                  <button key={p.l} onClick={p.fn}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-gray-600 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 transition">
+                    {p.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {!revenueData && !revenueLoading && (
+              <div className="text-center py-12 text-gray-400">
+                <div className="text-5xl mb-3">📈</div>
+                <p className="font-semibold text-gray-500">Select a date range and run the report</p>
+              </div>
+            )}
+
+            {revenueData && (() => {
+              const rows     = revenueData.rows || revenueData.report || [];
+              const summary  = revenueData.summary || {};
+              const gross    = summary.total_gross    ?? rows.reduce((s,r) => s + parseFloat(r.gross_revenue || r.total || 0), 0);
+              const platform = summary.platform_total ?? rows.reduce((s,r) => s + parseFloat(r.platform_fee || 0), 0);
+              const provider = summary.provider_total ?? rows.reduce((s,r) => s + parseFloat(r.provider_earnings || 0), 0);
+              return (
+                <>
+                  {/* Summary banner */}
+                  <div className="bg-gray-900 rounded-2xl p-5 grid grid-cols-3 gap-4 text-center">
+                    <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Gross Revenue</div><div className="text-white text-xl font-extrabold">₹{parseFloat(gross).toLocaleString()}</div></div>
+                    <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">PETclub Net (55%)</div><div className="text-orange-400 text-xl font-extrabold">₹{parseFloat(platform).toLocaleString()}</div></div>
+                    <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Providers (45%)</div><div className="text-emerald-400 text-xl font-extrabold">₹{parseFloat(provider).toLocaleString()}</div></div>
+                  </div>
+
+                  {/* Per-professional breakdown */}
+                  {rows.length > 0 ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                      <div className="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
+                        <h2 className="font-bold text-gray-700 text-sm">By Professional</h2>
+                        <span className="text-xs text-gray-400">{rows.length} professionals</span>
+                      </div>
+                      <div className="divide-y divide-gray-50">
+                        {rows.map((r, i) => {
+                          const rowGross = parseFloat(r.gross_revenue || r.total || 0);
+                          const rowPro   = parseFloat(r.provider_earnings || rowGross * 0.45 || 0);
+                          const rowPlat  = parseFloat(r.platform_fee || rowGross * 0.55 || 0);
+                          return (
+                            <div key={i} className="px-5 py-3.5">
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center text-base shrink-0">
+                                  {({Groomer:"✂️",Trainer:"🐕‍🦺",Vet:"🏥",Walker:"🦮",Boarding:"🏠"})[r.sub_role] || "🧑‍💼"}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-semibold text-sm text-gray-800 truncate">{r.name || r.professional_name || "—"}</div>
+                                  <div className="text-xs text-gray-400">{r.sub_role || "—"} · {r.bookings_count ?? r.count ?? 0} bookings</div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <div className="text-sm font-extrabold text-gray-800">₹{rowGross.toLocaleString()}</div>
+                                  <div className="text-xs text-gray-400">gross</div>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-emerald-50 rounded-lg px-3 py-1.5 flex items-center justify-between">
+                                  <span className="text-xs text-emerald-600 font-medium">Provider gets</span>
+                                  <span className="text-xs font-extrabold text-emerald-700">₹{rowPro.toLocaleString()}</span>
+                                </div>
+                                <div className="bg-orange-50 rounded-lg px-3 py-1.5 flex items-center justify-between">
+                                  <span className="text-xs text-orange-500 font-medium">Platform gets</span>
+                                  <span className="text-xs font-extrabold text-orange-600">₹{rowPlat.toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+                      <div className="text-4xl mb-3">📭</div>
+                      <p className="font-semibold text-gray-500">No completed bookings in this range</p>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        )}
 
         {/* ══ 🎁 LOYALTY ════════════════════════════════════════════════════ */}
         {view === "loyalty" && (() => {
