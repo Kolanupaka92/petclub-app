@@ -205,7 +205,7 @@ function WinCard({ icon, title, body, highlight }) {
 /* ── FAQ accordion ── */
 const FAQS = [
   { q: "How does booking work?", a: "Choose your service, pick a time, add your pet's details — done. You'll get instant confirmation with your pro's photo, rating, and contact number. The whole thing takes under 2 minutes." },
-  { q: "Can I cancel or reschedule?", a: "Yes — free cancellation up to 2 hours before the booking. Reschedule anytime with no fee. If a pro cancels on the day, you get a full refund automatically." },
+  { q: "Can I cancel or reschedule?", a: "Yes — free cancellation up to 4 hours before the booking. Reschedule anytime with no fee. If a pro cancels on the day, you get a full refund automatically." },
   { q: "How are professionals verified?", a: "Every pro submits a government-issued photo ID plus their professional certification. Our team manually reviews and approves each application — no shortcuts. The ✅ Verified badge only shows after that review is complete (typically 24–48 hours)." },
   { q: "What does it cost? Are there hidden fees?", a: "Prices are shown upfront at checkout — no surprises. There's no subscription or platform fee for customers. For professionals, PETclub takes 30% and pays out 70% every Saturday." },
   { q: "Is there a live GPS on every booking?", a: "Yes — not just for dog walking. Every groomer, trainer, and boarding drop-off shows a live map from the moment they start their journey. You also get a push notification when they're 10 minutes away." },
@@ -379,7 +379,7 @@ export default function LandingPage({ onGetStarted }) {
             </h1>
 
             <p style={{ fontSize: 17, color: "rgba(255,255,255,0.80)", lineHeight: 1.75, margin: "0 0 40px", maxWidth: 480 }}>
-              Book verified groomers, trainers, walkers, and vets — then watch them arrive live on a real map. 5 services, one platform, zero stress.
+              Book verified groomers, trainers, walkers, vets and boarders — then watch them arrive live on a real map. One platform, zero stress.
             </p>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 44 }}>
@@ -437,7 +437,7 @@ export default function LandingPage({ onGetStarted }) {
               <span style={{ fontSize: 20 }}>{s.icon}</span>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: "white" }}>{s.value}</div>
-                <div style={{ fontSize: 10, color: "#7c4a1e", fontWeight: 600 }}>{s.label}</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", fontWeight: 600 }}>{s.label}</div>
               </div>
             </div>
           ))}
@@ -456,9 +456,9 @@ export default function LandingPage({ onGetStarted }) {
           </div>
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center" }}>
             <ServiceCard icon="✂️" title="Grooming" badge="Most Popular"
-              desc="Professional bath, haircut, nail trim & ear cleaning — for dogs AND cats. Certified groomers at your doorstep." />
+              desc="Full bath, haircut, nail trim & ear cleaning for dogs and cats. Certified groomers come to your door — no travel stress for you or your pet." />
             <ServiceCard icon="🐕‍🦺" title="Dog Training"
-              desc="Obedience, behaviour correction, agility & puppy socialisation by certified trainers. At-home sessions." />
+              desc="Obedience, behaviour correction, agility & puppy socialisation — certified trainers come to you for at-home sessions." />
             <ServiceCard icon="🦮" title="Dog Walking" isNew
               desc="GPS-tracked daily or scheduled walks by verified handlers. Live map so you watch exactly where your dog is." />
             <ServiceCard icon="🏠" title="Pet Boarding" isNew
