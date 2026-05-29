@@ -1,3 +1,15 @@
+## [1.31.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.31.2...v1.31.3) (2026-05-29)
+
+
+### Bug Fixes
+
+* **admin:** resolve Rules of Hooks violation on Bookings tab ([5c50a7a](https://github.com/Kolanupaka92/petclub-app/commit/5c50a7a1eb6a07d5957f4456d069768d559f257f))
+
+
+### Reverts
+
+* remove brochure UI from customer app and landing page ([2e8c1b6](https://github.com/Kolanupaka92/petclub-app/commit/2e8c1b694de06b8935039681412e01c3cdc1a9f6))
+
 ## [1.31.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.31.1...v1.31.2) (2026-05-29)
 
 
