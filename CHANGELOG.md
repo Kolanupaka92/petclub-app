@@ -1,3 +1,10 @@
+# [1.32.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.31.3...v1.32.0) (2026-05-29)
+
+
+### Features
+
+* **admin:** manual provider assignment with push notification ([8de7712](https://github.com/Kolanupaka92/petclub-app/commit/8de77127ad4c361f000fa4c2b5d30327359d3394))
+
 ## [1.31.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.31.2...v1.31.3) (2026-05-29)
 
 
