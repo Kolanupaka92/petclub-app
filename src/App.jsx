@@ -747,6 +747,8 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [sharingLocId,    setSharingLocId]    = useState(null);  // bookingId being shared
   const [bgWarning,       setBgWarning]       = useState(false); // page-hidden warning
   const [chatBooking,     setChatBooking]     = useState(null);  // booking open in chat
+  const [serviceNotes,    setServiceNotes]    = useState({});    // { [bookingId]: text }
+  const [noShowLoading,   setNoShowLoading]   = useState(null);  // bookingId being marked
   const watchIdRef        = useRef(null);  // watchPosition ID
   const lastSentRef       = useRef(0);     // throttle: min 10s between sends
   const wakeLockRef       = useRef(null);  // Screen Wake Lock sentinel (keeps screen on during transit)
@@ -807,12 +809,13 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   };
 
   // "Mark Complete" — mark service done by professional
-  const markComplete = async (bookingId) => {
+  const markComplete = async (bookingId, notes = "") => {
     try {
-      await api.updateBookingStatus(bookingId, 'completed');
+      await api.updateBookingStatus(bookingId, 'completed', notes ? { service_notes: notes } : {});
       showToast("✅ Service marked as complete!");
       stopLocationSharing();
       setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'completed', assignment_status: 'completed' } : b));
+      setServiceNotes(prev => { const n = { ...prev }; delete n[bookingId]; return n; });
     } catch (e) { showToast("❌ " + (e.message || "Failed to mark complete")); }
   };
 
@@ -1413,10 +1416,34 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                                 Service in progress
                               </div>
                             )}
+                            {/* Service notes input before completing */}
+                            <textarea
+                              value={serviceNotes[b.id] || ""}
+                              onChange={e => setServiceNotes(prev => ({ ...prev, [b.id]: e.target.value }))}
+                              placeholder="Service notes (optional) — shampoo used, coat condition, behaviour…"
+                              rows={2}
+                              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-orange-400 resize-none transition"
+                            />
                             <button
-                              onClick={() => markComplete(b.id)}
+                              onClick={() => markComplete(b.id, serviceNotes[b.id] || "")}
                               className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.97] text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md">
                               ✅ Mark Service Complete
+                            </button>
+                            {/* No-show button — customer not at location */}
+                            <button
+                              disabled={noShowLoading === b.id}
+                              onClick={async () => {
+                                if (!window.confirm("Mark customer as no-show? ₹300 cancellation fee will apply and remainder will be refunded.")) return;
+                                setNoShowLoading(b.id);
+                                try {
+                                  await api.markNoShow(b.id);
+                                  setBookings(prev => prev.map(bk => bk.id === b.id ? { ...bk, status: 'cancelled', assignment_status: 'cancelled' } : bk));
+                                  showToast("Marked as no-show. Customer will be notified.", "success");
+                                } catch (e) { showToast(e.message || "Failed", "error"); }
+                                setNoShowLoading(null);
+                              }}
+                              className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-gray-400 border border-gray-200 rounded-xl py-2 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition disabled:opacity-50">
+                              {noShowLoading === b.id ? "Processing…" : "🚫 Customer No-Show"}
                             </button>
                           </div>
                         ) : (
@@ -1426,6 +1453,24 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                             📍 Share My Location with Customer
                           </button>
                         )
+                      )}
+                      {/* No-show also available when on_the_way (customer might not answer door) */}
+                      {b.assignment_status === "on_the_way" && (
+                        <button
+                          disabled={noShowLoading === b.id}
+                          onClick={async () => {
+                            if (!window.confirm("Mark customer as no-show? ₹300 cancellation fee will apply.")) return;
+                            setNoShowLoading(b.id);
+                            try {
+                              await api.markNoShow(b.id);
+                              setBookings(prev => prev.map(bk => bk.id === b.id ? { ...bk, status: 'cancelled', assignment_status: 'cancelled' } : bk));
+                              showToast("Marked as no-show. Customer notified.", "success");
+                            } catch (e) { showToast(e.message || "Failed", "error"); }
+                            setNoShowLoading(null);
+                          }}
+                          className="mt-2 w-full flex items-center justify-center gap-2 text-xs font-semibold text-gray-400 border border-gray-200 rounded-xl py-2 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition disabled:opacity-50">
+                          🚫 Customer No-Show
+                        </button>
                       )}
                       {/* Chat with customer */}
                       {["confirmed","on_the_way","in_progress","completed"].includes(b.assignment_status) && (
@@ -1565,6 +1610,19 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                 </div>
               )}
               <p className="text-[11px] text-white/50 mt-3">Settled every Saturday via direct bank transfer. 70% of every completed service.</p>
+              {/* Payout request button */}
+              {(earnings?.pending ?? 0) > 0 && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.requestPayout();
+                      showToast("✅ Payout request sent! You'll receive payment within 2 business days.");
+                    } catch (e) { showToast("❌ " + (e.message || "Payout request failed")); }
+                  }}
+                  className="mt-3 w-full bg-white/20 hover:bg-white/30 active:scale-[0.98] text-white font-bold text-sm py-2.5 rounded-xl transition-all">
+                  💰 Request Payout — {currencySymbol}{parseFloat(earnings?.pending ?? 0).toFixed(2)} Pending
+                </button>
+              )}
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -2987,6 +3045,28 @@ const AdminDashboard = ({ session, onLogout }) => {
                         className="mt-3 w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
                         <span>👤</span> Assign Provider
                       </button>
+                    )}
+                    {/* ── Admin cancel button ── */}
+                    {b.status !== "cancelled" && b.status !== "completed" && (
+                      <button
+                        onClick={async () => {
+                          const reason = window.prompt("Reason for cancellation (shown to customer):");
+                          if (reason === null) return; // user dismissed
+                          try {
+                            await api.cancelBooking(b.id, reason);
+                            setBookings(prev => prev.map(bk => bk.id === b.id
+                              ? { ...bk, status: "cancelled", assignment_status: "cancelled" } : bk));
+                            showToast("Booking cancelled.", "success");
+                          } catch (e) { showToast(e.message || "Cancel failed", "error"); }
+                        }}
+                        className="mt-2 w-full flex items-center justify-center gap-2 text-xs font-semibold text-gray-400 border border-gray-200 rounded-xl py-2 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition">
+                        ✕ Cancel Booking
+                      </button>
+                    )}
+                    {b.status === "cancelled" && b.refund_amount != null && (
+                      <div className="mt-2 text-[10px] text-gray-400 bg-red-50 rounded-lg px-2.5 py-1.5">
+                        Cancelled · {b.cancelled_by || "—"} · Fee: {currencySymbol}{parseFloat(b.cancellation_fee||0).toFixed(2)} · Refund: {currencySymbol}{parseFloat(b.refund_amount||0).toFixed(2)} · {b.refund_status || "pending"}
+                      </div>
                     )}
                   </div>
                   );

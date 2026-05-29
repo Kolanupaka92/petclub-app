@@ -78,7 +78,10 @@ export const api = {
   // Bookings
   getBookings: () => req('GET', '/bookings', null, true),
   createBooking: (data) => req('POST', '/bookings', data, true),
-  updateBookingStatus: (id, status) => req('PUT', `/bookings/${id}/status`, { status }, true),
+  updateBookingStatus: (id, status, extras = {}) => req('PUT', `/bookings/${id}/status`, { status, ...extras }, true),
+  cancelBooking:       (id, reason = '') => req('PUT', `/bookings/${id}/status`, { status: 'cancelled', reason }, true),
+  markNoShow:          (id) => req('PUT', `/bookings/${id}/status`, { status: 'no_show' }, true),
+  getCancelPreview:    (id) => req('GET', `/bookings/${id}/cancel-preview`, null, true),
   respondBooking: (id, action) => req('POST', `/bookings/${id}/respond`, { action }, true),
   getIncomingBookings: () => req('GET', '/bookings/incoming', null, true),
   adminAssignBooking: (id, professionalId) => req('PUT', `/bookings/${id}/assign`, { professionalId }, true),
@@ -108,7 +111,8 @@ export const api = {
   getProfessionals: (city, role) =>
     req('GET', `/professionals?city=${city || ''}&sub_role=${role || ''}`),
   getMyProProfile: () => req('GET', '/professionals/me', null, true),
-  getEarnings: () => req('GET', '/professionals/earnings', null, true),
+  getEarnings:    () => req('GET',  '/professionals/earnings', null, true),
+  requestPayout:  () => req('POST', '/professionals/payout',   {},   true),
   updateMyProProfile: (data) => req('PUT', '/professionals/me', data, true),
   uploadIdPhoto: (data) => req('POST', '/professionals/upload-id-photo', data, true),
   setAvailability: (is_available) => req('PUT', '/professionals/availability', { is_available }, true),

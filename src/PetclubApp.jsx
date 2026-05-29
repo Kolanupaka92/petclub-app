@@ -203,7 +203,10 @@ export default function PetclubApp({ session, onLogout }) {
   const [ratedBookings, setRatedBookings] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem("petclub_rated") || "[]")); } catch { return new Set(); }
   });
-  const [chatBooking, setChatBooking] = useState(null); // booking being chatted about
+  const [chatBooking,   setChatBooking]   = useState(null);  // booking open in chat
+  const [cancelModal,   setCancelModal]   = useState(null);  // { booking, preview: null | {...} }
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelReason,  setCancelReason]  = useState("");
   // O-3 fix: live service catalog fetched from backend — overrides fallback constants above.
   // Shape: { platform_discount, grooming: { packages, addons, pet_sizes }, training: { packages } }
   const [catalog, setCatalog] = useState(null);
@@ -729,8 +732,20 @@ export default function PetclubApp({ session, onLogout }) {
                       </div>
                     )}
                     {b.assignment_status === "no_pros_available" && (
-                      <div className="text-xs text-gray-400 bg-gray-50 rounded-lg p-2.5 text-center mt-3">
-                        No professionals available in your area right now. We'll keep searching and notify you via email.
+                      <div className="mt-3 space-y-2">
+                        <div className="text-xs text-gray-400 bg-gray-50 rounded-lg p-2.5 text-center">
+                          No professionals available right now. Try rebooking for a different time.
+                        </div>
+                        <button
+                          onClick={() => {
+                            const svc = SERVICES.find(s => s.role === b.service_type);
+                            setBookingForm(f => ({ ...f, service_type: b.service_type, service_name: b.service_name || "", pet_id: b.pet_id || "", city: b.city || "", address: "" }));
+                            setBookingStep(svc ? 2 : 1);
+                            setModal("bookService");
+                          }}
+                          className="w-full flex items-center justify-center gap-2 text-xs font-bold text-orange-600 border border-orange-200 bg-orange-50 rounded-xl py-2 hover:bg-orange-100 transition">
+                          🔁 Try Again — Pick a New Time
+                        </button>
                       </div>
                     )}
                     {/* Chat with provider — available once a pro is assigned */}
@@ -740,6 +755,30 @@ export default function PetclubApp({ session, onLogout }) {
                         className="mt-3 w-full flex items-center justify-center gap-2 text-xs font-bold text-blue-600 border border-blue-200 bg-blue-50 rounded-xl py-2 hover:bg-blue-100 transition">
                         <span>💬</span> Chat with Provider
                       </button>
+                    )}
+                    {/* Cancel booking — only for active (not yet completed/cancelled) */}
+                    {!["completed","cancelled"].includes(b.status) && b.assignment_status !== "no_pros_available" && (
+                      <button
+                        onClick={async () => {
+                          setCancelReason("");
+                          setCancelModal({ booking: b, preview: null });
+                          try {
+                            const p = await api.getCancelPreview(b.id);
+                            setCancelModal(prev => prev ? { ...prev, preview: p } : null);
+                          } catch { setCancelModal(prev => prev ? { ...prev, preview: { error: true } } : null); }
+                        }}
+                        className="mt-2 w-full flex items-center justify-center gap-2 text-xs font-semibold text-gray-400 border border-gray-200 rounded-xl py-2 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition">
+                        ✕ Cancel Booking
+                      </button>
+                    )}
+                    {/* Cancelled booking info */}
+                    {b.status === "cancelled" && (b.refund_amount != null || b.cancellation_fee != null) && (
+                      <div className="mt-3 bg-red-50 border border-red-100 rounded-xl p-3 text-xs space-y-0.5">
+                        <div className="font-bold text-red-700">Booking Cancelled</div>
+                        {b.cancellation_fee > 0 && <div className="text-red-600">Cancellation fee: ₹{parseFloat(b.cancellation_fee).toFixed(2)}</div>}
+                        {b.refund_amount > 0 && <div className="text-emerald-700 font-semibold">Refund: ₹{parseFloat(b.refund_amount).toFixed(2)} — {b.refund_status === 'processed' ? 'Processed ✓' : 'Pending (2-5 days)'}</div>}
+                        {b.cancelled_by === "no_show" && <div className="text-gray-500">Reason: Customer no-show at location</div>}
+                      </div>
                     )}
                     {/* Rate session button for completed bookings */}
                     {b.status === "completed" && !ratedBookings.has(b.id) && (
@@ -2267,6 +2306,74 @@ export default function PetclubApp({ session, onLogout }) {
             <button onClick={onLogout} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-2xl text-sm hover:bg-red-600">Sign Out</button>
           </div>
         </Modal>
+      )}
+
+      {/* Cancel booking modal */}
+      {cancelModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-2">❌</div>
+              <h2 className="text-lg font-extrabold text-gray-900">Cancel Booking?</h2>
+              <p className="text-sm text-gray-500 mt-1">{cancelModal.booking.service_name || cancelModal.booking.service_type} · {fmtDate(cancelModal.booking.scheduled_at)}</p>
+            </div>
+
+            {/* Refund preview */}
+            {!cancelModal.preview ? (
+              <div className="bg-gray-50 rounded-2xl p-4 text-center text-sm text-gray-400 mb-4">Calculating refund…</div>
+            ) : cancelModal.preview.error ? (
+              <div className="bg-red-50 rounded-2xl p-4 text-center text-sm text-red-500 mb-4">Could not load refund details. You can still cancel.</div>
+            ) : (
+              <div className={`rounded-2xl p-4 mb-4 ${cancelModal.preview.fee_free ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"}`}>
+                {cancelModal.preview.fee_free ? (
+                  <>
+                    <p className="text-sm font-extrabold text-emerald-700">✅ Full Refund — ₹{cancelModal.preview.total_amount?.toFixed(2)}</p>
+                    <p className="text-xs text-emerald-600 mt-1">You're cancelling more than 2 hours in advance. No cancellation fee.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-extrabold text-amber-800">⚠️ Cancellation Fee Applies</p>
+                    <div className="mt-2 space-y-1 text-xs text-amber-700">
+                      <div className="flex justify-between"><span>Total paid</span><span>₹{cancelModal.preview.total_amount?.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-red-600"><span>Cancellation fee (under 2hr)</span><span>−₹{cancelModal.preview.cancellation_fee?.toFixed(2)}</span></div>
+                      <div className="flex justify-between font-extrabold text-amber-900 border-t border-amber-300 pt-1 mt-1"><span>Refund</span><span>₹{cancelModal.preview.refund_amount?.toFixed(2)}</span></div>
+                    </div>
+                    <p className="text-[10px] text-amber-600 mt-2">Refund processed within 2–5 business days after cancellation.</p>
+                  </>
+                )}
+              </div>
+            )}
+
+            <p className="text-[10px] text-gray-400 text-center mb-4">Note: Rescheduling is not available. This booking will be permanently cancelled.</p>
+
+            <div className="flex gap-3">
+              <button onClick={() => setCancelModal(null)}
+                className="flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-2xl text-sm hover:bg-gray-50 transition">
+                Keep Booking
+              </button>
+              <button
+                disabled={cancelLoading}
+                onClick={async () => {
+                  setCancelLoading(true);
+                  try {
+                    await api.cancelBooking(cancelModal.booking.id, cancelReason);
+                    setMyBookings(prev => prev.map(b => b.id === cancelModal.booking.id
+                      ? { ...b, status: "cancelled", assignment_status: "cancelled",
+                          cancellation_fee: cancelModal.preview?.cancellation_fee ?? 0,
+                          refund_amount: cancelModal.preview?.refund_amount ?? 0,
+                          refund_status: "pending", cancelled_by: "customer" }
+                      : b));
+                    showToast("Booking cancelled. Refund will be processed within 2–5 days.", "success");
+                    setCancelModal(null);
+                  } catch (e) { showToast(e.message || "Cancellation failed", "error"); }
+                  setCancelLoading(false);
+                }}
+                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold py-3 rounded-2xl text-sm transition">
+                {cancelLoading ? "Cancelling…" : "Yes, Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* In-app chat with provider */}
