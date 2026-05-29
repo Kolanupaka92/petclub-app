@@ -723,6 +723,7 @@ export default function LandingPage({ onGetStarted }) {
         </div>
         <div style={{ display: "flex", gap: 16 }}>
           {[
+            { label: "Brochure",         href: "/PETclub-Brochure.pdf" },
             { label: "Terms of Service", href: "/terms.html" },
             { label: "Privacy Policy",   href: "/privacy.html" },
           ].map(({ label, href }) => (
