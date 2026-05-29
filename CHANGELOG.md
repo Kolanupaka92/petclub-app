@@ -1,3 +1,10 @@
+## [1.31.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.31.0...v1.31.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* **cards:** update titles + premium design improvements ([262d8f6](https://github.com/Kolanupaka92/petclub-app/commit/262d8f6c9c62587046e3674486069c6d7ea3993e))
+
 # [1.31.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.30.1...v1.31.0) (2026-05-29)
 
 
