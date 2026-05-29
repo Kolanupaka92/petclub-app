@@ -1,3 +1,10 @@
+# [1.34.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.33.2...v1.34.0) (2026-05-29)
+
+
+### Features
+
+* **pets:** auto-show completed bookings in pet service history ([3dc5f3c](https://github.com/Kolanupaka92/petclub-app/commit/3dc5f3c8f2d701161073b8febcaccb4d1a5c7e4f))
+
 ## [1.33.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.33.1...v1.33.2) (2026-05-29)
 
 
