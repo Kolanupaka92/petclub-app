@@ -1952,6 +1952,44 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [bStatus,  setBStatus]  = useState("All");
   const [bService, setBService] = useState("All");
 
+  /* ── Manual assignment modal ── */
+  const [assignModal,    setAssignModal]    = useState(null);  // booking object being assigned
+  const [assignPros,     setAssignPros]     = useState([]);
+  const [assignLoading,  setAssignLoading]  = useState(false);
+  const [assignSending,  setAssignSending]  = useState(null);  // professionalId being sent
+  const [assignSearch,   setAssignSearch]   = useState("");
+
+  const openAssignModal = async (booking) => {
+    setAssignModal(booking);
+    setAssignPros([]);
+    setAssignSearch("");
+    setAssignLoading(true);
+    const roleMap = { Groomer:"Groomer", Trainer:"Trainer", Vet:"Vet", Walker:"Walker", Boarding:"Boarding" };
+    const subRole = roleMap[booking.service_type] || "";
+    try {
+      const res = await api.getProfessionals("", subRole);
+      setAssignPros(res.professionals || []);
+    } catch { setAssignPros([]); }
+    setAssignLoading(false);
+  };
+
+  const doAssign = async (professionalId, proName) => {
+    if (!assignModal) return;
+    setAssignSending(professionalId);
+    try {
+      await api.adminAssignBooking(assignModal.id, professionalId);
+      setBookings(prev => prev.map(b => b.id === assignModal.id
+        ? { ...b, assignment_status: "offered", professional_id: professionalId }
+        : b
+      ));
+      showToast(`✅ Assigned to ${proName} — notification sent!`, "success");
+      setAssignModal(null);
+    } catch (e) {
+      showToast(e.message || "Assignment failed", "error");
+    }
+    setAssignSending(null);
+  };
+
   useEffect(() => {
     Promise.all([
       api.getAdminStats().catch(() => null),
@@ -2895,6 +2933,15 @@ const AdminDashboard = ({ session, onLogout }) => {
                         )}
                       </div>
                     )}
+
+                    {/* ── Manual assign button — shown when no pro found yet ── */}
+                    {["no_pros_available","searching",""].includes(b.assignment_status || "") && b.status !== "cancelled" && (
+                      <button
+                        onClick={() => openAssignModal(b)}
+                        className="mt-3 w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
+                        <span>👤</span> Assign Provider
+                      </button>
+                    )}
                   </div>
                   );
                 })}
@@ -3718,6 +3765,76 @@ const AdminDashboard = ({ session, onLogout }) => {
             </button>
           </div>
         </Modal>
+      )}
+
+      {/* ══ ASSIGN PROVIDER MODAL ══════════════════════════════════════════════ */}
+      {assignModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <div>
+                <h2 className="text-base font-extrabold text-gray-900">Assign Provider</h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {assignModal.service_name || assignModal.service_type} · {assignModal.users?.name || "Customer"} · {fmtDate(assignModal.scheduled_at)}
+                </p>
+              </div>
+              <button onClick={() => setAssignModal(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+            </div>
+
+            {/* Search */}
+            <div className="px-5 pt-4 pb-2">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+                <input
+                  value={assignSearch}
+                  onChange={e => setAssignSearch(e.target.value)}
+                  placeholder="Search by name or city…"
+                  className="w-full border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"/>
+              </div>
+            </div>
+
+            {/* Pro list */}
+            <div className="flex-1 overflow-y-auto px-5 pb-5">
+              {assignLoading ? (
+                <div className="py-10 text-center text-gray-400 text-sm">Loading providers…</div>
+              ) : assignPros.length === 0 ? (
+                <div className="py-10 text-center">
+                  <div className="text-3xl mb-2">😔</div>
+                  <p className="text-sm font-semibold text-gray-600">No available {assignModal.service_type}s found</p>
+                  <p className="text-xs text-gray-400 mt-1">Try approving more providers or check availability settings</p>
+                </div>
+              ) : (
+                <div className="space-y-2 mt-1">
+                  {assignPros
+                    .filter(p => {
+                      const q = assignSearch.trim().toLowerCase();
+                      return !q || (p.users?.name || "").toLowerCase().includes(q) || (p.city || "").toLowerCase().includes(q);
+                    })
+                    .map(p => (
+                      <div key={p.id} className="flex items-center justify-between bg-gray-50 rounded-2xl px-4 py-3 hover:bg-orange-50 transition">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{({Groomer:"✂️",Trainer:"🐕‍🦺",Vet:"🏥",Walker:"🦮",Boarding:"🏠"})[p.sub_role] || "👤"}</span>
+                            <span className="font-bold text-sm text-gray-800 truncate">{p.users?.name || "—"}</span>
+                            {p.rating && <span className="text-[10px] bg-amber-50 text-amber-600 font-bold px-1.5 py-0.5 rounded-full">⭐ {p.rating}</span>}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-0.5 ml-7">{p.sub_role} · {p.city || "—"}{p.area ? `, ${p.area}` : ""}</div>
+                          {p.service_areas && <div className="text-[10px] text-gray-400 ml-7 truncate">{p.service_areas}</div>}
+                        </div>
+                        <button
+                          disabled={assignSending === p.id}
+                          onClick={() => doAssign(p.id, p.users?.name || p.id)}
+                          className="ml-3 shrink-0 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl transition active:scale-95">
+                          {assignSending === p.id ? "…" : "Assign"}
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
