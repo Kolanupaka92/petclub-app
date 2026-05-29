@@ -1,3 +1,10 @@
+# [1.29.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.28.0...v1.29.0) (2026-05-29)
+
+
+### Features
+
+* **brochures:** add pricing brochure + use official PETclub logo ([83d72a0](https://github.com/Kolanupaka92/petclub-app/commit/83d72a0ab5cc285e013ca1baba3747a1f2414850))
+
 # [1.28.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.27.0...v1.28.0) (2026-05-29)
 
 
