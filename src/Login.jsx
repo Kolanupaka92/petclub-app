@@ -434,17 +434,29 @@ export default function Login({ onLogin, initialHint }) {
         res = await api.verifyPhoneOTP(pendingPhone, c);
       }
       saveToken(res.token);
-      if (mode === "signup" || res.isNew || res.user?.role === "pending_role") {
-        // Pre-fill email from the login-step email field (used when loginMethod==="email")
+      // Show profile form ONLY when the DB says the user hasn't completed signup yet.
+      // Removing `mode === "signup"` from this check fixes the bug where existing users
+      // who accidentally clicked "Sign Up" were forced to re-enter all their info.
+      if (res.isNew || res.user?.role === "pending_role") {
+        // Pre-fill from email login field and from any data already in the DB
         if (email.trim()) {
           setCust(cv => ({ ...cv, email: cv.email || email.trim() }));
-          setPro(p => ({ ...p, email: p.email || email.trim() }));
+          setPro(p  => ({ ...p,  email: p.email  || email.trim() }));
         }
-        // Sign In path (mode==="signin") never sets role — default to "customer"
-        // so the profile step always renders a form instead of blank screen.
-        if (mode !== "signup" && !role) setRole("customer");
+        if (res.user?.name) {
+          setCust(cv => ({ ...cv, name: cv.name || res.user.name }));
+          setPro(p  => ({ ...p,  name: p.name  || res.user.name }));
+        }
+        if (res.user?.email) {
+          setCust(cv => ({ ...cv, email: cv.email || res.user.email }));
+          setPro(p  => ({ ...p,  email: p.email  || res.user.email }));
+        }
+        // If arriving via Sign In with no role chosen yet, default to customer
+        if (!role) setRole("customer");
         setStep("profile");
       } else {
+        // Existing user with a real role — log them in directly regardless of which
+        // button they tapped (Sign In or Sign Up). Their data is already in the DB.
         onLogin({ ...res.user });
       }
     } catch (e) {
