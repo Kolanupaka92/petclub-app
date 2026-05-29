@@ -1,22 +1,22 @@
 /**
  * PETclub E2E shared helpers
  *
- * Login flow:
- *   1. Navigate to /?signin=1  (skips LandingPage, shows Login component)
- *   2. Login renders "start" step — click "Sign In" button
- *   3. "phone" step appears — enter phone number
- *   4. Click "Send OTP" — Firebase sends OTP (test numbers: fixed 123456)
- *   5. OTP input appears — fill 123456
- *   6. Verify button — app navigates to home / role selection
+ * Two login strategies:
  *
- * Firebase test phone numbers (only 2 needed — Firebase allows max 10 slots total):
- *   +91 9999900001 → fixed OTP 123456  (pet owner / customer flow)
- *   +91 9999900002 → fixed OTP 123456  (groomer — covers all SP RBAC checks)
+ * A) Phone OTP via Firebase (loginWithPhone)
+ *    - Uses Firebase test numbers with fixed OTP 123456
+ *    - Subject to Firebase rate limits (~2 OTP/min per number)
+ *    - Only 2 slots: +91 9999900001 (owner) · +91 9999900002 (groomer)
  *
- * NOTE: Firebase Phone Auth requires a reCAPTCHA widget even for test numbers.
- * The invisible reCAPTCHA should pass automatically in headless Chrome.
- * If tests timeout on "Send OTP", set E2E_HEADED=1 to debug visually.
- * Rate limit: ~4 OTP/min per number — wait 60s between runs.
+ * B) Email OTP via Mailinator (loginWithEmail) ← preferred for tests
+ *    - Backend sends real email to @mailinator.com public inbox
+ *    - NO Firebase / SMS involved → no rate limits
+ *    - OTP fetched from Mailinator public web UI by a second Playwright page
+ *    - Use EMAIL_USERS map for test identities
+ *
+ * Firebase test numbers (fallback / UI-only tests):
+ *   +91 9999900001 → fixed OTP 123456  (owner)
+ *   +91 9999900002 → fixed OTP 123456  (groomer)
  */
 
 const API_BASE    = process.env.PETCLUB_API_URL   || 'https://api.mypetclub.app/api';
@@ -43,6 +43,28 @@ export const USERS = {
   groomer: { phone: '9999900002', cc: '91', otp: TEST_OTP, name: 'E2E Groomer', email: 'e2e.groomer@mypetclub.test' },
   trainer: { phone: '9999900002', cc: '91', otp: TEST_OTP, name: 'E2E Trainer', email: 'e2e.trainer@mypetclub.test' },
   vet:     { phone: '9999900002', cc: '91', otp: TEST_OTP, name: 'E2E Vet',     email: 'e2e.vet@mypetclub.test' },
+};
+
+/**
+ * Mailinator test identities for email OTP login.
+ * These are PUBLIC inboxes — anyone can read them on mailinator.com.
+ * OTPs expire in ~10 min so there's no practical security concern.
+ * No Firebase / SMS / rate-limit issues with this approach.
+ */
+/**
+ * Unique run ID — appended to every Mailinator inbox name so each test run
+ * gets fresh addresses that have never had an OTP sent to them.
+ * This sidesteps the backend's per-email OTP resend cooldown completely.
+ * Generated once at module-load time, stable for the entire run.
+ */
+const RUN_ID = Date.now().toString(36); // e.g. "lp5qz8a"
+
+export const EMAIL_USERS = {
+  owner:   { email: `petclub-e2e-owner-${RUN_ID}@mailinator.com`,    name: 'E2E Owner' },
+  groomer: { email: `petclub-e2e-groomer-${RUN_ID}@mailinator.com`,  name: 'E2E Groomer' },
+  // Separate slots for data-isolation test (uses same run's ID — different from above)
+  owner2:   { email: `petclub-e2e-owner2-${RUN_ID}@mailinator.com`,  name: 'E2E Owner 2' },
+  groomer2: { email: `petclub-e2e-groomer2-${RUN_ID}@mailinator.com`,name: 'E2E Groomer 2' },
 };
 
 /**
@@ -147,4 +169,118 @@ export async function waitForToast(page, text, timeout = 8000) {
     text,
     { timeout }
   );
+}
+
+/**
+ * Fetch the 6-digit OTP from a Mailinator public inbox.
+ *
+ * Key observations from debugging:
+ * - PETclub puts the OTP in the email SUBJECT: "🔑 Your PETclub Verification Code: 123456"
+ * - No need to open the email or read an iframe — OTP is visible in the inbox row
+ * - Email delivery to Mailinator typically takes 60–120s (not instant)
+ *
+ * Strategy: poll the inbox every 5s until the OTP row appears (up to 90s).
+ *
+ * @param {import('@playwright/test').Page} page - Current login page (for browser context)
+ * @param {string} inbox - Inbox name without domain, e.g. "petclub-e2e-owner"
+ * @param {number} timeoutMs - Max wait time (default 90s)
+ * @returns {Promise<string|null>} 6-digit OTP, or null if not found in time
+ */
+export async function fetchMailinatorOTP(page, inbox, timeoutMs = 90000) {
+  const mailinatorPage = await page.context().newPage();
+  const deadline = Date.now() + timeoutMs;
+
+  try {
+    while (Date.now() < deadline) {
+      await mailinatorPage.goto(
+        `https://www.mailinator.com/v4/public/inboxes.jsp?to=${inbox}`,
+        { waitUntil: 'domcontentloaded', timeout: 15000 }
+      );
+      // Give Angular a moment to render the inbox rows
+      await mailinatorPage.waitForTimeout(1500);
+
+      // Each email row has class="ng-scope" (AngularJS repeater).
+      // The OTP is in the subject column — no need to open the email.
+      const emailRow = mailinatorPage.locator('tr.ng-scope').first();
+      if (await emailRow.isVisible({ timeout: 2000 }).catch(() => false)) {
+        const rowText = await emailRow.textContent().catch(() => '');
+        const match = rowText.match(/\b(\d{6})\b/);
+        if (match) return match[1];
+      }
+
+      // Not arrived yet — wait before retrying
+      await mailinatorPage.waitForTimeout(5000);
+    }
+  } finally {
+    await mailinatorPage.close().catch(() => {});
+  }
+
+  return null;
+}
+
+/**
+ * Complete the full Email OTP login flow using a Mailinator test address.
+ * Unlike loginWithPhone(), this uses the backend email OTP route — NO Firebase,
+ * NO SMS, NO rate limits.
+ *
+ * Steps: start → click "Sign In" → switch to "Email OTP" → fill address
+ *        → Send OTP → fetch code from Mailinator → fill boxes → auto-verify
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {{ email: string }} emailUser - Use EMAIL_USERS.owner / EMAIL_USERS.groomer
+ */
+export async function loginWithEmail(page, emailUser) {
+  await gotoLogin(page);
+
+  // ── "start" step — click "Sign In" ────────────────────────────────────────
+  const signInBtn = page.locator('button:has-text("Sign In"), button:has-text("Sign in")').first();
+  await signInBtn.waitFor({ state: 'visible', timeout: 15000 });
+  await signInBtn.click();
+
+  // ── Switch to Email OTP ────────────────────────────────────────────────────
+  const emailToggle = page.locator('button:has-text("Email OTP")').first();
+  await emailToggle.waitFor({ state: 'visible', timeout: 10000 });
+  await emailToggle.click();
+
+  // ── Fill email address ─────────────────────────────────────────────────────
+  const emailInput = page.locator('input[type="email"]').first();
+  await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+  await emailInput.fill(emailUser.email);
+
+  // ── Click "Send OTP" ──────────────────────────────────────────────────────
+  const sendBtn = page.locator('button:has-text("Send OTP"), button:has-text("Continue")').first();
+  await sendBtn.waitFor({ state: 'visible', timeout: 10000 });
+  await sendBtn.click();
+
+  // ── Wait for OTP boxes ────────────────────────────────────────────────────
+  // If the backend is rate-limiting (IP-based), the Send OTP step will show an
+  // error and OTP boxes will never appear.  In that case, return gracefully so
+  // the caller can decide to skip rather than fail the test.
+  const firstOtpBox = page.locator('input[maxlength="1"][inputmode="numeric"]').first();
+  const otpBoxVisible = await firstOtpBox
+    .waitFor({ state: 'visible', timeout: 20000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (!otpBoxVisible) {
+    // Surface the backend's error message so it shows up in the test log
+    const errText = await page.locator('[class*="red"], [class*="error"], .text-red-500').first()
+      .textContent({ timeout: 2000 }).catch(() => 'OTP boxes did not appear');
+    throw new Error(`loginWithEmail: OTP step not reached — ${errText}`);
+  }
+
+  // ── Fetch OTP from Mailinator ─────────────────────────────────────────────
+  const inbox = emailUser.email.split('@')[0]; // e.g. "petclub-e2e-owner-abc123"
+  const otp = await fetchMailinatorOTP(page, inbox);
+  if (!otp) throw new Error(`Mailinator: no OTP found in inbox "${inbox}" within 90s`);
+
+  // ── Fill digits — React auto-verifies when all 6 are entered ─────────────
+  const boxes = page.locator('input[maxlength="1"][inputmode="numeric"]');
+  for (let i = 0; i < otp.length; i++) {
+    await boxes.nth(i).fill(otp[i]);
+  }
+
+  await page.waitForTimeout(500);
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1500);
 }

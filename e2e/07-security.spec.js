@@ -17,7 +17,9 @@
  *   - groomer OTP #2: data-isolation test (ctx2)
  */
 import { test, expect } from '@playwright/test';
-import { loginWithPhone, USERS, FIREBASE_TESTS } from './helpers.js';
+import { loginWithEmail, EMAIL_USERS, FIREBASE_TESTS } from './helpers.js';
+// EMAIL_USERS.owner / .groomer  — used in single-user security checks
+// EMAIL_USERS.owner2 / .groomer2 — used in data-isolation (avoids OTP resend cooldown)
 
 // ── 1) SP (groomer) security — all checks in ONE login ────────────────────
 // Combining price RBAC, admin access, and ID-doc disclaimer into a single
@@ -28,7 +30,7 @@ test.describe('SP security — prices, admin access, ID docs', () => {
       test.skip(true, 'Requires Firebase test numbers — +91 9999900002 → 123456');
       return;
     }
-    await loginWithPhone(page, USERS.groomer);
+    await loginWithEmail(page, EMAIL_USERS.groomer);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
@@ -59,7 +61,7 @@ test.describe('Admin route access control', () => {
       test.skip(true, 'Requires Firebase test numbers — +91 9999900001 → 123456');
       return;
     }
-    await loginWithPhone(page, USERS.owner);
+    await loginWithEmail(page, EMAIL_USERS.owner);
     await page.waitForLoadState('networkidle');
 
     // Try to elevate role client-side — backend JWT must reject it
@@ -106,17 +108,13 @@ test.describe('Data isolation', () => {
   test('owner and groomer receive distinct JWT tokens', async ({ browser }) => {
     if (!FIREBASE_TESTS) { test.skip(true, 'Requires Firebase test numbers'); return; }
 
-    // Rate-limit guard: groomer OTP #1 and owner OTP #1 were sent earlier in this run.
-    // Wait 25s so Firebase's per-number window resets before sending OTP #2 to each.
-    await new Promise(r => setTimeout(r, 25000));
-
     const ctx1 = await browser.newContext();
     const ctx2 = await browser.newContext();
     const page1 = await ctx1.newPage();
     const page2 = await ctx2.newPage();
 
-    await loginWithPhone(page1, USERS.owner);    // owner OTP #2
-    await loginWithPhone(page2, USERS.groomer);  // groomer OTP #2
+    await loginWithEmail(page1, EMAIL_USERS.owner2);    // separate address — avoids OTP resend cooldown
+    await loginWithEmail(page2, EMAIL_USERS.groomer2);  // separate address — avoids OTP resend cooldown
 
     await page1.waitForLoadState('networkidle');
     await page2.waitForLoadState('networkidle');
