@@ -1,3 +1,10 @@
+# [1.35.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.34.0...v1.35.0) (2026-05-29)
+
+
+### Features
+
+* **chat:** in-app messaging between customer and professional ([090c5cc](https://github.com/Kolanupaka92/petclub-app/commit/090c5cc050eaa60bc18139a2f337501841be9389))
+
 # [1.34.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.33.2...v1.34.0) (2026-05-29)
 
 
