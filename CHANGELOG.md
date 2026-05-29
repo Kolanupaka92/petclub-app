@@ -1,3 +1,10 @@
+## [1.31.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.31.1...v1.31.2) (2026-05-29)
+
+
+### Bug Fixes
+
+* **pricing:** remove Wahl brand name and shampoo per-wash pricing ([dc8d571](https://github.com/Kolanupaka92/petclub-app/commit/dc8d571b5117f24d1042c16754bc92f32356f579))
+
 ## [1.31.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.31.0...v1.31.1) (2026-05-29)
 
 
