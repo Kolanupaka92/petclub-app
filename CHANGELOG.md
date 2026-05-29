@@ -1,3 +1,10 @@
+## [1.30.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.30.0...v1.30.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* **pricing:** keep cover photos only · remove from other panels · fix Bath+ header ([cd94373](https://github.com/Kolanupaka92/petclub-app/commit/cd94373bebb70d5b36ae67645e3c7c9db3617c96))
+
 # [1.30.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.29.1...v1.30.0) (2026-05-29)
 
 
