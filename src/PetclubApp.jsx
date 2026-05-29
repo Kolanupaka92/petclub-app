@@ -275,6 +275,21 @@ export default function PetclubApp({ session, onLogout }) {
   useEffect(() => { if (!apiMode) savePets(pets); }, [pets, apiMode]);
   useEffect(() => { localStorage.setItem("petclub_rated", JSON.stringify([...ratedBookings])); }, [ratedBookings]);
 
+  // When a booking flips to completed, invalidate that pet's record cache so
+  // the auto-created service record appears next time the pet profile is opened.
+  useEffect(() => {
+    const justCompleted = myBookings.filter(
+      b => (b.status === "completed" || b.assignment_status === "completed") && b.pet_id
+    );
+    if (justCompleted.length === 0) return;
+    const petIdsToInvalidate = new Set(justCompleted.map(b => b.pet_id));
+    setLoadedPetRecs(prev => {
+      const next = new Set(prev);
+      petIdsToInvalidate.forEach(id => next.delete(id));
+      return next;
+    });
+  }, [myBookings]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Lazy-load pet records from API when a pet detail view is opened
   useEffect(() => {
     if (!activePetId || !apiMode || loadedPetRecs.has(activePetId)) return;
