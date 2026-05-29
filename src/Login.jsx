@@ -1299,7 +1299,7 @@ export default function Login({ onLogin, initialHint }) {
                       </div>
                     </div>
 
-                    <p className="text-[10px] text-orange-600 italic">This document is confidential and intended solely for authorised PETclub partners. Queries: eshwar.kolanupaka@mypetclub.app</p>
+                    <p className="text-[10px] text-orange-600 italic">This document is confidential and intended solely for authorised PETclub partners. Queries: {import.meta.env.VITE_PARTNER_CONTACT_EMAIL || 'partners@mypetclub.app'}</p>
                   </div>
                 )}
 

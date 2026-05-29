@@ -22,49 +22,54 @@ const _stripBom = (v) => (v || '').replace(/^﻿/, '').trim();
 const BASE  = _stripBom(import.meta.env.VITE_API_URL) || "https://api.mypetclub.app/api";
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "";
 
+// Closed lookup maps — only these exact keys are valid service types.
+// Using a closed map (not user input) guarantees color/icon are safe constants.
 const SVC_ICON  = { Groomer: "✂️", Trainer: "🐕‍🦺", Vet: "🏥" };
 const SVC_COLOR = { Groomer: "#7c3aed", Trainer: "#ea580c", Vet: "#059669" };
 const SVC_LABEL = { Groomer: "Groomer", Trainer: "Trainer", Vet: "Veterinarian" };
 
+// Safe fallbacks — literal constants, never user data
+const SAFE_COLOR_FALLBACK = "#f97316";
+const SAFE_ICON_FALLBACK  = "👤";
+
 /* ── Animated professional marker element ── */
 function makeProEl(svcType) {
-  const color = SVC_COLOR[svcType] || "#f97316";
-  const icon  = SVC_ICON[svcType]  || "👤";
+  // Resolve color and icon from closed lookup maps only.
+  // If svcType is not in the map the fallback is a hardcoded constant — never user input.
+  const color = SVC_COLOR[svcType] ?? SAFE_COLOR_FALLBACK;
+  const icon  = SVC_ICON[svcType]  ?? SAFE_ICON_FALLBACK;
+
+  // Validate: color must be a hex code, icon must be an emoji (no HTML chars)
+  const safeColor = /^#[0-9a-fA-F]{6}$/.test(color) ? color : SAFE_COLOR_FALLBACK;
+  const safeIcon  = /[<>"'&]/.test(icon) ? SAFE_ICON_FALLBACK : icon;
+
   const el = document.createElement("div");
   el.style.cssText = "position:relative;width:56px;height:56px;cursor:default;";
-  el.innerHTML = `
-    <div style="
-      position:absolute;inset:0;border-radius:50%;
-      background:${color};opacity:0.18;
-      animation:proRing 1.8s ease-out infinite;
-    "></div>
-    <div style="
-      position:absolute;inset:0;border-radius:50%;
-      background:${color};opacity:0.09;
-      animation:proRing 1.8s ease-out infinite 0.6s;
-    "></div>
-    <div style="
-      position:absolute;top:8px;left:8px;width:40px;height:40px;border-radius:50%;
-      background:${color};border:3px solid #fff;
-      box-shadow:0 2px 18px rgba(0,0,0,0.35);
-      display:flex;align-items:center;justify-content:center;
-      font-size:18px;z-index:2;
-    ">${icon}</div>
-  `;
+
+  // Build marker via DOM API (not innerHTML template string) to prevent XSS
+  const ring1 = document.createElement("div");
+  ring1.style.cssText = `position:absolute;inset:0;border-radius:50%;background:${safeColor};opacity:0.18;animation:proRing 1.8s ease-out infinite;`;
+
+  const ring2 = document.createElement("div");
+  ring2.style.cssText = `position:absolute;inset:0;border-radius:50%;background:${safeColor};opacity:0.09;animation:proRing 1.8s ease-out infinite 0.6s;`;
+
+  const dot = document.createElement("div");
+  dot.style.cssText = `position:absolute;top:8px;left:8px;width:40px;height:40px;border-radius:50%;background:${safeColor};border:3px solid #fff;box-shadow:0 2px 18px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:18px;z-index:2;`;
+  dot.textContent = safeIcon; // textContent — never renders HTML
+
+  el.appendChild(ring1);
+  el.appendChild(ring2);
+  el.appendChild(dot);
   return el;
 }
 
 /* ── Customer home pin ── */
 function makeCustEl() {
   const el = document.createElement("div");
-  el.innerHTML = `
-    <div style="
-      width:44px;height:44px;border-radius:50%;
-      background:#f97316;border:3px solid #fff;
-      box-shadow:0 2px 14px rgba(249,115,22,0.55);
-      display:flex;align-items:center;justify-content:center;font-size:20px;
-    ">🏠</div>
-  `;
+  const pin = document.createElement("div");
+  pin.style.cssText = "width:44px;height:44px;border-radius:50%;background:#f97316;border:3px solid #fff;box-shadow:0 2px 14px rgba(249,115,22,0.55);display:flex;align-items:center;justify-content:center;font-size:20px;";
+  pin.textContent = "🏠"; // textContent — never renders HTML
+  el.appendChild(pin);
   return el;
 }
 
