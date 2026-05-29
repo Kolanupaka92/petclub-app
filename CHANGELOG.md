@@ -1,3 +1,10 @@
+## [1.26.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.26.2...v1.26.3) (2026-05-29)
+
+
+### Bug Fixes
+
+* **e2e:** consolidate security tests to respect Firebase OTP rate limits ([ffe1288](https://github.com/Kolanupaka92/petclub-app/commit/ffe1288311a00b8c22103365fd337127dc0b769c)), closes [#1](https://github.com/Kolanupaka92/petclub-app/issues/1) [#2](https://github.com/Kolanupaka92/petclub-app/issues/2)
+
 ## [1.26.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.26.1...v1.26.2) (2026-05-28)
 
 
