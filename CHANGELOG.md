@@ -1,3 +1,10 @@
+## [1.29.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.29.0...v1.29.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* **brochures:** clean header design + add original pet illustrations ([13015cd](https://github.com/Kolanupaka92/petclub-app/commit/13015cd58607b915e07a73f05bb3bafc9d49daa8))
+
 # [1.29.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.28.0...v1.29.0) (2026-05-29)
 
 
