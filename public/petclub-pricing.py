@@ -177,7 +177,7 @@ def draw_cover_panel(c):
 
 
 def draw_complete_panel(c):
-    """MIDDLE — Complete Makeover (Wahl), text-only."""
+    """MIDDLE — Complete Makeover, text-only."""
     fill_panel(c, 1, WHITE)
     x0 = PANEL_W
 
@@ -189,7 +189,7 @@ def draw_complete_panel(c):
     c.setFont(FONT_B, 18)
     c.drawString(x0 + 62, PAGE_H - 38, "Complete Makeover")
     c.setFont(FONT, 10.5)
-    c.drawString(x0 + 62, PAGE_H - 54, "Full grooming · Wahl shampoo")
+    c.drawString(x0 + 62, PAGE_H - 54, "Full grooming with premium shampoo")
     c.setFont(FONT, 9)
     c.drawString(x0 + 62, PAGE_H - 68, "For dogs and cats · 1.5-2 hours")
 
@@ -201,7 +201,7 @@ def draw_complete_panel(c):
     cur_y -= 18
 
     includes = [
-        "Bath with Wahl shampoo",
+        "Bath with premium shampoo",
         "Blow dry & finish",
         "Nail trim + nail grind",
         "Deshedding treatment",
@@ -243,10 +243,10 @@ def draw_complete_panel(c):
     c.setStrokeColor(ORANGE_BORD); c.setLineWidth(0.6)
     c.roundRect(x0 + 20, 30, PANEL_W - 40, 50, 8, fill=1, stroke=1)
     c.setFillColor(ORANGE_DARK); c.setFont(FONT_B, 11)
-    c.drawString(x0 + 32, 60, "💧 Wahl Premium Shampoo")
+    c.drawString(x0 + 32, 60, "💧 Premium Shampoo Included")
     c.setFillColor(SLATE); c.setFont(FONT, 9)
-    c.drawString(x0 + 32, 46, "30ml per pet · ₹40/wash")
-    c.drawString(x0 + 32, 36, "Vet-recommended quality")
+    c.drawString(x0 + 32, 46, "Vet-recommended quality")
+    c.drawString(x0 + 32, 36, "Gentle on skin & coat")
 
 
 def draw_luxury_panel(c):
@@ -317,7 +317,7 @@ def draw_luxury_panel(c):
     c.setFillColor(ORANGE_DARK); c.setFont(FONT_B, 11)
     c.drawString(x0 + 32, 60, "✨ Plus Puppy Shampoo")
     c.setFillColor(SLATE); c.setFont(FONT, 9)
-    c.drawString(x0 + 32, 46, "₹200-250/wash · Coat-specific")
+    c.drawString(x0 + 32, 46, "Coat-specific premium formula")
     c.drawString(x0 + 32, 36, "1-2+ bottles based on coat type")
 
 
@@ -346,7 +346,7 @@ def draw_bath_panel(c):
     cy = PAGE_H - 110
     card_h = 215
 
-    # ═══ Essential Bath+ (Wahl) ═══
+    # ═══ Essential Bath+ ═══
     c.setFillColor(LIGHT)
     c.setStrokeColor(BORD); c.setLineWidth(0.6)
     c.roundRect(x0 + 18, cy - card_h, PANEL_W - 36, card_h, 12, fill=1, stroke=1)
@@ -361,12 +361,12 @@ def draw_bath_panel(c):
     c.drawString(x0 + 28, cy - 18, "ESSENTIAL BATH+")
     # Subtitle (BELOW title, baseline lower)
     c.setFont(FONT, 9.5)
-    c.drawString(x0 + 28, cy - 35, "Wahl shampoo · ₹40/wash")
+    c.drawString(x0 + 28, cy - 35, "Premium shampoo · Quick refresh")
 
     # Includes
     c.setFillColor(SLATE); c.setFont(FONT, 9.5)
     inc_y = cy - 65
-    for line in ["✓ Bath with Wahl shampoo",
+    for line in ["✓ Bath with premium shampoo",
                   "✓ Blow dry",
                   "✓ FREE ear cleaning",
                   "✓ FREE nail trimming"]:
@@ -397,7 +397,7 @@ def draw_bath_panel(c):
     c.setFont(FONT_B, 14)
     c.drawString(x0 + 28, cy2 - 18, "PREMIUM BATH+")
     c.setFont(FONT, 9.5)
-    c.drawString(x0 + 28, cy2 - 35, "Plus Puppy shampoo · ₹250/wash")
+    c.drawString(x0 + 28, cy2 - 35, "Plus Puppy shampoo · Premium")
 
     c.setFillColor(SLATE); c.setFont(FONT, 9.5)
     inc_y = cy2 - 65
