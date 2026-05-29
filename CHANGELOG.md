@@ -1,3 +1,10 @@
+# [1.28.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.27.0...v1.28.0) (2026-05-29)
+
+
+### Features
+
+* add PETclub marketing brochure + integrate share/download in app ([a77bbb5](https://github.com/Kolanupaka92/petclub-app/commit/a77bbb5eac29c7eb6662777af309d54b5da6d606))
+
 # [1.27.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.26.3...v1.27.0) (2026-05-29)
 
 
