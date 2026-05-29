@@ -1,3 +1,10 @@
+# [1.33.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.32.0...v1.33.0) (2026-05-29)
+
+
+### Features
+
+* **admin:** show groomer 70/30 split with PETclub offer deduction ([2b2a396](https://github.com/Kolanupaka92/petclub-app/commit/2b2a39690ae459a76e952068b1977d1a09c44c9c))
+
 # [1.32.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.31.3...v1.32.0) (2026-05-29)
 
 
