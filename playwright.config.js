@@ -52,14 +52,14 @@ export default defineConfig({
       testIgnore: ['**/auth.setup.js'],
     },
 
-    // ── Mobile: no-auth smoke tests only ─────────────────────────────────────
+    // ── Mobile: landing page smoke tests only ────────────────────────────────
+    // Security policy is backend-enforced and identical across devices.
+    // Running auth-dependent security tests on mobile would double OTP consumption
+    // without adding coverage value. No-secrets checks are already covered by chromium.
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 7'] },
-      testMatch: [
-        '**/01-landing.spec.js',
-        '**/07-security.spec.js',
-      ],
+      testMatch: ['**/01-landing.spec.js'],
     },
   ],
 
