@@ -1,3 +1,10 @@
+# [1.30.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.29.1...v1.30.0) (2026-05-29)
+
+
+### Features
+
+* **brochures:** use REAL pet photos + emphasize cat services ([6ff1691](https://github.com/Kolanupaka92/petclub-app/commit/6ff1691f23df460d1c690f51331589ead4a6c30d)), closes [hi#quality](https://github.com/hi/issues/quality)
+
 ## [1.29.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.29.0...v1.29.1) (2026-05-29)
 
 
