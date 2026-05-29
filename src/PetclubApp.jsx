@@ -5,6 +5,7 @@ import { TC, fmtDate } from "./data/mockData.js";
 import { AddressInput, getEmailSuggestion } from "./Login.jsx";
 import { AddressPicker } from "./components/AddressPicker.jsx";
 import WhatsAppFAB from "./components/WhatsAppFAB.jsx";
+import ChatModal from "./components/ChatModal.jsx";
 
 // Lazy-load heavy map component (Mapbox GL is ~500 KB)
 const TrackingMap = lazy(() => import("./components/TrackingMap.jsx"));
@@ -202,6 +203,7 @@ export default function PetclubApp({ session, onLogout }) {
   const [ratedBookings, setRatedBookings] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem("petclub_rated") || "[]")); } catch { return new Set(); }
   });
+  const [chatBooking, setChatBooking] = useState(null); // booking being chatted about
   // O-3 fix: live service catalog fetched from backend — overrides fallback constants above.
   // Shape: { platform_discount, grooming: { packages, addons, pet_sizes }, training: { packages } }
   const [catalog, setCatalog] = useState(null);
@@ -730,6 +732,14 @@ export default function PetclubApp({ session, onLogout }) {
                       <div className="text-xs text-gray-400 bg-gray-50 rounded-lg p-2.5 text-center mt-3">
                         No professionals available in your area right now. We'll keep searching and notify you via email.
                       </div>
+                    )}
+                    {/* Chat with provider — available once a pro is assigned */}
+                    {["confirmed","on_the_way","in_progress","completed"].includes(b.assignment_status) && (
+                      <button
+                        onClick={() => setChatBooking(b)}
+                        className="mt-3 w-full flex items-center justify-center gap-2 text-xs font-bold text-blue-600 border border-blue-200 bg-blue-50 rounded-xl py-2 hover:bg-blue-100 transition">
+                        <span>💬</span> Chat with Provider
+                      </button>
                     )}
                     {/* Rate session button for completed bookings */}
                     {b.status === "completed" && !ratedBookings.has(b.id) && (
@@ -2257,6 +2267,15 @@ export default function PetclubApp({ session, onLogout }) {
             <button onClick={onLogout} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-2xl text-sm hover:bg-red-600">Sign Out</button>
           </div>
         </Modal>
+      )}
+
+      {/* In-app chat with provider */}
+      {chatBooking && (
+        <ChatModal
+          booking={chatBooking}
+          currentUserId={session.id}
+          onClose={() => setChatBooking(null)}
+        />
       )}
 
       {/* WhatsApp support chat */}

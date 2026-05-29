@@ -82,6 +82,8 @@ export const api = {
   respondBooking: (id, action) => req('POST', `/bookings/${id}/respond`, { action }, true),
   getIncomingBookings: () => req('GET', '/bookings/incoming', null, true),
   adminAssignBooking: (id, professionalId) => req('PUT', `/bookings/${id}/assign`, { professionalId }, true),
+  getMessages:  (bookingId)          => req('GET',  `/bookings/${bookingId}/messages`, null, true),
+  sendMessage:  (bookingId, content) => req('POST', `/bookings/${bookingId}/messages`, { content }, true),
 
   // Service Catalog (customer-facing pricing)
   getServiceCatalog: () => req('GET', '/services/catalog', null, true),

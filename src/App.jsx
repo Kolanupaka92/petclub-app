@@ -4,6 +4,7 @@ import { AddressInput } from "./Login.jsx";
 import { AddressPicker } from "./components/AddressPicker.jsx";
 import { bufferPosition, saveTokenToGpsDb } from "./utils/gpsBuffer.js";
 import WhatsAppFAB from "./components/WhatsAppFAB.jsx";
+import ChatModal from "./components/ChatModal.jsx";
 
 /* ── Helpers ── */
 const fmtDate = s => { try { return new Date(s).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }); } catch { return s || "—"; } };
@@ -745,6 +746,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [earningsLoad, setEarningsLoad] = useState(false);
   const [sharingLocId,    setSharingLocId]    = useState(null);  // bookingId being shared
   const [bgWarning,       setBgWarning]       = useState(false); // page-hidden warning
+  const [chatBooking,     setChatBooking]     = useState(null);  // booking open in chat
   const watchIdRef        = useRef(null);  // watchPosition ID
   const lastSentRef       = useRef(0);     // throttle: min 10s between sends
   const wakeLockRef       = useRef(null);  // Screen Wake Lock sentinel (keeps screen on during transit)
@@ -1425,6 +1427,14 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                           </button>
                         )
                       )}
+                      {/* Chat with customer */}
+                      {["confirmed","on_the_way","in_progress","completed"].includes(b.assignment_status) && (
+                        <button
+                          onClick={() => setChatBooking(b)}
+                          className="mt-2 w-full flex items-center justify-center gap-2 text-xs font-bold text-blue-600 border border-blue-200 bg-blue-50 rounded-xl py-2 hover:bg-blue-100 transition">
+                          <span>💬</span> Chat with Customer
+                        </button>
+                      )}
                     </div>
                   );
                 })}
@@ -1889,6 +1899,15 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
             {saving ? "Uploading…" : "Submit ID"}
           </button>
         </Modal>
+      )}
+
+      {/* In-app chat with customer */}
+      {chatBooking && (
+        <ChatModal
+          booking={chatBooking}
+          currentUserId={session.id}
+          onClose={() => setChatBooking(null)}
+        />
       )}
 
       {/* WhatsApp support chat */}
