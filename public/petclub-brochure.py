@@ -4,6 +4,7 @@ A4 landscape, 2 pages, 3 panels each (designed for tri-fold print + WhatsApp sha
 No "Trusted by Pet Parents" — replaced with honest "Our Promise" panel.
 """
 import io
+import os
 import qrcode
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.colors import HexColor, white, black
@@ -11,6 +12,37 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.utils import ImageReader
+
+# Real pet photos (Pexels — free for commercial use, no attribution)
+ASSETS = os.path.dirname(os.path.abspath(__file__)) + "/brochure-assets"
+IMG_DOG_HERO     = ASSETS + "/dog-hero.jpg"
+IMG_CAT_HERO     = ASSETS + "/cat-hero.jpg"
+IMG_CAT_GROOMING = ASSETS + "/cat-grooming.jpg"
+IMG_CAT_PORTRAIT = ASSETS + "/cat-cute.jpg"
+
+
+def draw_rounded_image(c, image_path, x, y, w, h, radius=8):
+    """Draw an image clipped to a rounded rectangle."""
+    if not os.path.exists(image_path):
+        c.setFillColor(HexColor("#e2e8f0"))
+        c.roundRect(x, y, w, h, radius, fill=1, stroke=0)
+        return
+    c.saveState()
+    p = c.beginPath()
+    p.moveTo(x + radius, y)
+    p.lineTo(x + w - radius, y)
+    p.arcTo(x + w - 2 * radius, y, x + w, y + 2 * radius, startAng=270, extent=90)
+    p.lineTo(x + w, y + h - radius)
+    p.arcTo(x + w - 2 * radius, y + h - 2 * radius, x + w, y + h, startAng=0, extent=90)
+    p.lineTo(x + radius, y + h)
+    p.arcTo(x, y + h - 2 * radius, x + 2 * radius, y + h, startAng=90, extent=90)
+    p.lineTo(x, y + radius)
+    p.arcTo(x, y, x + 2 * radius, y + 2 * radius, startAng=180, extent=90)
+    p.close()
+    c.clipPath(p, stroke=0, fill=0)
+    c.drawImage(image_path, x, y, width=w, height=h,
+                preserveAspectRatio=True, anchor='c', mask='auto')
+    c.restoreState()
 
 # ── Fonts (Arial — supports ₹ and emoji subset) ──────────────────────────────
 FONT = "Arial"
@@ -272,42 +304,49 @@ def draw_cover_panel(c):
                         (x0 + 130, 280, 35)]:
         draw_paw(c, px, py, sz, light_paws)
 
-    # Big logo tile (official PETclub icon — white rounded square with orange paw)
-    cy = PAGE_H * 0.72  # moved higher so pets + services fit below
-    tile_size = 80
-    draw_logo_tile(c, x0 + PANEL_W / 2 - tile_size / 2, cy - tile_size / 2,
-                   tile_size, bg_color=WHITE)
-
-    # Brand name (large) right under the logo
+    # Top: Logo + brand
+    top_y = PAGE_H - 60
+    draw_logo_tile(c, x0 + 22, top_y - 35, 35, bg_color=WHITE)
     c.setFillColor(WHITE)
-    c.setFont(FONT_B, 34)
-    tw_pet  = c.stringWidth("PET", FONT_B, 34)
-    tw_club = c.stringWidth("club", FONT, 34)
+    c.setFont(FONT_B, 22)
     cx_mid = x0 + PANEL_W / 2
-    c.drawString(cx_mid - (tw_pet + tw_club) / 2, cy - 80, "PET")
-    c.setFont(FONT, 34)
-    c.drawString(cx_mid - (tw_pet + tw_club) / 2 + tw_pet, cy - 80, "club")
+    tw_pet = c.stringWidth("PET", FONT_B, 22)
+    c.drawString(x0 + 68, top_y - 18, "PET")
+    c.setFont(FONT, 22)
+    c.drawString(x0 + 68 + tw_pet, top_y - 18, "club")
+    c.setFont(FONT, 8.5)
+    c.drawString(x0 + 68, top_y - 33, "Paw Care at Your Doorstep")
 
-    # Tagline
-    c.setFont(FONT, 11)
-    c.drawCentredString(cx_mid, cy - 100, "Paw Care at Your Doorstep")
+    # Two REAL photos side-by-side: Dog + Cat (each clearly labelled)
+    photo_y = PAGE_H * 0.45
+    photo_h = 140
+    photo_w = (PANEL_W - 55) / 2 - 3
 
-    # Happy dog + cat illustration pair (between tagline and services)
-    pet_y = cy - 145
-    draw_dog(c, x0 + PANEL_W * 0.32, pet_y, 38, WHITE)
-    draw_cat(c, x0 + PANEL_W * 0.68, pet_y - 3, 34, WHITE)
+    # Dog photo
+    draw_rounded_image(c, IMG_DOG_HERO,
+                       x0 + 22, photo_y, photo_w, photo_h, radius=12)
+    c.setFillColor(WHITE)
+    c.setFont(FONT_B, 10)
+    c.drawCentredString(x0 + 22 + photo_w / 2, photo_y - 16, "🐕  FOR DOGS")
+
+    # Cat photo
+    draw_rounded_image(c, IMG_CAT_HERO,
+                       x0 + 33 + photo_w, photo_y, photo_w, photo_h, radius=12)
+    c.setFillColor(WHITE)
+    c.setFont(FONT_B, 10)
+    c.drawCentredString(x0 + 33 + photo_w + photo_w / 2, photo_y - 16, "🐱  FOR CATS")
 
     # Divider line
     c.setStrokeColor(WHITE)
-    c.setLineWidth(1)
-    c.line(x0 + 60, cy - 180, x0 + PANEL_W - 60, cy - 180)
+    c.setLineWidth(1.2)
+    c.line(x0 + 50, photo_y - 38, x0 + PANEL_W - 50, photo_y - 38)
 
     # Services list
     services = ["✂️  Pet Grooming", "🐕  Pet Training",
                 "🏥  Vet at Home", "🍖  Pet Food Delivery"]
     for i, s in enumerate(services):
         c.setFont(FONT_B, 12)
-        c.drawCentredString(cx_mid, cy - 205 - i * 22, s)
+        c.drawCentredString(cx_mid, photo_y - 60 - i * 20, s)
 
     # Bottom CTA box
     c.setFillColor(WHITE)
