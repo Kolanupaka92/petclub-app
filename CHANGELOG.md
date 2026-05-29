@@ -1,3 +1,10 @@
+## [1.33.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.33.0...v1.33.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* **admin:** remove hardcoded 55%/45% from revenue summary bars ([d98f918](https://github.com/Kolanupaka92/petclub-app/commit/d98f9180c3a34cefe981db1f4f049789846b9d22))
+
 # [1.33.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.32.0...v1.33.0) (2026-05-29)
 
 
