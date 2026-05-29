@@ -1,3 +1,10 @@
+# [1.36.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.35.0...v1.36.0) (2026-05-29)
+
+
+### Features
+
+* comprehensive workflow improvements across all three roles ([921f20e](https://github.com/Kolanupaka92/petclub-app/commit/921f20e4de97ad25c044cadf3d56fdf47b793aaa))
+
 # [1.35.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.34.0...v1.35.0) (2026-05-29)
 
 
