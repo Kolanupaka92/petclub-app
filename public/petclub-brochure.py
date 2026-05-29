@@ -91,6 +91,41 @@ def draw_logo_tile(c, x, y, size, bg_color=None):
     draw_paw(c, x + size / 2, y + size / 2, size * 0.95, paw_color)
 
 
+# ── Original pet illustrations (no copyright) ────────────────────────────
+def draw_dog(c, x, y, size, color):
+    """Cute dog silhouette — facing right."""
+    c.setFillColor(color); s = size
+    c.ellipse(x - s * 0.55, y - s * 0.10, x + s * 0.50, y + s * 0.20, fill=1, stroke=0)
+    c.ellipse(x + s * 0.20, y - s * 0.35, x + s * 0.32, y - s * 0.05, fill=1, stroke=0)
+    c.ellipse(x - s * 0.32, y - s * 0.35, x - s * 0.20, y - s * 0.05, fill=1, stroke=0)
+    c.ellipse(x - s * 0.68, y + s * 0.05, x - s * 0.55, y + s * 0.35, fill=1, stroke=0)
+    c.ellipse(x + s * 0.30, y + s * 0.10, x + s * 0.70, y + s * 0.45, fill=1, stroke=0)
+    c.ellipse(x + s * 0.30, y + s * 0.05, x + s * 0.42, y + s * 0.35, fill=1, stroke=0)
+    c.ellipse(x + s * 0.55, y + s * 0.15, x + s * 0.72, y + s * 0.28, fill=1, stroke=0)
+
+
+def draw_cat(c, x, y, size, color):
+    """Cute cat silhouette — sitting."""
+    c.setFillColor(color); s = size
+    c.ellipse(x - s * 0.30, y - s * 0.35, x + s * 0.30, y + s * 0.25, fill=1, stroke=0)
+    c.ellipse(x - s * 0.27, y + s * 0.18, x + s * 0.27, y + s * 0.55, fill=1, stroke=0)
+    p = c.beginPath()
+    p.moveTo(x - s * 0.25, y + s * 0.45)
+    p.lineTo(x - s * 0.12, y + s * 0.70)
+    p.lineTo(x - s * 0.02, y + s * 0.50)
+    p.close()
+    c.drawPath(p, fill=1, stroke=0)
+    p = c.beginPath()
+    p.moveTo(x + s * 0.02, y + s * 0.50)
+    p.lineTo(x + s * 0.12, y + s * 0.70)
+    p.lineTo(x + s * 0.25, y + s * 0.45)
+    p.close()
+    c.drawPath(p, fill=1, stroke=0)
+    c.ellipse(x + s * 0.25, y - s * 0.05, x + s * 0.42, y + s * 0.30, fill=1, stroke=0)
+    c.ellipse(x - s * 0.15, y - s * 0.40, x - s * 0.02, y - s * 0.28, fill=1, stroke=0)
+    c.ellipse(x + s * 0.02, y - s * 0.40, x + s * 0.15, y - s * 0.28, fill=1, stroke=0)
+
+
 def draw_dotted_paw_bg(c, panel_idx, color, opacity_color):
     """Background paw print decoration."""
     c.setFillColor(opacity_color)
@@ -238,34 +273,41 @@ def draw_cover_panel(c):
         draw_paw(c, px, py, sz, light_paws)
 
     # Big logo tile (official PETclub icon — white rounded square with orange paw)
-    cy = PAGE_H * 0.62
-    tile_size = 110
+    cy = PAGE_H * 0.72  # moved higher so pets + services fit below
+    tile_size = 80
     draw_logo_tile(c, x0 + PANEL_W / 2 - tile_size / 2, cy - tile_size / 2,
                    tile_size, bg_color=WHITE)
 
-    # Brand name (large)
+    # Brand name (large) right under the logo
     c.setFillColor(WHITE)
-    c.setFont(FONT_B, 38)
-    c.drawCentredString(x0 + PANEL_W / 2, cy - 90, "PET")
-    c.setFont(FONT, 38)
-    tw = c.stringWidth("PET", FONT_B, 38)
-    c.drawString(x0 + PANEL_W / 2 - tw / 2 + tw, cy - 90, "club")
+    c.setFont(FONT_B, 34)
+    tw_pet  = c.stringWidth("PET", FONT_B, 34)
+    tw_club = c.stringWidth("club", FONT, 34)
+    cx_mid = x0 + PANEL_W / 2
+    c.drawString(cx_mid - (tw_pet + tw_club) / 2, cy - 80, "PET")
+    c.setFont(FONT, 34)
+    c.drawString(cx_mid - (tw_pet + tw_club) / 2 + tw_pet, cy - 80, "club")
 
     # Tagline
-    c.setFont(FONT, 12)
-    c.drawCentredString(x0 + PANEL_W / 2, cy - 115, "Paw Care at Your Doorstep")
+    c.setFont(FONT, 11)
+    c.drawCentredString(cx_mid, cy - 100, "Paw Care at Your Doorstep")
+
+    # Happy dog + cat illustration pair (between tagline and services)
+    pet_y = cy - 145
+    draw_dog(c, x0 + PANEL_W * 0.32, pet_y, 38, WHITE)
+    draw_cat(c, x0 + PANEL_W * 0.68, pet_y - 3, 34, WHITE)
 
     # Divider line
     c.setStrokeColor(WHITE)
     c.setLineWidth(1)
-    c.line(x0 + 60, cy - 130, x0 + PANEL_W - 60, cy - 130)
+    c.line(x0 + 60, cy - 180, x0 + PANEL_W - 60, cy - 180)
 
     # Services list
     services = ["✂️  Pet Grooming", "🐕  Pet Training",
                 "🏥  Vet at Home", "🍖  Pet Food Delivery"]
     for i, s in enumerate(services):
         c.setFont(FONT_B, 12)
-        c.drawCentredString(x0 + PANEL_W / 2, cy - 155 - i * 22, s)
+        c.drawCentredString(cx_mid, cy - 205 - i * 22, s)
 
     # Bottom CTA box
     c.setFillColor(WHITE)

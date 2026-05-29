@@ -63,6 +63,56 @@ def draw_logo_tile(c, x, y, size, bg_color=None):
     draw_paw(c, x + size / 2, y + size / 2, size * 0.95, paw_color)
 
 
+# ── Custom pet illustrations (original art — no copyright) ───────────────
+def draw_dog(c, x, y, size, color):
+    """Cute dog silhouette — facing right, original pictogram."""
+    c.setFillColor(color)
+    s = size
+    # Body (rounded rectangle look — use overlapping ellipses)
+    c.ellipse(x - s * 0.55, y - s * 0.10, x + s * 0.50, y + s * 0.20, fill=1, stroke=0)
+    # Front leg
+    c.ellipse(x + s * 0.20, y - s * 0.35, x + s * 0.32, y - s * 0.05, fill=1, stroke=0)
+    # Back leg
+    c.ellipse(x - s * 0.32, y - s * 0.35, x - s * 0.20, y - s * 0.05, fill=1, stroke=0)
+    # Tail (curving up)
+    c.ellipse(x - s * 0.68, y + s * 0.05, x - s * 0.55, y + s * 0.35, fill=1, stroke=0)
+    # Head (rounded square)
+    c.ellipse(x + s * 0.30, y + s * 0.10, x + s * 0.70, y + s * 0.45, fill=1, stroke=0)
+    # Floppy ear (down)
+    c.ellipse(x + s * 0.30, y + s * 0.05, x + s * 0.42, y + s * 0.35, fill=1, stroke=0)
+    # Snout / nose (slightly darker)
+    c.ellipse(x + s * 0.55, y + s * 0.15, x + s * 0.72, y + s * 0.28, fill=1, stroke=0)
+
+
+def draw_cat(c, x, y, size, color):
+    """Cute cat silhouette — sitting, original pictogram."""
+    c.setFillColor(color)
+    s = size
+    # Body (sitting — tall oval)
+    c.ellipse(x - s * 0.30, y - s * 0.35, x + s * 0.30, y + s * 0.25, fill=1, stroke=0)
+    # Head (round, on top)
+    c.ellipse(x - s * 0.27, y + s * 0.18, x + s * 0.27, y + s * 0.55, fill=1, stroke=0)
+    # Left ear (pointed triangle)
+    p = c.beginPath()
+    p.moveTo(x - s * 0.25, y + s * 0.45)
+    p.lineTo(x - s * 0.12, y + s * 0.70)
+    p.lineTo(x - s * 0.02, y + s * 0.50)
+    p.close()
+    c.drawPath(p, fill=1, stroke=0)
+    # Right ear
+    p = c.beginPath()
+    p.moveTo(x + s * 0.02, y + s * 0.50)
+    p.lineTo(x + s * 0.12, y + s * 0.70)
+    p.lineTo(x + s * 0.25, y + s * 0.45)
+    p.close()
+    c.drawPath(p, fill=1, stroke=0)
+    # Tail (curving up beside body — vertical S)
+    c.ellipse(x + s * 0.25, y - s * 0.05, x + s * 0.42, y + s * 0.30, fill=1, stroke=0)
+    # Front paws (small bumps at bottom)
+    c.ellipse(x - s * 0.15, y - s * 0.40, x - s * 0.02, y - s * 0.28, fill=1, stroke=0)
+    c.ellipse(x + s * 0.02, y - s * 0.40, x + s * 0.15, y - s * 0.28, fill=1, stroke=0)
+
+
 def fill_panel(c, panel_idx, color):
     c.setFillColor(color)
     c.rect(panel_idx * PANEL_W, 0, PANEL_W, PAGE_H, fill=1, stroke=0)
@@ -73,50 +123,55 @@ def fill_panel(c, panel_idx, color):
 # ══════════════════════════════════════════════════════════════════════════
 
 def draw_cover_panel(c):
-    """LEFT panel — Cover."""
+    """LEFT panel — Cover with pet illustrations."""
     fill_panel(c, 0, ORANGE)
     x0 = 0
 
-    # Background paw decorations
+    # Background paw decorations (lighter orange)
     light = HexColor("#fb923c")
     c.setFillColor(light)
-    for cx, cy, sz in [(40, 500, 30), (240, 100, 25),
-                        (240, 460, 22), (50, 100, 25),
-                        (130, 280, 40)]:
+    for cx, cy, sz in [(40, 500, 28), (240, 100, 22), (240, 460, 18)]:
         draw_paw(c, x0 + cx, cy, sz, light)
 
-    # Big logo tile (white)
-    cy_pos = PAGE_H * 0.65
-    tile = 110
-    draw_logo_tile(c, x0 + PANEL_W / 2 - tile / 2, cy_pos - tile / 2,
-                   tile, bg_color=WHITE)
+    # Top: Logo tile centered
+    tile = 80
+    top_y = PAGE_H - 130
+    draw_logo_tile(c, x0 + PANEL_W / 2 - tile / 2, top_y, tile, bg_color=WHITE)
 
-    # Brand name
+    # Brand name below logo
     c.setFillColor(WHITE)
-    c.setFont(FONT_B, 36)
-    tw_pet  = c.stringWidth("PET", FONT_B, 36)
-    tw_club = c.stringWidth("club", FONT, 36)
+    c.setFont(FONT_B, 32)
     cx_mid = x0 + PANEL_W / 2
-    c.drawString(cx_mid - (tw_pet + tw_club) / 2, cy_pos - 100, "PET")
-    c.setFont(FONT, 36)
-    c.drawString(cx_mid - (tw_pet + tw_club) / 2 + tw_pet, cy_pos - 100, "club")
+    tw_pet  = c.stringWidth("PET", FONT_B, 32)
+    tw_club = c.stringWidth("club", FONT, 32)
+    c.drawString(cx_mid - (tw_pet + tw_club) / 2, top_y - 38, "PET")
+    c.setFont(FONT, 32)
+    c.drawString(cx_mid - (tw_pet + tw_club) / 2 + tw_pet, top_y - 38, "club")
 
     # Tagline
     c.setFont(FONT, 11)
-    c.drawCentredString(cx_mid, cy_pos - 122, "Paw Care at Your Doorstep")
+    c.drawCentredString(cx_mid, top_y - 58, "Paw Care at Your Doorstep")
 
-    # Divider
-    c.setStrokeColor(WHITE); c.setLineWidth(1)
-    c.line(x0 + 60, cy_pos - 140, x0 + PANEL_W - 60, cy_pos - 140)
+    # Pet illustrations (dog + cat side by side)
+    pet_y = PAGE_H * 0.40
+    draw_dog(c, x0 + PANEL_W * 0.32, pet_y, 55, WHITE)
+    draw_cat(c, x0 + PANEL_W * 0.68, pet_y - 5, 50, WHITE)
 
-    # Title
-    c.setFont(FONT_B, 22)
-    c.drawCentredString(cx_mid, cy_pos - 175, "GROOMING")
-    c.drawCentredString(cx_mid, cy_pos - 200, "PRICE LIST")
+    # Divider line
+    c.setStrokeColor(WHITE); c.setLineWidth(1.2)
+    c.line(x0 + 50, pet_y - 65, x0 + PANEL_W - 50, pet_y - 65)
+
+    # Title block
+    c.setFillColor(WHITE)
+    c.setFont(FONT_B, 26)
+    c.drawCentredString(cx_mid, pet_y - 95, "GROOMING")
+    c.setFont(FONT_B, 18)
+    c.drawCentredString(cx_mid, pet_y - 118, "PRICE LIST")
+
     c.setFont(FONT, 10)
-    c.drawCentredString(cx_mid, cy_pos - 220, "At-home grooming · Hyderabad")
+    c.drawCentredString(cx_mid, pet_y - 138, "At-home grooming · Hyderabad")
 
-    # Bottom CTA
+    # Bottom CTA card
     c.setFillColor(WHITE)
     c.roundRect(x0 + 25, 35, PANEL_W - 50, 55, 10, fill=1, stroke=0)
     c.setFillColor(ORANGE_DARK)
@@ -132,23 +187,23 @@ def draw_complete_panel(c):
     fill_panel(c, 1, WHITE)
     x0 = PANEL_W
 
-    # Header band
+    # Header band (taller to give breathing room)
     c.setFillColor(ORANGE)
-    c.rect(x0, PAGE_H - 80, PANEL_W, 80, fill=1, stroke=0)
-    draw_logo_tile(c, x0 + 14, PAGE_H - 62, 36, bg_color=WHITE)
+    c.rect(x0, PAGE_H - 90, PANEL_W, 90, fill=1, stroke=0)
+    # Small dog decoration top-right
+    draw_dog(c, x0 + PANEL_W - 35, PAGE_H - 55, 32, HexColor("#fb923c"))
+    # Logo + title (left-aligned, properly spaced)
+    draw_logo_tile(c, x0 + 18, PAGE_H - 65, 32, bg_color=WHITE)
     c.setFillColor(WHITE)
-    c.setFont(FONT_B, 18)
-    c.drawString(x0 + 60, PAGE_H - 35, "Complete Makeover")
+    c.setFont(FONT_B, 17)
+    c.drawString(x0 + 58, PAGE_H - 38, "Complete Makeover")
     c.setFont(FONT, 10)
-    c.drawString(x0 + 60, PAGE_H - 52, "Full grooming · Wahl shampoo")
-    # WAHL badge
-    c.setStrokeColor(WHITE); c.setLineWidth(1)
-    c.roundRect(x0 + PANEL_W - 60, PAGE_H - 50, 45, 16, 4, fill=0, stroke=1)
-    c.setFont(FONT_B, 8)
-    c.drawCentredString(x0 + PANEL_W - 37, PAGE_H - 40, "WAHL")
+    c.drawString(x0 + 58, PAGE_H - 53, "Full grooming · Wahl shampoo")
+    c.setFont(FONT, 8.5)
+    c.drawString(x0 + 58, PAGE_H - 67, "Premium quality at your home")
 
     # Includes section
-    cur_y = PAGE_H - 105
+    cur_y = PAGE_H - 115
     c.setFillColor(SLATE)
     c.setFont(FONT_B, 9)
     c.drawString(x0 + 25, cur_y, "INCLUDES")
@@ -206,21 +261,22 @@ def draw_luxury_panel(c):
     fill_panel(c, 2, ORANGE_LITE)
     x0 = 2 * PANEL_W
 
-    # Header band
+    # Header band (taller)
     c.setFillColor(ORANGE_DARK)
-    c.rect(x0, PAGE_H - 80, PANEL_W, 80, fill=1, stroke=0)
-    draw_logo_tile(c, x0 + 14, PAGE_H - 62, 36, bg_color=WHITE)
+    c.rect(x0, PAGE_H - 90, PANEL_W, 90, fill=1, stroke=0)
+    # Small cat decoration top-right
+    draw_cat(c, x0 + PANEL_W - 35, PAGE_H - 55, 32, ORANGE)
+    # Logo + title
+    draw_logo_tile(c, x0 + 18, PAGE_H - 65, 32, bg_color=WHITE)
     c.setFillColor(WHITE)
-    c.setFont(FONT_B, 18)
-    c.drawString(x0 + 60, PAGE_H - 35, "Luxury Makeover ★")
+    c.setFont(FONT_B, 17)
+    c.drawString(x0 + 58, PAGE_H - 38, "Luxury Makeover ★")
     c.setFont(FONT, 10)
-    c.drawString(x0 + 60, PAGE_H - 52, "Premium spa · Plus Puppy shampoo")
-    c.setStrokeColor(WHITE); c.setLineWidth(1)
-    c.roundRect(x0 + PANEL_W - 80, PAGE_H - 50, 65, 16, 4, fill=0, stroke=1)
-    c.setFont(FONT_B, 8)
-    c.drawCentredString(x0 + PANEL_W - 47, PAGE_H - 40, "PLUS PUPPY")
+    c.drawString(x0 + 58, PAGE_H - 53, "Premium spa · Plus Puppy")
+    c.setFont(FONT, 8.5)
+    c.drawString(x0 + 58, PAGE_H - 67, "Salon-quality, coat-specific care")
 
-    cur_y = PAGE_H - 105
+    cur_y = PAGE_H - 115
     c.setFillColor(SLATE); c.setFont(FONT_B, 9)
     c.drawString(x0 + 25, cur_y, "INCLUDES")
     cur_y -= 14
@@ -281,18 +337,22 @@ def draw_bath_panel(c):
     x0 = 0
 
     c.setFillColor(ORANGE)
-    c.rect(x0, PAGE_H - 80, PANEL_W, 80, fill=1, stroke=0)
-    draw_logo_tile(c, x0 + 14, PAGE_H - 62, 36, bg_color=WHITE)
+    c.rect(x0, PAGE_H - 90, PANEL_W, 90, fill=1, stroke=0)
+    # Dog illustration top-right
+    draw_dog(c, x0 + PANEL_W - 35, PAGE_H - 55, 32, HexColor("#fb923c"))
+    draw_logo_tile(c, x0 + 18, PAGE_H - 65, 32, bg_color=WHITE)
     c.setFillColor(WHITE)
-    c.setFont(FONT_B, 18)
-    c.drawString(x0 + 60, PAGE_H - 35, "Bath+ Packages")
+    c.setFont(FONT_B, 17)
+    c.drawString(x0 + 58, PAGE_H - 38, "Bath+ Packages")
     c.setFont(FONT, 10)
-    c.drawString(x0 + 60, PAGE_H - 52, "Bath + FREE ear clean & nail trim")
+    c.drawString(x0 + 58, PAGE_H - 53, "Bath + FREE ear clean & nail trim")
+    c.setFont(FONT, 8.5)
+    c.drawString(x0 + 58, PAGE_H - 67, "Quick refresh for your pet")
 
     # Two cards
     # Essential Bath+ (Wahl)
-    cy = PAGE_H - 95
-    card_h = 180
+    cy = PAGE_H - 105
+    card_h = 170
 
     c.setFillColor(LIGHT)
     c.setStrokeColor(BORD); c.setLineWidth(0.6)
@@ -356,13 +416,17 @@ def draw_quick_panel(c):
     x0 = PANEL_W
 
     c.setFillColor(ORANGE)
-    c.rect(x0, PAGE_H - 80, PANEL_W, 80, fill=1, stroke=0)
-    draw_logo_tile(c, x0 + 14, PAGE_H - 62, 36, bg_color=WHITE)
+    c.rect(x0, PAGE_H - 90, PANEL_W, 90, fill=1, stroke=0)
+    # Cat illustration top-right
+    draw_cat(c, x0 + PANEL_W - 35, PAGE_H - 55, 30, HexColor("#fb923c"))
+    draw_logo_tile(c, x0 + 18, PAGE_H - 65, 32, bg_color=WHITE)
     c.setFillColor(WHITE)
-    c.setFont(FONT_B, 18)
-    c.drawString(x0 + 60, PAGE_H - 35, "Quick Services")
+    c.setFont(FONT_B, 17)
+    c.drawString(x0 + 58, PAGE_H - 38, "Quick Services")
     c.setFont(FONT, 10)
-    c.drawString(x0 + 60, PAGE_H - 52, "Add-on grooming · puppy care")
+    c.drawString(x0 + 58, PAGE_H - 53, "Haircuts · puppy care · add-ons")
+    c.setFont(FONT, 8.5)
+    c.drawString(x0 + 58, PAGE_H - 67, "For pets of every size")
 
     items = [
         ("✂️", "TRIM & STYLE", "Haircut only — any size dog or cat",
@@ -403,14 +467,18 @@ def draw_qr_panel(c):
     fill_panel(c, 2, ORANGE_LITE)
     x0 = 2 * PANEL_W
 
-    # Header
+    # Header (taller)
     c.setFillColor(ORANGE_DARK)
-    c.rect(x0, PAGE_H - 80, PANEL_W, 80, fill=1, stroke=0)
-    draw_logo_tile(c, x0 + 14, PAGE_H - 62, 36, bg_color=WHITE)
-    c.setFillColor(WHITE); c.setFont(FONT_B, 18)
-    c.drawString(x0 + 60, PAGE_H - 35, "Book Now")
+    c.rect(x0, PAGE_H - 90, PANEL_W, 90, fill=1, stroke=0)
+    # Dog illustration top-right
+    draw_dog(c, x0 + PANEL_W - 35, PAGE_H - 55, 32, ORANGE)
+    draw_logo_tile(c, x0 + 18, PAGE_H - 65, 32, bg_color=WHITE)
+    c.setFillColor(WHITE); c.setFont(FONT_B, 17)
+    c.drawString(x0 + 58, PAGE_H - 38, "Book Now")
     c.setFont(FONT, 10)
-    c.drawString(x0 + 60, PAGE_H - 52, "Scan or visit app.mypetclub.app")
+    c.drawString(x0 + 58, PAGE_H - 53, "Scan or visit app.mypetclub.app")
+    c.setFont(FONT, 8.5)
+    c.drawString(x0 + 58, PAGE_H - 67, "Booking takes 60 seconds")
 
     # QR card
     qr_y = PAGE_H - 290
