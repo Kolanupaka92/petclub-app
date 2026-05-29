@@ -2910,29 +2910,53 @@ const AdminDashboard = ({ session, onLogout }) => {
                       <Bdg text={b.status} cls={sColor(b.status)}/>
                     </div>
                     {/* Financial breakdown — only visible to admin */}
-                    {(b.total_amount || b.amount) && (
+                    {(b.total_amount || b.amount) && (() => {
+                      const isGroomer   = b.service_type === "Groomer";
+                      const totalPaid   = parseFloat(b.total_amount || b.amount || 0);
+                      const offerAmt    = parseFloat(b.petclub_offer_amount || 0);
+                      const splitBase   = offerAmt > 0 ? Math.max(0, totalPaid - offerAmt) : totalPaid;
+                      // Derive % labels from actual stored values where possible
+                      const provEarned  = parseFloat(b.provider_earnings || (splitBase * (isGroomer ? 0.70 : 0.45)));
+                      const platFee     = parseFloat(b.platform_fee     || (splitBase * (isGroomer ? 0.30 : 0.55)));
+                      const provPct     = splitBase > 0 ? Math.round((provEarned / splitBase) * 100) : (isGroomer ? 70 : 45);
+                      const platPct     = splitBase > 0 ? Math.round((platFee    / splitBase) * 100) : (isGroomer ? 30 : 55);
+                      return (
                       <div className="mt-2 pt-2 border-t border-gray-50">
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="bg-blue-50 rounded-lg p-1.5">
-                            <div className="text-[10px] text-blue-500 font-semibold">Customer Paid</div>
-                            <div className="text-xs font-extrabold text-blue-700">{currencySymbol}{parseFloat(b.total_amount || b.amount || 0).toFixed(2)}</div>
+                        {/* Offer deduction row — only shown when a PETclub offer was applied */}
+                        {offerAmt > 0 && (
+                          <div className="flex items-center justify-between text-[10px] mb-2 bg-amber-50 rounded-lg px-2.5 py-1.5">
+                            <span className="text-amber-600 font-semibold">Customer Paid</span>
+                            <span className="font-bold text-amber-700">{currencySymbol}{totalPaid.toFixed(2)}</span>
+                            <span className="text-amber-500">− PETclub Offer</span>
+                            <span className="font-bold text-amber-700">−{currencySymbol}{offerAmt.toFixed(2)}</span>
+                            <span className="text-amber-600 font-semibold">Net</span>
+                            <span className="font-extrabold text-amber-800">{currencySymbol}{splitBase.toFixed(2)}</span>
                           </div>
+                        )}
+                        <div className={`grid gap-2 text-center ${offerAmt > 0 ? "grid-cols-2" : "grid-cols-3"}`}>
+                          {offerAmt === 0 && (
+                            <div className="bg-blue-50 rounded-lg p-1.5">
+                              <div className="text-[10px] text-blue-500 font-semibold">Customer Paid</div>
+                              <div className="text-xs font-extrabold text-blue-700">{currencySymbol}{totalPaid.toFixed(2)}</div>
+                            </div>
+                          )}
                           <div className="bg-emerald-50 rounded-lg p-1.5">
-                            <div className="text-[10px] text-emerald-500 font-semibold">Provider (45%)</div>
-                            <div className="text-xs font-extrabold text-emerald-700">{currencySymbol}{parseFloat(b.provider_earnings || (b.amount * 0.45) || 0).toFixed(2)}</div>
+                            <div className="text-[10px] text-emerald-500 font-semibold">Provider ({provPct}%)</div>
+                            <div className="text-xs font-extrabold text-emerald-700">{currencySymbol}{provEarned.toFixed(2)}</div>
                           </div>
                           <div className="bg-orange-50 rounded-lg p-1.5">
-                            <div className="text-[10px] text-orange-500 font-semibold">PETclub (55%)</div>
-                            <div className="text-xs font-extrabold text-orange-700">{currencySymbol}{parseFloat(b.platform_fee || (b.amount * 0.55) || 0).toFixed(2)}</div>
+                            <div className="text-[10px] text-orange-500 font-semibold">PETclub ({platPct}%)</div>
+                            <div className="text-xs font-extrabold text-orange-700">{currencySymbol}{platFee.toFixed(2)}</div>
                           </div>
                         </div>
                         {b.gateway_fee && (
                           <div className="text-[10px] text-gray-400 mt-1 text-right">
-                            Gateway fee: −{currencySymbol}{parseFloat(b.gateway_fee).toFixed(2)} · Net platform: {currencySymbol}{(parseFloat(b.platform_fee || 0) - parseFloat(b.gateway_fee || 0)).toFixed(2)}
+                            Gateway fee: −{currencySymbol}{parseFloat(b.gateway_fee).toFixed(2)} · Net platform: {currencySymbol}{(platFee - parseFloat(b.gateway_fee || 0)).toFixed(2)}
                           </div>
                         )}
                       </div>
-                    )}
+                      );
+                    })()}
 
                     {/* ── Manual assign button — shown when no pro found yet ── */}
                     {["no_pros_available","searching",""].includes(b.assignment_status || "") && b.status !== "cancelled" && (
