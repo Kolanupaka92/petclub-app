@@ -2295,15 +2295,15 @@ const AdminDashboard = ({ session, onLogout }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/10">
                   <div className="bg-white/5 rounded-xl p-2.5 text-center">
-                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">PETclub Net (55%)</div>
+                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">PETclub Net</div>
                     <div className="text-orange-400 font-extrabold text-sm">
-                      {currencySymbol}{(stats?.platform_net ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.platform_fee||b.amount*0.55||0),0)).toLocaleString()}
+                      {currencySymbol}{(stats?.platform_net ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.platform_fee||0),0)).toLocaleString()}
                     </div>
                   </div>
                   <div className="bg-white/5 rounded-xl p-2.5 text-center">
-                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">Provider Payouts (45%)</div>
+                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">Provider Payouts</div>
                     <div className="text-emerald-400 font-extrabold text-sm">
-                      {currencySymbol}{(stats?.provider_total ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.provider_earnings||b.amount*0.45||0),0)).toLocaleString()}
+                      {currencySymbol}{(stats?.provider_total ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.provider_earnings||0),0)).toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -2829,7 +2829,10 @@ const AdminDashboard = ({ session, onLogout }) => {
                                  (b.users?.phone || "").includes(q);
             return matchStatus && matchService && matchSearch;
           });
-          const revenue = filtered.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.total_amount||b.amount||0),0);
+          const completedFiltered = filtered.filter(b=>b.status==="completed");
+          const revenue     = completedFiltered.reduce((s,b)=>s+parseFloat(b.total_amount||b.amount||0),0);
+          const totalPlatform = completedFiltered.reduce((s,b)=>s+parseFloat(b.platform_fee||0),0);
+          const totalProvider = completedFiltered.reduce((s,b)=>s+parseFloat(b.provider_earnings||0),0);
           return (
           <div className="max-w-2xl mx-auto px-5 py-6">
             <div className="flex items-center justify-between mb-4">
@@ -2873,11 +2876,11 @@ const AdminDashboard = ({ session, onLogout }) => {
             </div>
 
             {/* Revenue summary for filtered view */}
-            {filtered.some(b=>b.status==="completed") && (
+            {completedFiltered.length > 0 && (
               <div className="bg-gray-900 rounded-2xl p-4 mb-4 grid grid-cols-3 gap-3 text-center">
-                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Gross Revenue</div><div className="text-white font-extrabold text-sm mt-0.5">₹{revenue.toLocaleString()}</div></div>
-                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">PETclub (55%)</div><div className="text-orange-400 font-extrabold text-sm mt-0.5">₹{(revenue*0.55).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
-                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Providers (45%)</div><div className="text-emerald-400 font-extrabold text-sm mt-0.5">₹{(revenue*0.45).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Gross Revenue</div><div className="text-white font-extrabold text-sm mt-0.5">₹{revenue.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">PETclub</div><div className="text-orange-400 font-extrabold text-sm mt-0.5">₹{totalPlatform.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Providers</div><div className="text-emerald-400 font-extrabold text-sm mt-0.5">₹{totalProvider.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
               </div>
             )}
 
