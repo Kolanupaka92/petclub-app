@@ -1947,6 +1947,11 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [now,         setNow]         = useState(() => Date.now()); // drives live deletion countdowns
   const [rolePopover, setRolePopover] = useState(null);              // userId whose role dropdown is open
 
+  /* ── Bookings tab filter state — hoisted from inline IIFE to satisfy Rules of Hooks ── */
+  const [bSearch,  setBSearch]  = useState("");
+  const [bStatus,  setBStatus]  = useState("All");
+  const [bService, setBService] = useState("All");
+
   useEffect(() => {
     Promise.all([
       api.getAdminStats().catch(() => null),
@@ -2775,9 +2780,6 @@ const AdminDashboard = ({ session, onLogout }) => {
         )}
 
         {view === "bookings" && (() => {
-          const [bSearch,     setBSearch]     = React.useState("");
-          const [bStatus,     setBStatus]     = React.useState("All");
-          const [bService,    setBService]    = React.useState("All");
           const SERVICE_TYPES = ["All","Groomer","Trainer","Vet","Walker","Boarding"];
           const STATUS_TABS   = ["All","upcoming","completed","cancelled"];
           const filtered = bookings.filter(b => {

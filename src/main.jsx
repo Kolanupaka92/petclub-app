@@ -14,11 +14,23 @@ import { clearGpsDb } from "./utils/gpsBuffer.js";
  * Catches render errors in any child component and shows a friendly recovery
  * screen instead of a blank white page. Class component required by React API.  */
 class ErrorBoundary extends Component {
-  constructor(props) { super(props); this.state = { error: null }; }
+  constructor(props) { super(props); this.state = { error: null, stack: null, copied: false }; }
   static getDerivedStateFromError(err) { return { error: err }; }
-  componentDidCatch(err, info) { console.error('[ErrorBoundary]', err, info?.componentStack); }
+  componentDidCatch(err, info) {
+    const stack = info?.componentStack || "";
+    this.setState({ stack });
+    console.error('[ErrorBoundary]', err, stack);
+  }
   render() {
     if (!this.state.error) return this.props.children;
+    const { error, stack, copied } = this.state;
+    const details = `PETclub error report\nv${__APP_VERSION__} · ${new Date().toISOString()}\n\n${error?.toString()}\n\nComponent stack:${stack}`;
+    const copyDetails = () => {
+      navigator.clipboard?.writeText(details).then(() => {
+        this.setState({ copied: true });
+        setTimeout(() => this.setState({ copied: false }), 2000);
+      }).catch(() => {});
+    };
     return (
       <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#fff8f0", padding: "24px", fontFamily: "system-ui,-apple-system,sans-serif", textAlign: "center" }}>
         <div style={{ fontSize: 52, marginBottom: 12 }}>🐾</div>
@@ -28,12 +40,17 @@ class ErrorBoundary extends Component {
         </p>
         <button
           onClick={() => window.location.reload()}
-          style={{ background: "#f97316", color: "#fff", fontWeight: 700, fontSize: 14, padding: "12px 28px", borderRadius: 12, border: "none", cursor: "pointer" }}>
+          style={{ background: "#f97316", color: "#fff", fontWeight: 700, fontSize: 14, padding: "12px 28px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 12 }}>
           🔄 Reload App
+        </button>
+        <button
+          onClick={copyDetails}
+          style={{ background: "transparent", color: "#9a3412", fontWeight: 600, fontSize: 12, padding: "8px 20px", borderRadius: 10, border: "1px solid #fed7aa", cursor: "pointer" }}>
+          {copied ? "✅ Copied!" : "📋 Copy error details"}
         </button>
         {process.env.NODE_ENV !== "production" && (
           <pre style={{ marginTop: 20, fontSize: 11, color: "#6b7280", textAlign: "left", maxWidth: 500, overflow: "auto", background: "#f3f4f6", padding: 12, borderRadius: 8 }}>
-            {this.state.error?.toString()}
+            {error?.toString()}{stack}
           </pre>
         )}
       </div>
