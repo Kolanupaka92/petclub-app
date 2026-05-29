@@ -1,3 +1,10 @@
+# [1.27.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.26.3...v1.27.0) (2026-05-29)
+
+
+### Features
+
+* **e2e:** add email OTP login via Mailinator to bypass Firebase SMS limits ([5140c14](https://github.com/Kolanupaka92/petclub-app/commit/5140c14163e35de954bc62bfb83efd554fc136f7))
+
 ## [1.26.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.26.2...v1.26.3) (2026-05-29)
 
 
