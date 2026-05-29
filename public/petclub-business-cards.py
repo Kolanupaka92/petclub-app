@@ -53,6 +53,47 @@ def make_qr_image(url):
     return ImageReader(bio)
 
 
+# ── Mini country flags (drawn programmatically — Arial cannot render flag emojis) ──
+def draw_us_flag(c, x, y, w=11, h=7):
+    """Stars-and-stripes mini flag."""
+    # Red base
+    c.setFillColor(HexColor("#b22234"))
+    c.rect(x, y, w, h, fill=1, stroke=0)
+    # White stripes (7 stripes total — 3 white)
+    sh = h / 7.0
+    c.setFillColor(WHITE)
+    for i in [1, 3, 5]:
+        c.rect(x, y + i * sh, w, sh, fill=1, stroke=0)
+    # Blue canton (top-left ~40% wide, ~57% tall)
+    c.setFillColor(HexColor("#3c3b6e"))
+    c.rect(x, y + 4 * sh, w * 0.4, 3 * sh, fill=1, stroke=0)
+    # Thin border
+    c.setStrokeColor(HexColor("#94a3b8"))
+    c.setLineWidth(0.3)
+    c.rect(x, y, w, h, fill=0, stroke=1)
+
+
+def draw_india_flag(c, x, y, w=11, h=7):
+    """Tricolour: saffron / white / green."""
+    sh = h / 3.0
+    # Saffron top
+    c.setFillColor(HexColor("#FF9933"))
+    c.rect(x, y + 2 * sh, w, sh, fill=1, stroke=0)
+    # White middle
+    c.setFillColor(WHITE)
+    c.rect(x, y + sh, w, sh, fill=1, stroke=0)
+    # Green bottom
+    c.setFillColor(HexColor("#138808"))
+    c.rect(x, y, w, sh, fill=1, stroke=0)
+    # Tiny navy dot (Ashoka chakra centre)
+    c.setFillColor(HexColor("#000080"))
+    c.circle(x + w / 2, y + h / 2, 0.7, fill=1, stroke=0)
+    # Thin border
+    c.setStrokeColor(HexColor("#94a3b8"))
+    c.setLineWidth(0.3)
+    c.rect(x, y, w, h, fill=0, stroke=1)
+
+
 # ── Official PETclub logo ────────────────────────────────────────────────
 def draw_paw(c, x, y, size, color):
     c.setFillColor(color)
@@ -98,24 +139,32 @@ def draw_card_front(c, x, y, person):
     # Cut marks
     draw_cut_marks(c, x, y, CARD_W, CARD_H)
 
-    # White card background
+    # Subtle drop shadow (premium printed feel)
+    c.setFillColor(HexColor("#cbd5e1"))  # slate-300
+    c.roundRect(x + 2, y - 3, CARD_W, CARD_H, 8, fill=1, stroke=0)
+
+    # White card background with thin border
     c.setFillColor(WHITE)
-    c.roundRect(x, y, CARD_W, CARD_H, 8, fill=1, stroke=0)
+    c.setStrokeColor(BORD)
+    c.setLineWidth(0.6)
+    c.roundRect(x, y, CARD_W, CARD_H, 8, fill=1, stroke=1)
 
     # Left orange tile (1.0" wide)
     tile_w = 1.0 * INCH
     c.setFillColor(ORANGE)
-    # Custom shape: rounded only on left side, flat on right edge
+    # Rounded on left, flat on right edge
     c.roundRect(x, y, tile_w + 12, CARD_H, 8, fill=1, stroke=0)
     c.rect(x + tile_w, y, 12, CARD_H, fill=1, stroke=0)
 
     # Background paw decorations on tile
-    c.setFillColor(ORANGE_LITE)
     draw_paw(c, x + 18, y + CARD_H - 25, 18, ORANGE_LITE)
     draw_paw(c, x + tile_w - 18, y + 25, 14, ORANGE_LITE)
 
-    # Logo paw (large, centered on tile)
-    draw_paw(c, x + tile_w / 2, y + CARD_H / 2, 38, WHITE)
+    # Big logo tile centered on orange — white square with orange paw
+    tile_size = 38
+    draw_logo_tile(c, x + tile_w / 2 - tile_size / 2,
+                   y + CARD_H / 2 - tile_size / 2,
+                   tile_size, bg_color=WHITE)
 
     # ─── Right side: contact details ──────────────────────────────────────
     rx = x + tile_w + 20   # right column x-start
@@ -126,48 +175,59 @@ def draw_card_front(c, x, y, person):
     c.setFont(FONT_B, 11)
     c.drawString(rx, y + CARD_H - 22, person['name'])
 
-    # Title (orange)
+    # Title (orange) — bolder weight
     c.setFillColor(ORANGE)
-    c.setFont(FONT_B, 8.5)
+    c.setFont(FONT_B, 9)
     c.drawString(rx, y + CARD_H - 35, person['title'])
 
     # Divider
     c.setStrokeColor(BORD)
     c.setLineWidth(0.4)
-    c.line(rx, y + CARD_H - 43, rx + rw - 10, y + CARD_H - 43)
+    c.line(rx, y + CARD_H - 44, rx + rw - 10, y + CARD_H - 44)
 
-    # Website
+    # Website (bold dark) — keep ASCII only for max font compatibility
     c.setFillColor(DARK)
     c.setFont(FONT_B, 8)
-    c.drawString(rx, y + CARD_H - 56, "www.mypetclub.app")
+    c.drawString(rx, y + CARD_H - 57, "www.mypetclub.app")
 
     # Email
     c.setFillColor(SLATE)
     c.setFont(FONT, 7)
-    c.drawString(rx, y + CARD_H - 68, "✉  " + person['email'])
+    c.drawString(rx, y + CARD_H - 69, "✉  " + person['email'])
 
-    # WhatsApp (NEW)
-    c.setFillColor(HexColor("#16a34a"))  # WhatsApp green for accent
-    c.setFont(FONT_B, 7)
-    c.drawString(rx, y + CARD_H - 80, "💬  " + person['whatsapp'])
+    # WhatsApp (green for instant recognition)
+    c.setFillColor(HexColor("#16a34a"))
+    c.setFont(FONT_B, 7.5)
+    c.drawString(rx, y + CARD_H - 82, "💬  " + person['whatsapp'])
 
-    # Location
+    # Location with mini drawn flag (instead of broken flag emoji)
+    flag_fn = person.get('flag_fn')
+    if flag_fn:
+        flag_fn(c, rx, y + CARD_H - 99, w=11, h=7)
+        text_offset = 16
+    else:
+        text_offset = 0
     c.setFillColor(ORANGE_DARK)
-    c.setFont(FONT, 7)
-    c.drawString(rx, y + CARD_H - 92, "📍  " + person['location'])
+    c.setFont(FONT_B, 7)
+    c.drawString(rx + text_offset, y + CARD_H - 94, person['location'])
 
-    # QR code bottom-right
-    qr_size = 38
+    # QR code bottom-right with subtle frame
+    qr_size = 40
     qr_x = x + CARD_W - qr_size - 8
-    qr_y = y + 8
+    qr_y = y + 12
+    # White frame around QR for clarity
+    c.setFillColor(WHITE)
+    c.setStrokeColor(BORD)
+    c.setLineWidth(0.5)
+    c.roundRect(qr_x - 2, qr_y - 2, qr_size + 4, qr_size + 4, 3, fill=1, stroke=1)
     qr_img = make_qr_image(person['qr_url'])
     c.drawImage(qr_img, qr_x, qr_y, width=qr_size, height=qr_size,
                 preserveAspectRatio=True, mask='auto')
 
-    # "Scan" label below QR
-    c.setFillColor(GRAY)
-    c.setFont(FONT, 5.5)
-    c.drawCentredString(qr_x + qr_size / 2, qr_y - 4, "Scan to Download")
+    # "Scan to WhatsApp" label below QR (more useful than "Download")
+    c.setFillColor(HexColor("#16a34a"))
+    c.setFont(FONT_B, 6)
+    c.drawCentredString(qr_x + qr_size / 2, qr_y - 7, "💬 Scan to Chat")
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -177,6 +237,10 @@ def draw_card_front(c, x, y, person):
 def draw_card_back(c, x, y):
     """Branded back of card."""
     draw_cut_marks(c, x, y, CARD_W, CARD_H)
+
+    # Drop shadow (matches front)
+    c.setFillColor(HexColor("#cbd5e1"))
+    c.roundRect(x + 2, y - 3, CARD_W, CARD_H, 8, fill=1, stroke=0)
 
     # Orange background
     c.setFillColor(ORANGE)
@@ -218,19 +282,23 @@ def draw_card_back(c, x, y):
 PEOPLE = [
     {
         'name':     'Sai Krishna Kolanupaka',
-        'title':    'CEO & Founder',
+        'title':    'Founder',
         'email':    'saikrishna.kolanupaka@mypetclub.app',
         'whatsapp': 'WhatsApp: +1 609-721-5754',
         'location': 'USA Operations',
-        'qr_url':   'https://app.mypetclub.app',
+        'flag_fn':  draw_us_flag,
+        # QR → WhatsApp chat (not app) — scanning a business card should
+        # open a direct conversation, not redirect to a generic download
+        'qr_url':   'https://wa.me/16097215754',
     },
     {
         'name':     'Eshwar Kolanupaka',
-        'title':    'COO & Co-Founder',
+        'title':    'CEO & Co-Founder',
         'email':    'eshwar.kolanupaka@mypetclub.app',
         'whatsapp': 'WhatsApp: +91 93474-11132',
         'location': 'Hyderabad, India',
-        'qr_url':   'https://app.mypetclub.app',
+        'flag_fn':  draw_india_flag,
+        'qr_url':   'https://wa.me/919347411132',
     },
 ]
 
