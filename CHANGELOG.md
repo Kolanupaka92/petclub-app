@@ -1,3 +1,10 @@
+## [1.33.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.33.1...v1.33.2) (2026-05-29)
+
+
+### Bug Fixes
+
+* **auth:** stop forcing profile form on re-login for existing users ([ac7a77d](https://github.com/Kolanupaka92/petclub-app/commit/ac7a77d28a57fa1e8aa34feae03b51c58412f288))
+
 ## [1.33.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.33.0...v1.33.1) (2026-05-29)
 
 
