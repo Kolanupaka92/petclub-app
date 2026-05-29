@@ -1,3 +1,10 @@
+# [1.37.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.36.0...v1.37.0) (2026-05-29)
+
+
+### Features
+
+* cancel policy display, refund mgmt, pro cancel, loyalty reversal, chat masking ([40d9fa9](https://github.com/Kolanupaka92/petclub-app/commit/40d9fa9a3ec4b285f311d0d386540880a72bf79e))
+
 # [1.36.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.35.0...v1.36.0) (2026-05-29)
 
 
