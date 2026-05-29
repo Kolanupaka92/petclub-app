@@ -1348,11 +1348,26 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                       {/* 🚗 On My Way + 📍 Location sharing */}
                       {isActive && (
                         b.assignment_status === 'confirmed' ? (
-                          <button
-                            onClick={() => startJourney(b.id)}
-                            className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 active:scale-[0.97] text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md">
-                            🚗 I&apos;m On My Way — Start Journey
-                          </button>
+                          <div className="space-y-2">
+                            <button
+                              onClick={() => startJourney(b.id)}
+                              className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 active:scale-[0.97] text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md">
+                              🚗 I&apos;m On My Way — Start Journey
+                            </button>
+                            {/* Emergency cancel — professional unable to attend */}
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm("Cancel this booking? The customer will be notified and we'll find them another professional. Only use this for genuine emergencies.")) return;
+                                try {
+                                  await api.cancelBooking(b.id, "Professional unable to attend");
+                                  setBookings(prev => prev.map(bk => bk.id === b.id ? { ...bk, status: 'upcoming', assignment_status: 'searching' } : bk));
+                                  showToast("Booking returned to queue. Customer will be notified.", "success");
+                                } catch (e) { showToast("❌ " + (e.message || "Failed"), "error"); }
+                              }}
+                              className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-gray-400 border border-gray-200 rounded-xl py-2 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition">
+                              ⚠️ Emergency Cancel — Can&apos;t Attend
+                            </button>
+                          </div>
                         ) : b.assignment_status === 'on_the_way' ? (
                           <div className="space-y-2">
                             {isSharing ? (
@@ -3064,8 +3079,28 @@ const AdminDashboard = ({ session, onLogout }) => {
                       </button>
                     )}
                     {b.status === "cancelled" && b.refund_amount != null && (
-                      <div className="mt-2 text-[10px] text-gray-400 bg-red-50 rounded-lg px-2.5 py-1.5">
-                        Cancelled · {b.cancelled_by || "—"} · Fee: {currencySymbol}{parseFloat(b.cancellation_fee||0).toFixed(2)} · Refund: {currencySymbol}{parseFloat(b.refund_amount||0).toFixed(2)} · {b.refund_status || "pending"}
+                      <div className="mt-2 bg-red-50 rounded-xl px-3 py-2.5 space-y-1.5">
+                        <div className="text-[10px] text-gray-500 flex flex-wrap gap-x-3">
+                          <span>By: <strong>{b.cancelled_by || "—"}</strong></span>
+                          <span>Fee: <strong>{currencySymbol}{parseFloat(b.cancellation_fee||0).toFixed(2)}</strong></span>
+                          <span>Refund: <strong className="text-emerald-700">{currencySymbol}{parseFloat(b.refund_amount||0).toFixed(2)}</strong></span>
+                          <span className={`font-bold ${b.refund_status === 'processed' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {b.refund_status === 'processed' ? '✓ Refund Processed' : b.refund_status === 'not_applicable' ? 'No Refund' : '⏳ Refund Pending'}
+                          </span>
+                        </div>
+                        {b.refund_amount > 0 && b.refund_status === 'pending' && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api.adminSetRefundStatus(b.id, 'processed');
+                                setBookings(prev => prev.map(bk => bk.id === b.id ? { ...bk, refund_status: 'processed' } : bk));
+                                showToast("Refund marked as processed — customer notified.", "success");
+                              } catch (e) { showToast(e.message || "Failed", "error"); }
+                            }}
+                            className="w-full text-xs font-bold text-emerald-700 border border-emerald-200 bg-white rounded-lg py-1.5 hover:bg-emerald-50 transition">
+                            ✓ Mark Refund as Processed
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

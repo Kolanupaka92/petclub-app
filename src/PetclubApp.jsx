@@ -2169,8 +2169,17 @@ export default function PetclubApp({ session, onLogout }) {
                 </div>
               )}
 
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 text-xs text-blue-700">
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-3 text-xs text-blue-700">
                 🔍 After confirming, we&apos;ll find the best available {bookingForm.service_type} in your area. You&apos;ll be notified once matched!
+              </div>
+
+              {/* ── Cancellation policy — must be visible before checkout ── */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-xs text-amber-800 space-y-1">
+                <div className="font-bold text-amber-900 flex items-center gap-1.5">📋 Cancellation Policy</div>
+                <div className="flex items-start gap-2"><span className="text-emerald-600 font-bold shrink-0">✓</span><span>Cancel <strong>2+ hours</strong> before booking — <strong>full refund</strong>, no charge</span></div>
+                <div className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0">✗</span><span>Cancel <strong>under 2 hours</strong> before — ₹300 cancellation fee, rest refunded</span></div>
+                <div className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0">✗</span><span>Customer <strong>no-show</strong> at location — ₹300 fee, rest refunded</span></div>
+                <div className="flex items-start gap-2"><span className="text-gray-500 font-bold shrink-0">⊘</span><span><strong>Rescheduling is not available</strong> under any circumstances</span></div>
               </div>
 
               {/* ── Clickwrap consent checkbox ───────────────────────────────────── */}

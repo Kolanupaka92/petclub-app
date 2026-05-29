@@ -84,7 +84,8 @@ export const api = {
   getCancelPreview:    (id) => req('GET', `/bookings/${id}/cancel-preview`, null, true),
   respondBooking: (id, action) => req('POST', `/bookings/${id}/respond`, { action }, true),
   getIncomingBookings: () => req('GET', '/bookings/incoming', null, true),
-  adminAssignBooking: (id, professionalId) => req('PUT', `/bookings/${id}/assign`, { professionalId }, true),
+  adminAssignBooking:    (id, professionalId) => req('PUT', `/bookings/${id}/assign`, { professionalId }, true),
+  adminSetRefundStatus:  (id, status)         => req('PUT', `/admin/bookings/${id}/refund-status`, { status }, true),
   getMessages:  (bookingId)          => req('GET',  `/bookings/${bookingId}/messages`, null, true),
   sendMessage:  (bookingId, content) => req('POST', `/bookings/${bookingId}/messages`, { content }, true),
 
