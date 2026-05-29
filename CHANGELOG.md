@@ -1,3 +1,10 @@
+# [1.31.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.30.1...v1.31.0) (2026-05-29)
+
+
+### Features
+
+* add business cards PDF with WhatsApp numbers ([6b6ffe4](https://github.com/Kolanupaka92/petclub-app/commit/6b6ffe41cb284ef6b6b2dc6dfc28dd3ed1093d3e))
+
 ## [1.30.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.30.0...v1.30.1) (2026-05-29)
 
 
