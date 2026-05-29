@@ -62,16 +62,33 @@ def fill_panel(c, panel_idx, color):
 
 
 def draw_paw(c, x, y, size, color):
-    """Simple paw print: 4 toe pads + 1 main pad."""
+    """Official PETclub paw: 4 ellipse toes + larger main pad (matches icon.svg)."""
     c.setFillColor(color)
-    r = size * 0.18
-    # Main pad
-    c.circle(x, y - size * 0.2, size * 0.40, fill=1, stroke=0)
-    # Toes
-    c.circle(x - size * 0.35, y + size * 0.10, r, fill=1, stroke=0)
-    c.circle(x - size * 0.12, y + size * 0.30, r, fill=1, stroke=0)
-    c.circle(x + size * 0.12, y + size * 0.30, r, fill=1, stroke=0)
-    c.circle(x + size * 0.35, y + size * 0.10, r, fill=1, stroke=0)
+    # Toes — ellipses at top, arranged in natural arc
+    # SVG: cx=150,212,300,362 cy=210,165,165,210 rx=38 ry=34
+    # Normalised to size (SVG canvas 512). Center pad at (256, 335).
+    s = size / 512.0
+    toes = [(150, 210), (212, 165), (300, 165), (362, 210)]
+    for (cx, cy) in toes:
+        c.ellipse(x + (cx - 256 - 38) * s, y + (335 - cy - 34) * s,
+                  x + (cx - 256 + 38) * s, y + (335 - cy + 34) * s,
+                  fill=1, stroke=0)
+    # Main pad — larger, more dominant
+    c.ellipse(x - 114 * s, y - 97 * s, x + 114 * s, y + 97 * s, fill=1, stroke=0)
+
+
+def draw_logo_tile(c, x, y, size, bg_color=None):
+    """Draw the official PETclub logo: rounded square with white paw inside.
+
+    bg_color=None uses brand orange. Pass WHITE for inverted version on dark bg.
+    """
+    fill = ORANGE if bg_color is None else bg_color
+    paw_color = WHITE if bg_color is None else ORANGE
+    radius = size * 0.225  # matches SVG rx=115/512
+    c.setFillColor(fill)
+    c.roundRect(x, y, size, size, radius, fill=1, stroke=0)
+    # Paw centered inside the tile
+    draw_paw(c, x + size / 2, y + size / 2, size * 0.95, paw_color)
 
 
 def draw_dotted_paw_bg(c, panel_idx, color, opacity_color):
@@ -97,19 +114,17 @@ def draw_back_panel(c):
     c.setFillColor(ORANGE)
     c.rect(x0, PAGE_H - 80, PANEL_W, 80, fill=1, stroke=0)
 
-    # Paw icon (white circle with paw)
-    c.setFillColor(WHITE)
-    c.circle(x0 + 30, PAGE_H - 40, 16, fill=1, stroke=0)
-    draw_paw(c, x0 + 30, PAGE_H - 38, 18, ORANGE)
+    # Official logo tile (white tile + orange paw on orange band)
+    draw_logo_tile(c, x0 + 14, PAGE_H - 60, 36, bg_color=WHITE)
 
     # Brand text
     c.setFillColor(WHITE)
     c.setFont(FONT_B, 20)
-    c.drawString(x0 + 56, PAGE_H - 38, "PET")
+    c.drawString(x0 + 60, PAGE_H - 38, "PET")
     c.setFont(FONT, 20)
-    c.drawString(x0 + 56 + 38, PAGE_H - 38, "club")
+    c.drawString(x0 + 60 + 38, PAGE_H - 38, "club")
     c.setFont(FONT, 9)
-    c.drawString(x0 + 56, PAGE_H - 53, "Paw Care at Your Doorstep")
+    c.drawString(x0 + 60, PAGE_H - 53, "Paw Care at Your Doorstep")
 
     # QR code box (orange card)
     qr_box_y = PAGE_H - 320
@@ -222,11 +237,11 @@ def draw_cover_panel(c):
                         (x0 + 130, 280, 35)]:
         draw_paw(c, px, py, sz, light_paws)
 
-    # Big white circle with paw (logo)
+    # Big logo tile (official PETclub icon — white rounded square with orange paw)
     cy = PAGE_H * 0.62
-    c.setFillColor(WHITE)
-    c.circle(x0 + PANEL_W / 2, cy, 50, fill=1, stroke=0)
-    draw_paw(c, x0 + PANEL_W / 2, cy + 4, 55, ORANGE)
+    tile_size = 110
+    draw_logo_tile(c, x0 + PANEL_W / 2 - tile_size / 2, cy - tile_size / 2,
+                   tile_size, bg_color=WHITE)
 
     # Brand name (large)
     c.setFillColor(WHITE)

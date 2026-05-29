@@ -1263,7 +1263,7 @@ export default function PetclubApp({ session, onLogout }) {
         </div>
       </div>
 
-      {/* ── Share PETclub — brochure download + invite friends ── */}
+      {/* ── Share PETclub — brochures + WhatsApp share ── */}
       <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-5 mb-4 relative overflow-hidden shadow-card">
         <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full pointer-events-none"/>
         <div className="absolute -left-4 -bottom-4 w-24 h-24 bg-black/5 rounded-full pointer-events-none"/>
@@ -1272,36 +1272,44 @@ export default function PetclubApp({ session, onLogout }) {
             <div className="w-11 h-11 bg-white/25 rounded-xl flex items-center justify-center text-2xl border border-white/20">📄</div>
             <div className="flex-1">
               <h3 className="text-white font-black text-base">Share PETclub</h3>
-              <p className="text-orange-100/90 text-xs">Send the brochure to friends & family</p>
+              <p className="text-orange-100/90 text-xs">Send our brochures to friends & family</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {/* View / Download Brochure */}
+          {/* Two brochure links */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <a
               href="/PETclub-Brochure.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-white/20 hover:bg-white/30 active:scale-[0.98] text-white font-bold py-2.5 rounded-xl text-xs text-center transition-all border border-white/20 flex items-center justify-center gap-1.5">
-              <span>📄</span> View Brochure
+              <span>📋</span> About PETclub
             </a>
-            {/* Share via WhatsApp / native share */}
-            <button
-              onClick={async () => {
-                const url = `${window.location.origin}/PETclub-Brochure.pdf`;
-                const shareText = `🐾 Check out PETclub — premium at-home pet grooming, vet, and training services. Download here: ${url}`;
-                try {
-                  if (navigator.share) {
-                    await navigator.share({ title: "PETclub", text: shareText, url });
-                  } else {
-                    // Fallback: open WhatsApp share link
-                    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
-                  }
-                } catch (e) { /* user cancelled — ignore */ }
-              }}
-              className="bg-white text-orange-600 hover:bg-orange-50 active:scale-[0.98] font-bold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
-              <span>💬</span> Share Now
-            </button>
+            <a
+              href="/PETclub-Pricing.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white/20 hover:bg-white/30 active:scale-[0.98] text-white font-bold py-2.5 rounded-xl text-xs text-center transition-all border border-white/20 flex items-center justify-center gap-1.5">
+              <span>💰</span> Pricing List
+            </a>
           </div>
+          {/* WhatsApp share */}
+          <button
+            onClick={async () => {
+              const baseUrl   = window.location.origin;
+              const aboutUrl  = `${baseUrl}/PETclub-Brochure.pdf`;
+              const priceUrl  = `${baseUrl}/PETclub-Pricing.pdf`;
+              const shareText = `🐾 Check out PETclub — premium at-home pet grooming, vet & training in Hyderabad.\n\n📋 About: ${aboutUrl}\n💰 Pricing: ${priceUrl}\n\nBook in 60s: ${baseUrl}`;
+              try {
+                if (navigator.share) {
+                  await navigator.share({ title: "PETclub", text: shareText, url: baseUrl });
+                } else {
+                  window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+                }
+              } catch (e) { /* user cancelled */ }
+            }}
+            className="w-full bg-white text-orange-600 hover:bg-orange-50 active:scale-[0.98] font-bold py-2.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+            <span>💬</span> Share via WhatsApp
+          </button>
         </div>
       </div>
 
