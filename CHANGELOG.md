@@ -1,3 +1,10 @@
+# [1.38.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.37.2...v1.38.0) (2026-05-30)
+
+
+### Features
+
+* update grooming packages, sync loyalty model, clean groomer earnings ([80868c2](https://github.com/Kolanupaka92/petclub-app/commit/80868c2f86a7e444fc7393dd9d8260de6ef7f938))
+
 ## [1.37.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.37.1...v1.37.2) (2026-05-30)
 
 
