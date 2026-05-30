@@ -1247,66 +1247,41 @@ export default function Login({ onLogin, initialHint }) {
                     <div className="pt-3">
                       <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-2">1. Earnings & Compensation</p>
                       <div className="bg-gray-900 rounded-xl px-4 py-2.5 mb-2">
-                        <p className="text-xs text-white font-semibold">Total Partner Earnings = 70% Commission + Travel Allowance + 100% of Tips</p>
+                        <p className="text-xs text-white font-semibold">Total Partner Earnings = 70% Commission + 100% of Tips</p>
                       </div>
                       <div className="space-y-1.5 text-xs text-orange-800">
                         <p>• <strong>70% Service Commission</strong> — you retain 70% of the base service value, including any add-ons upsold at the customer's doorstep. PETclub retains 30%.</p>
                         <p>• <strong>100% Gratuity</strong> — all tips (cash or in-app) go entirely to you. PETclub takes zero commission on tips.</p>
                       </div>
-                      {/* Travel allowance table */}
-                      <div className="mt-2 rounded-xl overflow-hidden border border-orange-200">
-                        <div className="bg-gray-800 px-3 py-1.5">
-                          <p className="text-xs font-bold text-white">Flat Travel Allowance (per completed job)</p>
-                        </div>
-                        {[
-                          { tier:"Tier 1", dist:"Up to 8 km",   amt:"₹150" },
-                          { tier:"Tier 2", dist:"8 – 20 km",    amt:"₹250" },
-                          { tier:"Tier 3", dist:"20 – 40 km",   amt:"₹350 – ₹400" },
-                        ].map((r, i) => (
-                          <div key={r.tier} className={`flex items-center text-xs px-3 py-2 ${i % 2 === 0 ? "bg-white" : "bg-orange-50/50"}`}>
-                            <span className="w-14 font-bold text-orange-700 shrink-0">{r.tier}</span>
-                            <span className="flex-1 text-gray-600">{r.dist}</span>
-                            <span className="font-extrabold text-emerald-700">{r.amt}</span>
-                          </div>
-                        ))}
-                      </div>
                     </div>
 
-                    {/* Section 2 — Insurance */}
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5">
-                      <p className="text-xs font-extrabold text-emerald-700 uppercase tracking-wider mb-1">2. Company-Sponsored Insurance</p>
-                      <p className="text-xs text-emerald-800">PETclub covers <strong>100%</strong> of your Group Accidental Insurance Policy premiums — zero deductions from your earnings. Coverage is active throughout all working hours including transit.</p>
-                    </div>
-
-                    {/* Section 3 — Weekly Settlement */}
+                    {/* Section 2 — Weekly Settlement */}
                     <div>
-                      <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-1.5">3. Weekly Settlement</p>
+                      <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-1.5">2. Weekly Settlement</p>
                       <p className="text-xs text-orange-800 mb-2">Earnings are transferred to your bank account <strong>every Saturday</strong>. You will receive an itemized statement via WhatsApp/App showing:</p>
                       <div className="space-y-1 text-xs text-orange-800">
-                        {["Jobs completed during the week","Total gross service value","Your exact 70% commission","Travel allowances & performance bonuses"].map(item => (
+                        {["Jobs completed during the week","Total gross service value","Your exact 70% commission","Performance bonuses"].map(item => (
                           <p key={item} className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span>{item}</p>
                         ))}
                       </div>
                     </div>
 
-                    {/* Section 4 — Performance */}
+                    {/* Section 3 — Performance */}
                     <div>
-                      <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-1.5">4. Performance Incentives</p>
+                      <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-1.5">3. Performance Incentives</p>
                       <div className="space-y-1 text-xs text-orange-800">
                         <p>• <strong>🏆 Elite Award</strong> — Top groomer/trainer monthly: ₹1,500 cash bonus + Gold badge on profile for 30 days</p>
-                        <p>• <strong>⭐ 5-Star Review Bonus</strong> — ₹100 extra for every review mentioning your name</p>
                         <p>• <strong>🔄 Subscription Conversion</strong> — ₹250 for every client on a recurring care package</p>
                         <p>• <strong>✅ Reliability Bonus</strong> — ₹750/month for 80+ jobs with zero last-minute cancellations</p>
                       </div>
                     </div>
 
-                    {/* Section 5 — Operational Standards */}
+                    {/* Section 4 — Operational Standards */}
                     <div>
-                      <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-1.5">5. Operational Standards</p>
+                      <p className="text-xs font-extrabold text-orange-700 uppercase tracking-wider mb-1.5">4. Operational Standards</p>
                       <div className="space-y-1 text-xs text-orange-800">
                         <p>• <strong>App Check-Ins</strong> — Log arrival, obtain customer signature on waiver, and close out before departing</p>
                         <p>• <strong>Visual QC</strong> — Upload before & after photos for every session via the app</p>
-                        <p>• <strong>Insurance Validity</strong> — Coverage is linked to your active app check-in status</p>
                         <p>• <strong>Quality Gate</strong> — Repeated negative feedback may result in suspension from premium zones</p>
                       </div>
                     </div>
@@ -1324,7 +1299,7 @@ export default function Login({ onLogin, initialHint }) {
                     className="mt-0.5 w-4 h-4 accent-orange-500 shrink-0 cursor-pointer"
                   />
                   <span className="text-xs text-gray-700 leading-relaxed">
-                    I have read and agree to the <strong>PETclub Partner Network Agreement</strong> — including the 70% commission structure, travel allowance tiers, weekly settlement terms, operational standards, and insurance policy.
+                    I have read and agree to the <strong>PETclub Partner Network Agreement</strong> — including the 70% commission structure, weekly settlement terms, performance incentives, and operational standards.
                   </span>
                 </label>
               </div>
