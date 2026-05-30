@@ -1,3 +1,10 @@
+## [1.37.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.37.0...v1.37.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* **reports:** remove hardcoded 55%/45% labels from Revenue Report ([3d10045](https://github.com/Kolanupaka92/petclub-app/commit/3d1004527ae087ba0c48f863cdee336b3a09a5b2))
+
 # [1.37.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.36.0...v1.37.0) (2026-05-29)
 
 
