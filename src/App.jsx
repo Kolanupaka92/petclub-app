@@ -3984,7 +3984,10 @@ export default function ProApp({ session, onLogout }) {
     api.getMyProProfile().then(res => {
       const subRole = res.profile?.sub_role;
       if (subRole) setEnrichedSession(s => ({ ...s, subRole }));
-      const incomplete = !res.profile?.bio && !res.profile?.experience;
+      // Use `name` as the completion signal — it is always saved on successful
+      // submission (step 1 required field) and is more reliable than bio/experience
+      // which can return null in edge cases, causing onboarding to re-appear on refresh.
+      const incomplete = !res.profile?.name;
       setNeedsOnboarding(incomplete);
       setProfileChecked(true);
     }).catch(() => { setNeedsOnboarding(false); setProfileChecked(true); });
