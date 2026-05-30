@@ -1,3 +1,10 @@
+## [1.38.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.0...v1.38.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* **e2e:** OTP rate-limit retry, correct timeouts, missed loyalty text ([9dc8d50](https://github.com/Kolanupaka92/petclub-app/commit/9dc8d5057b22b3cffca091c981552df89b1c1bb5))
+
 # [1.38.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.37.2...v1.38.0) (2026-05-30)
 
 
