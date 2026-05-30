@@ -1,3 +1,10 @@
+## [1.38.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.3...v1.38.4) (2026-05-30)
+
+
+### Bug Fixes
+
+* **pro:** restore bio-based onboarding check, bypass for verified pros ([dc4dbd7](https://github.com/Kolanupaka92/petclub-app/commit/dc4dbd7faff2b69baa5eee1435d039a412739df1))
+
 ## [1.38.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.2...v1.38.3) (2026-05-30)
 
 
