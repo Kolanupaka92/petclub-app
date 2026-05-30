@@ -1,3 +1,10 @@
+## [1.38.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.1...v1.38.2) (2026-05-30)
+
+
+### Bug Fixes
+
+* **login:** remove travel allowance, insurance, 5-star review from Partner Agreement ([736e153](https://github.com/Kolanupaka92/petclub-app/commit/736e153b3954c206e734808cb85b70f1be21c0d2))
+
 ## [1.38.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.0...v1.38.1) (2026-05-30)
 
 
