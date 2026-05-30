@@ -3320,8 +3320,8 @@ const AdminDashboard = ({ session, onLogout }) => {
                   {/* Summary banner */}
                   <div className="bg-gray-900 rounded-2xl p-5 grid grid-cols-3 gap-4 text-center">
                     <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Gross Revenue</div><div className="text-white text-xl font-extrabold">₹{parseFloat(gross).toLocaleString()}</div></div>
-                    <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">PETclub Net (55%)</div><div className="text-orange-400 text-xl font-extrabold">₹{parseFloat(platform).toLocaleString()}</div></div>
-                    <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Providers (45%)</div><div className="text-emerald-400 text-xl font-extrabold">₹{parseFloat(provider).toLocaleString()}</div></div>
+                    <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">PETclub Net</div><div className="text-orange-400 text-xl font-extrabold">₹{parseFloat(platform).toLocaleString()}</div></div>
+                    <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Providers</div><div className="text-emerald-400 text-xl font-extrabold">₹{parseFloat(provider).toLocaleString()}</div></div>
                   </div>
 
                   {/* Per-professional breakdown */}
