@@ -1,3 +1,10 @@
+## [1.37.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.37.1...v1.37.2) (2026-05-30)
+
+
+### Bug Fixes
+
+* **e2e:** pro cancel removes booking from list immediately ([dc8ea5b](https://github.com/Kolanupaka92/petclub-app/commit/dc8ea5b177459298cf52dd053eb64bd614dc263d))
+
 ## [1.37.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.37.0...v1.37.1) (2026-05-30)
 
 
