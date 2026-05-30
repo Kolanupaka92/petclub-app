@@ -247,26 +247,40 @@ export async function loginWithEmail(page, emailUser) {
   await emailInput.waitFor({ state: 'visible', timeout: 10000 });
   await emailInput.fill(emailUser.email);
 
-  // ── Click "Send OTP" ──────────────────────────────────────────────────────
+  // ── Click "Send OTP" (with one automatic retry on IP rate-limit) ────────────
+  // The backend enforces an IP-based OTP rate limit (~1 per 60s per IP).
+  // When hit, the form shows an error and no OTP boxes appear. We wait 75s
+  // and retry once rather than failing the test immediately — this handles
+  // consecutive test runs without requiring manual cooldown between them.
   const sendBtn = page.locator('button:has-text("Send OTP"), button:has-text("Continue")').first();
   await sendBtn.waitFor({ state: 'visible', timeout: 10000 });
   await sendBtn.click();
 
-  // ── Wait for OTP boxes ────────────────────────────────────────────────────
-  // If the backend is rate-limiting (IP-based), the Send OTP step will show an
-  // error and OTP boxes will never appear.  In that case, return gracefully so
-  // the caller can decide to skip rather than fail the test.
   const firstOtpBox = page.locator('input[maxlength="1"][inputmode="numeric"]').first();
-  const otpBoxVisible = await firstOtpBox
+  let otpBoxVisible = await firstOtpBox
     .waitFor({ state: 'visible', timeout: 20000 })
     .then(() => true)
     .catch(() => false);
 
   if (!otpBoxVisible) {
-    // Surface the backend's error message so it shows up in the test log
     const errText = await page.locator('[class*="red"], [class*="error"], .text-red-500').first()
-      .textContent({ timeout: 2000 }).catch(() => 'OTP boxes did not appear');
-    throw new Error(`loginWithEmail: OTP step not reached — ${errText}`);
+      .textContent({ timeout: 2000 }).catch(() => '');
+    if (errText.includes('Too many OTP') || errText.includes('wait')) {
+      // IP rate-limited — wait 75s for the window to reset, then retry once
+      console.log(`[loginWithEmail] Rate limited — waiting 75s before retry…`);
+      await page.waitForTimeout(75000);
+      const retryBtn = page.locator('button:has-text("Send OTP"), button:has-text("Continue")').first();
+      if (await retryBtn.isVisible({ timeout: 3000 }).catch(() => false)) await retryBtn.click();
+      otpBoxVisible = await firstOtpBox
+        .waitFor({ state: 'visible', timeout: 20000 })
+        .then(() => true)
+        .catch(() => false);
+    }
+    if (!otpBoxVisible) {
+      const finalErr = await page.locator('[class*="red"], [class*="error"], .text-red-500').first()
+        .textContent({ timeout: 2000 }).catch(() => 'OTP boxes did not appear');
+      throw new Error(`loginWithEmail: OTP step not reached — ${finalErr}`);
+    }
   }
 
   // ── Fetch OTP from Mailinator ─────────────────────────────────────────────

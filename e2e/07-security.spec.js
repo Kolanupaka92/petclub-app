@@ -30,6 +30,7 @@ test.describe('SP security — prices, admin access, ID docs', () => {
       test.skip(true, 'Requires Firebase test numbers — +91 9999900002 → 123456');
       return;
     }
+    test.setTimeout(240_000); // loginWithEmail: up to 75s rate-limit retry + 90s Mailinator + buffer
     await loginWithEmail(page, EMAIL_USERS.groomer);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
@@ -55,12 +56,17 @@ test.describe('SP security — prices, admin access, ID docs', () => {
 });
 
 // ── 2) Client-side role escalation (owner) ────────────────────────────────
+// NOTE: wait 70s before sending a second OTP from the same IP — the backend
+// enforces a 1-minute IP-based OTP rate limit. Without this pause, this test
+// and the data-isolation test below always fail when run after the SP security
+// test in the same suite.
 test.describe('Admin route access control', () => {
   test('customer cannot access admin dashboard via localStorage role injection', async ({ page }) => {
     if (!FIREBASE_TESTS) {
       test.skip(true, 'Requires Firebase test numbers — +91 9999900001 → 123456');
       return;
     }
+    test.setTimeout(240_000); // loginWithEmail: up to 75s rate-limit retry + 90s Mailinator + buffer
     await loginWithEmail(page, EMAIL_USERS.owner);
     await page.waitForLoadState('networkidle');
 
@@ -107,6 +113,7 @@ test.describe('No secrets in frontend', () => {
 test.describe('Data isolation', () => {
   test('owner and groomer receive distinct JWT tokens', async ({ browser }) => {
     if (!FIREBASE_TESTS) { test.skip(true, 'Requires Firebase test numbers'); return; }
+    test.setTimeout(300_000); // two loginWithEmail calls may each retry 75s on rate-limit
 
     const ctx1 = await browser.newContext();
     const ctx2 = await browser.newContext();

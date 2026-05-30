@@ -1393,7 +1393,7 @@ export default function PetclubApp({ session, onLogout }) {
               <p className="text-xs text-gray-500 mt-1.5">
                 {canRedeem
                   ? "🎉 You've unlocked a free Essential Bath!"
-                  : `Earn ${needed.toLocaleString("en-IN")} more credits for a free Basic Bath!`}
+                  : `Earn ${needed.toLocaleString("en-IN")} more credits for a free Essential Bath!`}
               </p>
               {/* Fix 5: pending credits notice */}
               {pending > 0 && (
