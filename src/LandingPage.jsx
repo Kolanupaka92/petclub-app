@@ -209,7 +209,7 @@ const FAQS = [
   { q: "How are professionals verified?", a: "Every pro submits a government-issued photo ID plus their professional certification. Our team manually reviews and approves each application — no shortcuts. The ✅ Verified badge only shows after that review is complete (typically 24–48 hours)." },
   { q: "What does it cost? Are there hidden fees?", a: "Prices are shown upfront at checkout — no surprises. There's no subscription or platform fee for customers. For professionals, PETclub takes 30% and pays out 70% every Saturday." },
   { q: "Is there a live GPS on every booking?", a: "Yes — not just for dog walking. Every groomer, trainer, and boarding drop-off shows a live map from the moment they start their journey. You also get a push notification when they're 10 minutes away." },
-  { q: "How do loyalty points work?", a: "You earn points automatically on every completed booking. Grooming = 50 pts, Boarding = 60 pts, Training = 40 pts, Walking = 20 pts per session. Redeem them for money off future bookings — no codes needed." },
+  { q: "How do loyalty points work?", a: "You earn 1 credit for every ₹10 spent on any booking. Bonus credits: +50 for writing a review, +200 for referring a friend. 1,000 credits = 1 Free Essential Bath (₹800+ value) — applied automatically at checkout, no codes needed." },
 ];
 
 function FaqAccordion({ dark = false }) {
@@ -515,8 +515,8 @@ export default function LandingPage({ onGetStarted }) {
               body="Attach vaccination records, allergy notes, and vet history directly to every booking. Your pro arrives knowing your pet — not guessing."
               highlight="Pre-loaded health notes" />
             <WinCard icon="🏆" title="Loyalty rewards on every service"
-              body="Earn PETclub points on every booking — grooming, walking, training, boarding. Redeem for discounts. Most platforms offer nothing after your payment clears."
-              highlight="Points on all 5 services" />
+              body="Earn 1 credit per ₹10 spent on every booking. Bonus credits for reviews and referrals. Redeem 1,000 credits for a free Essential Bath — no codes needed."
+              highlight="Points on every booking" />
           </div>
         </div>
       </section>
@@ -535,7 +535,7 @@ export default function LandingPage({ onGetStarted }) {
               Every booking earns you{" "}<span style={{ color: "#4ade80" }}>points.</span>
             </h2>
             <p style={{ fontSize: 15, color: "#c2956a", margin: "0 0 24px", lineHeight: 1.7 }}>
-              Earn PETclub points automatically on every grooming, walking, training, or boarding session. Redeem them for money off your next booking — no codes, no faff.
+              Earn 1 credit per ₹10 spent on any booking. Bonus credits for reviews (+50) and referrals (+200). Hit 1,000 credits and get a Free Essential Bath — redeemed automatically, no codes needed.
             </p>
             <button
               onClick={() => onGetStarted("customer")}
@@ -546,10 +546,10 @@ export default function LandingPage({ onGetStarted }) {
           </div>
           <div style={{ flex: "1 1 280px", minWidth: 0, display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
             {[
-              { icon: "✂️", label: "Grooming",    pts: "+50 pts" },
-              { icon: "🦮", label: "Dog Walking", pts: "+20 pts" },
-              { icon: "🐕‍🦺", label: "Training",  pts: "+40 pts" },
-              { icon: "🏠", label: "Boarding",    pts: "+60 pts" },
+              { icon: "💰", label: "Every Booking",  pts: "1 / ₹10"  },
+              { icon: "⭐", label: "Write a Review",  pts: "+50"       },
+              { icon: "👥", label: "Refer a Friend",  pts: "+200"      },
+              { icon: "🎁", label: "Free Essential Bath", pts: "1,000 pts" },
             ].map(item => (
               <div key={item.label} style={{ flex: "1 1 120px", background: DARK3, border: "1px solid rgba(34,197,94,0.15)", borderRadius: 16, padding: "18px 14px", textAlign: "center" }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>{item.icon}</div>

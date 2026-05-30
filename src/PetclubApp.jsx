@@ -28,10 +28,16 @@ const INITIAL_PETS = [];
 const PLATFORM_DISCOUNT = 150; // fallback — overridden by catalog.platform_discount
 
 // Grooming — tiered by pet size (fallback)
+// Small = small dog (up to 10 kg), Medium = mid-size dog (10–20 kg), Large = big dog (20 kg+), Cat = all cat breeds
 const GROOMING_PACKAGES = [
-  { name: "Basic Bath",          prices: { Small: 800,  Medium: 1000, Large: 1300, Cat: 900  }, icon: "🛁", desc: "Shampoo, blow-dry & ear clean" },
-  { name: "Trimming & Hygiene",  prices: { Small: 1300, Medium: 1500, Large: 1800, Cat: 1400 }, icon: "✂️", desc: "Bath + full trim, nail & paw care" },
-  { name: "Complete Makeover",   prices: { Small: 1900, Medium: 2200, Large: 2600, Cat: 1600 }, icon: "✨", desc: "Full groom + styling + spa finish" },
+  { name: "Essential Bath+",   prices: { Small: 800,  Medium: 900,  Large: 1000, Cat: 1000 }, icon: "🛁", desc: "Premium shampoo · Blow dry · FREE ear cleaning & nail trim · 45–60 min" },
+  { name: "Premium Bath+",     prices: { Small: 2000, Medium: 2200, Large: 2500, Cat: 2000 }, icon: "✨", desc: "Plus Puppy shampoo · Premium blow dry · FREE ear cleaning & nail trim" },
+  { name: "Complete Makeover", prices: { Small: 1700, Medium: 1750, Large: 1800, Cat: 1500 }, icon: "💆", desc: "Full groom · Premium shampoo · Nail trim + grind · Deshedding · 1.5–2 hrs" },
+  { name: "Luxury Makeover",   prices: { Small: 3000, Medium: 3100, Large: 3200, Cat: 3000 }, icon: "👑", desc: "Premium spa · Plus Puppy shampoo · Coat-specific care · Salon-quality finish" },
+  { name: "Trim & Style",      prices: { Small: 1300, Medium: 1400, Large: 1500, Cat: 1300 }, icon: "✂️", desc: "Haircut any size · Dog or cat" },
+  { name: "Care Combo",        prices: { Small: 500,  Medium: 500,  Large: 500,  Cat: 500  }, icon: "💅", desc: "Nails + ear cleaning + face trim" },
+  { name: "Puppy Dry Spa",     prices: { Small: 600,  Medium: 600,  Large: 600,  Cat: 600  }, icon: "🐾", desc: "Gentle dry bath for tiny puppies" },
+  { name: "Puppy Wet Bath",    prices: { Small: 800,  Medium: 800,  Large: 900,  Cat: 800  }, icon: "🐶", desc: "Gentle wet bath for puppies" },
 ];
 const PET_SIZES = [
   { id: "Small",  label: "Small",  sub: "Up to 10 kg" },
@@ -74,7 +80,7 @@ const BOARDING_PACKAGES = [
 
 // SVC_OPTS — used for pet health RECORDS only (not booking flow)
 const SVC_OPTS = {
-  grooming: ["Basic Bath","Trimming & Hygiene","Complete Makeover","De-matting","Tick & Flea Treatment","Anal Gland Expression","Puppy/Kitten First Groom","Herbal Bath","Spa Treatment"],
+  grooming: ["Essential Bath+","Premium Bath+","Complete Makeover","Luxury Makeover","Trim & Style","Care Combo","Puppy Dry Spa","Puppy Wet Bath","De-matting","Tick & Flea Treatment","Anal Gland Expression","Puppy/Kitten First Groom","Herbal Bath","Spa Treatment"],
   training: ["Consultation Session","Puppy Basics","Basic Obedience","Behavioural Modification","Advanced Obedience","Leash Training","Agility Training"],
   food:     ["Dry Food","Wet Food","Raw Diet","Treats","Supplement"],
   vet:      ["General Check-up","Vaccination","Deworming","Dental Care","Surgery","Emergency Care"],
@@ -469,6 +475,8 @@ export default function PetclubApp({ session, onLogout }) {
   const activeGroomingPackages = catalog?.grooming?.packages ?? GROOMING_PACKAGES;
   const activeGroomingAddons   = catalog?.grooming?.addons   ?? GROOMING_ADDONS;
   const activeTrainingPackages = catalog?.training?.packages ?? TRAINING_PACKAGES;
+  const activeWalkingPackages  = catalog?.walking?.packages  ?? WALKING_PACKAGES;
+  const activeBoardingPackages = catalog?.boarding?.packages ?? BOARDING_PACKAGES;
 
   // Calculate final booking amount shown to customer (platform discount applied)
   const calcAmount = (form) => {
@@ -485,12 +493,12 @@ export default function PetclubApp({ session, onLogout }) {
       return { base: pkg.price, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, pkg.price - activePlatformDiscount) };
     }
     if (form.service_type === "Walker") {
-      const pkg = WALKING_PACKAGES.find(p => p.name === form.service_name);
+      const pkg = activeWalkingPackages.find(p => p.name === form.service_name);
       if (!pkg) return null;
       return { base: pkg.price, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, pkg.price - activePlatformDiscount) };
     }
     if (form.service_type === "Boarding") {
-      const pkg = BOARDING_PACKAGES.find(p => p.name === form.service_name);
+      const pkg = activeBoardingPackages.find(p => p.name === form.service_name);
       if (!pkg) return null;
       return { base: pkg.price, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, pkg.price - activePlatformDiscount) };
     }
@@ -856,7 +864,7 @@ export default function PetclubApp({ session, onLogout }) {
               <p className="text-sm font-black text-gray-900">
                 {loyaltyData.balance.toLocaleString("en-IN")} pts
                 <span className="text-xs font-semibold text-gray-400 ml-2">
-                  / {loyaltyData.threshold?.toLocaleString("en-IN") || "1,000"} for free groom
+                  / {loyaltyData.threshold?.toLocaleString("en-IN") || "1,000"} for free Essential Bath
                 </span>
               </p>
             </div>
@@ -1384,7 +1392,7 @@ export default function PetclubApp({ session, onLogout }) {
               </div>
               <p className="text-xs text-gray-500 mt-1.5">
                 {canRedeem
-                  ? "🎉 You've unlocked a free grooming session!"
+                  ? "🎉 You've unlocked a free Essential Bath!"
                   : `Earn ${needed.toLocaleString("en-IN")} more credits for a free Basic Bath!`}
               </p>
               {/* Fix 5: pending credits notice */}
@@ -1403,7 +1411,7 @@ export default function PetclubApp({ session, onLogout }) {
               disabled={!canRedeem || redeemLoading}
               onClick={handleRedeem}
               className={`w-full font-bold py-2.5 rounded-xl text-sm transition-all mb-4 ${canRedeem ? "bg-emerald-500 text-white hover:bg-emerald-600 active:scale-[0.98] shadow-sm" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}>
-              {redeemLoading ? "Processing…" : canRedeem ? "✨ Redeem 1,000 Credits — Free Basic Bath" : `🔒 Redeem (${bal}/${threshold} Credits)`}
+              {redeemLoading ? "Processing…" : canRedeem ? "✨ Redeem 1,000 Credits — Free Essential Bath" : `🔒 Redeem (${bal}/${threshold} Credits)`}
             </button>
 
             {/* Active coupons */}
@@ -1536,7 +1544,7 @@ export default function PetclubApp({ session, onLogout }) {
             {loyaltyData?.transactions?.length === 0 && (
               <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-xl p-3 text-center">
                 <p className="text-base font-bold text-gray-800 mb-1">You're in! 🐾</p>
-                <p className="text-xs text-gray-500">Every booking, review, and referral earns you credits towards a <strong>free grooming session</strong>.</p>
+                <p className="text-xs text-gray-500">Every booking, review, and referral earns you credits towards a <strong>free Essential Bath</strong>.</p>
               </div>
             )}
             {/* What is 1 credit worth */}
@@ -1545,7 +1553,7 @@ export default function PetclubApp({ session, onLogout }) {
               <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-gray-500">1,000 credits =</span>
-                  <span className="font-bold text-emerald-600">1 Free Basic Bath (₹800+ value)</span>
+                  <span className="font-bold text-emerald-600">1 Free Essential Bath (₹800+ value)</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Earn rate:</span>
@@ -1918,7 +1926,7 @@ export default function PetclubApp({ session, onLogout }) {
               {bookingForm.service_type === "Walker" && (<>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Choose Walk Package *</p>
                 <div className="space-y-2 mb-4">
-                  {WALKING_PACKAGES.map(pkg => {
+                  {activeWalkingPackages.map(pkg => {
                     const sel = bookingForm.service_name === pkg.name;
                     return (
                       <button key={pkg.name} onClick={() => setBookingForm(f => ({ ...f, service_name: pkg.name }))}
@@ -1947,7 +1955,7 @@ export default function PetclubApp({ session, onLogout }) {
               {bookingForm.service_type === "Boarding" && (<>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Choose Stay Package *</p>
                 <div className="space-y-2 mb-4">
-                  {BOARDING_PACKAGES.map(pkg => {
+                  {activeBoardingPackages.map(pkg => {
                     const sel = bookingForm.service_name === pkg.name;
                     return (
                       <button key={pkg.name} onClick={() => setBookingForm(f => ({ ...f, service_name: pkg.name }))}
@@ -2150,7 +2158,7 @@ export default function PetclubApp({ session, onLogout }) {
                     <div className="flex items-center justify-between bg-emerald-50 border border-emerald-300 rounded-xl px-3.5 py-3">
                       <div>
                         <p className="text-xs font-bold text-emerald-700">🎟️ Coupon applied!</p>
-                        <p className="text-[10px] text-emerald-600 font-mono mt-0.5">{bookingForm.coupon_code} — Free Basic Bath</p>
+                        <p className="text-[10px] text-emerald-600 font-mono mt-0.5">{bookingForm.coupon_code} — Free Essential Bath</p>
                       </div>
                       <button onClick={() => setBookingForm(f => ({ ...f, coupon_code: "" }))}
                         className="text-[10px] text-red-400 font-semibold hover:text-red-600">Remove</button>
@@ -2162,7 +2170,7 @@ export default function PetclubApp({ session, onLogout }) {
                         if (activeCoupon) setBookingForm(f => ({ ...f, coupon_code: activeCoupon.code }));
                       }}
                       className="w-full flex items-center justify-between bg-orange-50 border border-orange-200 rounded-xl px-3.5 py-3 hover:bg-orange-100 transition-colors">
-                      <span className="text-xs font-semibold text-orange-700">🎟️ Apply loyalty coupon — Free Basic Bath</span>
+                      <span className="text-xs font-semibold text-orange-700">🎟️ Apply loyalty coupon — Free Essential Bath</span>
                       <span className="text-orange-500 font-bold text-sm">→</span>
                     </button>
                   )}
