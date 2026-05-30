@@ -1,3 +1,10 @@
+## [1.38.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.2...v1.38.3) (2026-05-30)
+
+
+### Bug Fixes
+
+* **pro:** use name as onboarding completion signal to stop refresh loop ([de752b3](https://github.com/Kolanupaka92/petclub-app/commit/de752b3d2959b2c15ab6e40685f510938ae253cf))
+
 ## [1.38.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.1...v1.38.2) (2026-05-30)
 
 
