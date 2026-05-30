@@ -1360,7 +1360,9 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                                 if (!window.confirm("Cancel this booking? The customer will be notified and we'll find them another professional. Only use this for genuine emergencies.")) return;
                                 try {
                                   await api.cancelBooking(b.id, "Professional unable to attend");
-                                  setBookings(prev => prev.map(bk => bk.id === b.id ? { ...bk, status: 'upcoming', assignment_status: 'searching' } : bk));
+                                  // Remove from pro's list immediately — backend clears professional_id
+                                  // so getBookings won't return it on next poll either
+                                  setBookings(prev => prev.filter(bk => bk.id !== b.id));
                                   showToast("Booking returned to queue. Customer will be notified.", "success");
                                 } catch (e) { showToast("❌ " + (e.message || "Failed"), "error"); }
                               }}
