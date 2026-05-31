@@ -1,3 +1,10 @@
+## [1.38.5](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.4...v1.38.5) (2026-05-31)
+
+
+### Bug Fixes
+
+* **auth:** friendly OTP expired/invalid error messages with auto-reset ([9914d70](https://github.com/Kolanupaka92/petclub-app/commit/9914d70bd4d0e8d0c039c0f03f6f3b6919ffdb9b))
+
 ## [1.38.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.3...v1.38.4) (2026-05-30)
 
 
