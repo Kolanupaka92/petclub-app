@@ -174,8 +174,11 @@ export const verifyPhoneOtp = async (otp) => {
     } catch (signOutErr) {
       console.warn('[PhoneAuth] sign-out after backend failure failed:', signOutErr.message);
     }
-    // Re-throw with a clear user-facing message so Login.jsx can display it.
-    const err = new Error('Verification failed — please try again.');
+    // Re-throw — use the backend's error message when it's specific, otherwise
+    // fall back to a generic message so the user sees the real cause (e.g.
+    // "Firebase not configured on server", "Failed to create user. Try again.").
+    const msg = backendErr?.message || 'Verification failed — please try again.';
+    const err = new Error(msg);
     err.code  = backendErr?.code || 'auth/backend-error';
     err.cause = backendErr;
     throw err;
