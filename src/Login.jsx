@@ -460,7 +460,19 @@ export default function Login({ onLogin, initialHint }) {
         onLogin({ ...res.user });
       }
     } catch (e) {
-      showErr(e.message || "Wrong OTP. Try again.");
+      const code = e.code || e.message || "";
+      if (code.includes("code-expired") || code.includes("session-expired")) {
+        setOtp(["","","","","",""]);
+        setTimer(0); // allow immediate resend
+        otpRefs.current[0]?.focus();
+        showErr("OTP expired — tap Resend OTP to get a new code.");
+      } else if (code.includes("invalid-verification-code") || code.includes("wrong-otp")) {
+        setOtp(["","","","","",""]);
+        otpRefs.current[0]?.focus();
+        showErr("Incorrect OTP. Please try again.");
+      } else {
+        showErr(e.message || "Wrong OTP. Try again.");
+      }
     } finally { setLoading(false); }
   };
 
