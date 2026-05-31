@@ -1,3 +1,10 @@
+## [1.38.6](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.5...v1.38.6) (2026-05-31)
+
+
+### Bug Fixes
+
+* **auth:** surface backend error in phone OTP failure + pass-through message ([ba1418d](https://github.com/Kolanupaka92/petclub-app/commit/ba1418dfecf0ab932d0dbfbd39db3ca6281c6b68))
+
 ## [1.38.5](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.4...v1.38.5) (2026-05-31)
 
 
