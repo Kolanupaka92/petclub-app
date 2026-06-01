@@ -418,32 +418,6 @@ export default function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* ══ SOCIAL PROOF BAR — warm dark ══ */}
-      <div style={{
-        background: DARK2,
-        borderTop: `1px solid ${ORANGE}22`,
-        borderBottom: `1px solid ${ORANGE}22`,
-        padding: "18px 24px",
-      }}>
-        <div style={{ maxWidth: 1120, margin: "0 auto", display: "flex", gap: 0, flexWrap: "wrap", justifyContent: "space-around", alignItems: "center" }}>
-          {[
-            { icon: "🐾", value: "50,000+",  label: "Pets Served" },
-            { icon: "✅", value: "1,200+",   label: "Verified Pros" },
-            { icon: "📍", value: "100+",     label: "Cities" },
-            { icon: "⭐", value: "4.9 / 5",  label: "App Rating" },
-            { icon: "🗺️", value: "Live GPS", label: "Every Booking" },
-          ].map((s, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px" }}>
-              <span style={{ fontSize: 20 }}>{s.icon}</span>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "white" }}>{s.value}</div>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", fontWeight: 600 }}>{s.label}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* ══ SERVICES — warm CREAM ══ */}
       <section ref={servicesRef} style={{ background: CREAM, borderBottom: `1px solid ${ORANGE}18`, padding: "72px 24px" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
@@ -454,7 +428,7 @@ export default function LandingPage({ onGetStarted }) {
             </h2>
             <p style={{ fontSize: 14, color: "#92400e", margin: 0 }}>All at-home or doorstep. No travel, no stress — for you or your pet.</p>
           </div>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
             <ServiceCard icon="✂️" title="Grooming" badge="Most Popular"
               desc="Full bath, haircut, nail trim & ear cleaning for dogs and cats. Certified groomers come to your door — no travel stress for you or your pet." />
             <ServiceCard icon="🐕‍🦺" title="Dog Training"
@@ -511,12 +485,9 @@ export default function LandingPage({ onGetStarted }) {
             <WinCard icon="🌐" title="No app download required"
               body="Works in any browser on any device. While PawSpace and PetJio require an app install, PETclub runs instantly — iPhone, Android, or desktop."
               highlight="Book in 60 seconds" />
-            <WinCard icon="🐾" title="Pet health profiles per booking"
-              body="Attach vaccination records, allergy notes, and vet history directly to every booking. Your pro arrives knowing your pet — not guessing."
-              highlight="Pre-loaded health notes" />
-            <WinCard icon="🏆" title="Loyalty rewards on every service"
-              body="Earn 1 credit per ₹10 spent on every booking. Bonus credits for reviews and referrals. Redeem 1,000 credits for a free Essential Bath — no codes needed."
-              highlight="Points on every booking" />
+            <WinCard icon="💬" title="Real human support on WhatsApp"
+              body="Questions before or after a booking? Chat directly with our team on WhatsApp — not a bot, not a ticket queue. Mon–Sat, 9 AM–8 PM IST."
+              highlight="Mon–Sat support" />
           </div>
         </div>
       </section>
@@ -583,6 +554,37 @@ export default function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
+      {/* ══ TESTIMONIALS — warm CREAM ══ */}
+      <section style={{ background: CREAM2, borderTop: `1px solid ${ORANGE}15`, padding: "72px 24px" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 2, textTransform: "uppercase", margin: "0 0 10px" }}>What pet owners say</p>
+            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "#1a0500", margin: 0 }}>
+              Trusted by 50,000+ pet families.
+            </h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
+            {[
+              { quote: "The groomer knew my dog's allergies before arriving. The pet health profile feature is a game changer — no forms at the door, no awkward briefing.", name: "Priya R.", city: "Bangalore", stars: 5 },
+              { quote: "GPS tracking for every service, not just walking. I was at work and watched my trainer arrive on the map. That kind of transparency is rare.", name: "Arjun M.", city: "Mumbai", stars: 5 },
+              { quote: "Booked in under 2 minutes, no app download. The pro called me 10 minutes before arrival exactly like the app said. Impressed.", name: "Deepika S.", city: "Hyderabad", stars: 5 },
+            ].map(({ quote, name, city, stars }) => (
+              <div key={name} style={{ background: "white", border: `1px solid ${ORANGE}22`, borderRadius: 20, padding: "28px 24px", borderTop: `3px solid ${ORANGE}`, boxShadow: `0 4px 20px ${ORANGE}0f` }}>
+                <div style={{ fontSize: 16, marginBottom: 14 }}>{"⭐".repeat(stars)}</div>
+                <p style={{ fontSize: 14, color: "#92400e", lineHeight: 1.75, margin: "0 0 20px", fontStyle: "italic" }}>"{quote}"</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg, ${ORANGE}33, ${AMBER}22)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🐾</div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#1a0500" }}>{name}</div>
+                    <div style={{ fontSize: 11, color: "#92400e", fontWeight: 600 }}>{city}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ══ PRO SIGNUP CTA — warm gradient ══ */}
       <section style={{
         padding: "80px 24px",
@@ -632,7 +634,7 @@ export default function LandingPage({ onGetStarted }) {
             style={{ padding: "18px 48px", background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`, color: "white", fontWeight: 900, fontSize: 16, border: "none", borderRadius: 18, cursor: "pointer", boxShadow: `0 12px 40px ${ORANGE}55`, transition: "transform 0.15s" }}
             onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"}
             onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}
-          >Open Web App — Free 🐾</button>
+          >Book a Service — Free 🐾</button>
           <p style={{ fontSize: 11, color: "#5c3010", marginTop: 20 }}>
             Secure · No credit card required · Available everywhere
           </p>
@@ -689,17 +691,16 @@ export default function LandingPage({ onGetStarted }) {
               </div>
             </a>
 
-            <a href={`${import.meta.env.VITE_APP_URL || 'https://app.mypetclub.app'}?signin=1&role=professional`}
-              target="_blank" rel="noreferrer"
-              style={{ background: DARK3, border: "1.5px solid rgba(139,92,246,0.25)", borderRadius: 20, padding: "28px 20px", textDecoration: "none", color: "white", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, transition: "all 0.2s", boxSizing: "border-box" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.6)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(139,92,246,0.12)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.25)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+            <a href="mailto:support@mypetclub.app?subject=Partnership Inquiry"
+              style={{ background: DARK3, border: "1.5px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: "28px 20px", textDecoration: "none", color: "white", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, transition: "all 0.2s", boxSizing: "border-box" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(251,191,36,0.6)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(251,191,36,0.10)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(251,191,36,0.25)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
             >
-              <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(139,92,246,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>🐾</div>
+              <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(251,191,36,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>🤝</div>
               <div style={{ textAlign: "center", minWidth: 0, width: "100%" }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>Join as a Pro</p>
-                <p style={{ fontSize: "clamp(14px,3.5vw,15px)", fontWeight: 800, color: "white", margin: "0 0 4px" }}>Sign Up Free →</p>
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>Groomers · Trainers · Walkers · Vets</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#fbbf24", letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>Partnerships & Press</p>
+                <p style={{ fontSize: "clamp(14px,3.5vw,15px)", fontWeight: 800, color: "white", margin: "0 0 4px" }}>Let's work together</p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>Brands · Media · Clinics · Shelters</p>
               </div>
             </a>
           </div>
