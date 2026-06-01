@@ -33,3 +33,17 @@ build/
 .cache/
 server.log
 server.err
+
+# Vercel CLI artifacts (tokens, build cache — not app code)
+.vercel/
+.env.prod.check
+.env.prod.verify
+.env.vercel.check
+
+# Claude Code internals
+.claude/
+commit_msg.txt
+
+# Test artifacts
+test-results/
+test_id_photo.png
