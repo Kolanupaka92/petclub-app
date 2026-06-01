@@ -1,3 +1,10 @@
+## [1.39.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.39.0...v1.39.1) (2026-06-01)
+
+
+### Bug Fixes
+
+* **landing:** mobile-responsive Let's Connect section ([4f02ce2](https://github.com/Kolanupaka92/petclub-app/commit/4f02ce2c48f9e14333ff1266d9ccf36b8c0ef50a)), closes [#7c4a1e](https://github.com/Kolanupaka92/petclub-app/issues/7c4a1e)
+
 # [1.39.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.6...v1.39.0) (2026-06-01)
 
 
