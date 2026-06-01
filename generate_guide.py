@@ -280,6 +280,9 @@ def build():
     story.append(Spacer(1, 4*mm))
     story.append(Paragraph('Cloud Run revision: petclub-backend-00246-zj9',
                             S['cover_ver']))
+    story.append(Spacer(1, 2*mm))
+    story.append(Paragraph('Last updated: June 1, 2026  —  Sentry + RLS + Secret Manager',
+                            S['cover_ver']))
     story.append(PageBreak())
 
     # ════════════════════════════════════════════
@@ -346,10 +349,11 @@ def build():
         ['Layer', 'Technology', 'Hosting / Provider'],
         [
             ['Frontend',            'React 19 + Vite 6',           'Vercel'],
-            ['Backend',             'Node.js + Express 4',         'Google Cloud Run (us-central1)'],
-            ['Database',            'Supabase — Postgres 17',      'AWS us-west-2'],
+            ['Backend',             'Node.js + Express 4',         'Google Cloud Run (us-central1 → us-west1 pending)'],
+            ['Database',            'Supabase — Postgres 17',      'AWS us-west-2  |  RLS enabled ✓'],
             ['Phone Auth',          'Firebase Authentication',      'Google'],
             ['Push Notifications',  'Firebase FCM',                'Google'],
+            ['Error Tracking',      'Sentry (active when DSN set)', 'sentry.io'],
             ['Transactional Email', 'Resend API',                  'Cloud'],
             ['Admin Email',         'Zoho SMTP',                   'Cloud'],
             ['SMS',                 'Twilio (currently stubbed)',   'Cloud'],
@@ -564,28 +568,31 @@ def build():
              'Signs all auth tokens',
              'node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"'],
             ['JWT_EXPIRES_IN',
-             'Token lifetime',
-             'Set to 30d'],
+             'Token lifetime (set 30d)',
+             '⚠ Currently 07d — update to 30d'],
             ['SUPABASE_URL',
              'Supabase API URL',
              'Supabase Dashboard → Settings → API'],
             ['SUPABASE_SERVICE_KEY',
-             'REST API JWT key',
+             'REST API JWT key  (→ Secret Manager)',
              'Supabase Dashboard → Settings → API'],
             ['SUPABASE_DB_PASSWORD',
-             'Direct Postgres password',
+             'Direct Postgres password  (→ Secret Manager)',
              'Supabase Dashboard → Settings → Database'],
             ['FIREBASE_SERVICE_ACCOUNT_JSON',
-             'FCM + phone auth admin',
-             'Firebase Console → Service Accounts → Generate key'],
+             'FCM + phone auth  (already in Secret Manager)',
+             'Firebase Console → Service Accounts'],
             ['RESEND_API_KEY',
-             'Transactional email',
+             'Transactional email  (→ Secret Manager)',
              'resend.com → API Keys'],
+            ['SENTRY_DSN',
+             'Error tracking (activates Sentry)',
+             'sentry.io → New Project → Node.js → DSN'],
             ['TWILIO_ACCOUNT_SID',
              'SMS (optional, stubbed)',
              'console.twilio.com'],
             ['ADMIN_SECRET',
-             'Admin bootstrap endpoint',
+             'Admin bootstrap  (→ Secret Manager)',
              'Generate: node -e "...randomBytes(32)..."'],
         ],
         S, col_widths=[52*mm, 48*mm, 70*mm]
@@ -599,6 +606,7 @@ def build():
             ['VITE_API_URL',          'http://localhost:5000/api',  'Must change for local dev'],
             ['VITE_FIREBASE_API_KEY', 'same as prod',               'From Firebase Console → Project Settings'],
             ['VITE_MAPBOX_TOKEN',     'same as prod',               'From account.mapbox.com → Tokens'],
+            ['VITE_SENTRY_DSN',       'unset locally',              'sentry.io → New Project → React → DSN'],
             ['VITE_SUPPORT_EMAIL',    'support@mypetclub.app',      'Shown in error messages'],
         ],
         S, col_widths=[58*mm, 58*mm, 54*mm]
@@ -760,15 +768,39 @@ def build():
     story.append(section_header('Known Issues & Action Items', '09', S))
     story.append(sp(3))
 
+    # ── Completed ──────────────────────────────────────────────────────────────
+    story.append(Paragraph('Completed — June 2026', S['h2']))
+    BLUE_BG  = HexColor('#eff6ff')
+    BLUE_TXT = HexColor('#1d4ed8')
+    for item, fix in [
+        ('RLS enabled on all 21 Supabase tables',
+         'Done June 1, 2026. service_role bypass policies applied to every table. No anon/authenticated access. Verified via pg_policies query.'),
+        ('Supabase grant migration applied',
+         'Done. supabase-grant-migration.sql run — explicit PostgREST GRANTs in place ahead of Oct 30, 2026 deadline.'),
+        ('Sentry error tracking added to frontend + backend',
+         'Code deployed. Activates automatically when SENTRY_DSN (backend) and VITE_SENTRY_DSN (frontend/Vercel) are set.'),
+        ('Secret Manager migration script ready',
+         'migrate-to-secret-manager.ps1 — fills in values, creates secrets, updates Cloud Run refs in one run.'),
+        ('Region migration script ready',
+         'migrate-region.ps1 — moves Cloud Run us-central1 to us-west1 (Oregon, co-located with Supabase).'),
+    ]:
+        story.append(alert('✅', item, fix, BLUE_BG, BLUE_TXT, S))
+        story.append(sp(2))
+
+    story.append(sp(2))
+
+    # ── Critical ───────────────────────────────────────────────────────────────
     story.append(Paragraph('Critical — Action Required', S['h2']))
     for item, fix in [
         ('SUPABASE_DB_PASSWORD not set on Cloud Run',
-         'Rate limiter uses in-memory store (not shared across Cloud Run instances). Add SUPABASE_DB_PASSWORD to Cloud Run env vars.'),
-        ('JWT_EXPIRES_IN = 07d',
-         'Users are forced to re-login every 7 days. Update Cloud Run var to 30d.'),
-        ('Supabase grant migration not applied — DEADLINE: Oct 30, 2026',
-         'After Oct 30, all DB tables will be inaccessible via REST API without explicit grants. '
-         'Run supabase-grant-migration.sql in Supabase SQL Editor immediately.'),
+         'Rate limiter uses in-memory store (not shared across Cloud Run instances). '
+         'Add SUPABASE_DB_PASSWORD to Cloud Run: gcloud run services update petclub-backend --update-env-vars SUPABASE_DB_PASSWORD=VALUE'),
+        ('JWT_EXPIRES_IN = 07d — users log out every 7 days',
+         'Update Cloud Run: gcloud run services update petclub-backend --update-env-vars JWT_EXPIRES_IN=30d'),
+        ('Sentry DSN not yet set — error tracking is inactive',
+         'Create project at sentry.io → add SENTRY_DSN to Cloud Run and VITE_SENTRY_DSN to Vercel dashboard.'),
+        ('Secret Manager migration not yet run',
+         'Fill in values in migrate-to-secret-manager.ps1 and run it. Moves JWT_SECRET, SUPABASE_SERVICE_KEY, RESEND_API_KEY, TWILIO_AUTH_TOKEN, ADMIN_SECRET out of plain env vars.'),
     ]:
         story.append(alert('🔴', item, fix, RED_BG, RED_TXT, S))
         story.append(sp(2))
@@ -789,8 +821,8 @@ def build():
     story.append(sp(2))
     story.append(Paragraph('Watch — Not Urgent', S['h2']))
     for item, fix in [
-        ('Cloud Run (us-central1) + Supabase (us-west-2) cross-region latency',
-         'Adds ~20ms to every DB call. Acceptable at current scale. Revisit when traffic grows.'),
+        ('Cloud Run region migration pending',
+         'Script ready: migrate-region.ps1. Moves us-central1 to us-west1 (Oregon) — eliminates ~20ms Supabase latency. Run after Secret Manager migration is confirmed working.'),
         ('Twilio SMS stubbed',
          'US +1 phone logins log a warning and do not send real SMS. Fine while the platform is India-only.'),
         ('Vercel Hobby plan bandwidth limit',
@@ -810,10 +842,11 @@ def build():
     story.append(data_table(
         ['Service', 'Dashboard URL', 'Used for'],
         [
-            ['Supabase',      'app.supabase.com',                    'Database, SQL editor, API logs'],
+            ['Supabase',      'app.supabase.com',                    'Database, SQL editor, RLS policies, API logs'],
             ['Firebase',      'console.firebase.google.com',         'Phone auth, FCM push, service accounts'],
-            ['Google Cloud',  'console.cloud.google.com/run',        'Cloud Run, Cloud Build, GCP logs'],
+            ['Google Cloud',  'console.cloud.google.com/run',        'Cloud Run, Cloud Build, Secret Manager, GCP logs'],
             ['Vercel',        'vercel.com/kolanupaka92-s-projects',  'Frontend deploys, env vars, analytics'],
+            ['Sentry',        'sentry.io',                           'Error tracking — frontend + backend crashes'],
             ['Resend',        'resend.com',                          'Email delivery logs, API keys'],
             ['Twilio',        'console.twilio.com',                  'SMS logs, phone numbers'],
             ['Mapbox',        'account.mapbox.com',                  'Geocoding API tokens'],
