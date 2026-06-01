@@ -1,3 +1,10 @@
+# [1.40.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.39.1...v1.40.0) (2026-06-01)
+
+
+### Features
+
+* **landing:** UX cleanup — remove duplicates, add testimonials, fix layout ([ad846ac](https://github.com/Kolanupaka92/petclub-app/commit/ad846ac8efc69a5941fecdc9c37d99782c02c574))
+
 ## [1.39.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.39.0...v1.39.1) (2026-06-01)
 
 
