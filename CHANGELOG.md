@@ -1,3 +1,10 @@
+# [1.39.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.6...v1.39.0) (2026-06-01)
+
+
+### Features
+
+* **infra:** Sentry error tracking + engineering guide PDF ([9182fd2](https://github.com/Kolanupaka92/petclub-app/commit/9182fd2eaa38be54833ce539b105c6819242dbdc))
+
 ## [1.38.6](https://github.com/Kolanupaka92/petclub-app/compare/v1.38.5...v1.38.6) (2026-05-31)
 
 
