@@ -1,6 +1,23 @@
 import { StrictMode, useState, useCallback, useEffect, useRef, Component } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
+import * as Sentry from "@sentry/react";
+
+// Sentry — active only when VITE_SENTRY_DSN is set (prod). No-op in local dev.
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.PROD ? "production" : "development",
+    release: `petclub-app@${__APP_VERSION__}`,
+    integrations: [Sentry.browserTracingIntegration()],
+    tracesSampleRate: 0.1,
+    // Never send PII — scrub phone numbers and emails from breadcrumbs
+    beforeSend(event) {
+      if (event.user) { delete event.user.email; delete event.user.username; }
+      return event;
+    },
+  });
+}
 import LandingPage from "./LandingPage.jsx";
 import Login from "./Login.jsx";
 import PetclubApp from "./PetclubApp.jsx";
@@ -20,6 +37,7 @@ class ErrorBoundary extends Component {
     const stack = info?.componentStack || "";
     this.setState({ stack });
     console.error('[ErrorBoundary]', err, stack);
+    Sentry.captureException(err, { extra: { componentStack: stack } });
   }
   render() {
     if (!this.state.error) return this.props.children;

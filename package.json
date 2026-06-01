@@ -21,6 +21,7 @@
     "test:e2e:security": "playwright test e2e/07-security.spec.js"
   },
   "dependencies": {
+    "@sentry/react": "^10.55.0",
     "firebase": "^10.12.0",
     "mapbox-gl": "^3.24.0",
     "react": "^19.1.0",
