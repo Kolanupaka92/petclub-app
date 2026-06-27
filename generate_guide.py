@@ -275,13 +275,13 @@ def build():
     story.append(Spacer(1, 10*mm))
     story.append(HRFlowable(width='60%', thickness=1, color=SLATE,
                              hAlign='CENTER', spaceAfter=8*mm))
-    story.append(Paragraph('Frontend v1.38.6  |  Backend v1.22.5  |  June 2026',
+    story.append(Paragraph('Frontend v1.40.2  |  Backend v2.x  |  June 2026',
                             S['cover_ver']))
     story.append(Spacer(1, 4*mm))
-    story.append(Paragraph('Cloud Run revision: petclub-backend-00246-zj9',
+    story.append(Paragraph('Cloud Run: petclub-backend  (us-west1 Oregon)',
                             S['cover_ver']))
     story.append(Spacer(1, 2*mm))
-    story.append(Paragraph('Last updated: June 1, 2026  —  Sentry + RLS + Secret Manager',
+    story.append(Paragraph('Last updated: June 27, 2026  —  Soft delete · Realtime · Pino · httpOnly auth · Monitoring',
                             S['cover_ver']))
     story.append(PageBreak())
 
@@ -349,11 +349,13 @@ def build():
         ['Layer', 'Technology', 'Hosting / Provider'],
         [
             ['Frontend',            'React 19 + Vite 6',           'Vercel'],
-            ['Backend',             'Node.js + Express 4',         'Google Cloud Run (us-central1 → us-west1 pending)'],
-            ['Database',            'Supabase — Postgres 17',      'AWS us-west-2  |  RLS enabled ✓'],
+            ['Backend',             'Node.js + Express 4 + Pino',  'Google Cloud Run (us-west1 Oregon)'],
+            ['Database',            'Supabase — Postgres 17',      'AWS us-west-2 Oregon  |  RLS ✓  |  Realtime ✓'],
             ['Phone Auth',          'Firebase Authentication',      'Google'],
             ['Push Notifications',  'Firebase FCM',                'Google'],
             ['Error Tracking',      'Sentry (active when DSN set)', 'sentry.io'],
+            ['Logging',             'Pino structured JSON',        'Cloud Logging (GCP)'],
+            ['Uptime Monitoring',   'Cloud Monitoring (every 5m)', 'GCP — alerts to admin email'],
             ['Transactional Email', 'Resend API',                  'Cloud'],
             ['Admin Email',         'Zoho SMTP',                   'Cloud'],
             ['SMS',                 'Twilio (currently stubbed)',   'Cloud'],
@@ -369,6 +371,9 @@ def build():
     story.append(code_block([
         'Frontend:  github.com/Kolanupaka92/petclub-app',
         'Backend:   github.com/Kolanupaka92/petclub-backend',
+        '',
+        'Branches:  main    → production  (Cloud Build auto-deploy)',
+        '           develop → staging     (Cloud Build auto-deploy)',
     ], S))
 
     story.append(PageBreak())
@@ -394,18 +399,21 @@ def build():
         '                          │',
         '         ┌────────────────▼────────────────────┐',
         '         │   BACKEND   —  api.mypetclub.app    │',
-        '         │   Node.js + Express 4               │',
-        '         │   Google Cloud Run  (us-central1)   │',
+        '         │   Node.js + Express 4 + Pino        │',
+        '         │   Google Cloud Run  (us-west1 OR)   │',
         '         │                                     │',
         '         │  Auth | Bookings | Admin | Notifs   │',
         '         └──────────────┬──────────────────────┘',
-        '                        │',
+        '                        │  Supabase JS v2 (REST + Realtime)',
         '         ┌──────────────▼──────────────────────┐',
-        '         │   SUPABASE POSTGRES  (us-west-2)    │',
-        '         │   users, bookings, pets,            │',
+        '         │   SUPABASE POSTGRES  (us-west-2 OR) │',
+        '         │   users, bookings, pets (soft del)  │',
         '         │   otp_tokens, rate_limits,          │',
         '         │   professional_profiles, loyalty    │',
+        '         │   Realtime: bookings pub/sub ✓      │',
         '         └─────────────────────────────────────┘',
+        '',
+        '  Staging: develop branch → petclub-backend-staging (us-west1, min=0)',
         '',
         '  External services connected to Backend:',
         '  ├── Firebase    → Phone OTP (India +91) + FCM push notifications',
@@ -413,6 +421,7 @@ def build():
         '  ├── Resend      → Transactional email (OTP, booking alerts)',
         '  ├── Zoho SMTP   → Admin / support emails',
         '  ├── Mappls      → India geocoding + address autocomplete',
+        '  ├── Cloud Monitoring → uptime check every 5 min → email alert',
         '  └── Razorpay    → Payments (BLOCKED — pending LLC registration)',
     ], S))
 
@@ -449,8 +458,8 @@ def build():
         'Frontend calls  POST /api/auth/firebase-verify  with the ID token',
         'Backend verifies the token with Firebase Admin SDK',
         'Backend finds or creates the user row in Supabase users table',
-        'Backend returns a PETclub JWT (30d expiry)',
-        'JWT stored in localStorage — user is now logged in',
+        'Backend issues a PETclub JWT (30d expiry) as an httpOnly cookie',
+        'Cookie is set with Secure; SameSite=Strict — JS cannot read it (XSS-safe)',
     ], 1):
         story.append(Paragraph(
             f'<font color="#f97316"><b>{i}.</b></font>  {step}', S['step']))
@@ -464,7 +473,7 @@ def build():
         'Resend API delivers OTP email to user',
         'User enters the 6-digit code',
         'Frontend calls  POST /api/auth/verify-email-otp',
-        'Backend verifies OTP → returns PETclub JWT',
+        'Backend verifies OTP → issues PETclub JWT as httpOnly cookie',
     ], 1):
         story.append(Paragraph(
             f'<font color="#f97316"><b>{i}.</b></font>  {step}', S['step']))
@@ -478,8 +487,9 @@ def build():
             ['Secret',       '64-byte random hex  (JWT_SECRET env var)'],
             ['Payload',      '{ id, role }'],
             ['Expiry',       '30d  (JWT_EXPIRES_IN env var)'],
-            ['Storage',      'localStorage  (browser)'],
-            ['On 401',       'localStorage cleared → petclub:unauthorized event → re-login'],
+            ['Storage',      'httpOnly; Secure; SameSite=Strict cookie — not readable by JS'],
+            ['On 401',       'petclub:unauthorized event fired → re-login (cookie cleared by POST /api/auth/logout)'],
+            ['Logout',       'POST /api/auth/logout — backend expires the cookie explicitly'],
             ['OTP Rate limit','5 sends per 3 minutes per IP'],
             ['Secret rotation','Immediately invalidates ALL tokens — do during off-peak hours'],
         ],
@@ -630,7 +640,7 @@ def build():
         '',
         '# Step 2 — update Cloud Run (redeploys automatically)',
         'gcloud run services update petclub-backend `',
-        '  --region=us-central1 `',
+        '  --region=us-west1 `',
         '  --update-env-vars JWT_SECRET=PASTE_NEW_SECRET_HERE',
     ], S))
 
@@ -638,7 +648,7 @@ def build():
     story.append(Paragraph('Update Any Cloud Run Variable', S['h2']))
     story.append(code_block([
         'gcloud run services update petclub-backend `',
-        '  --region=us-central1 `',
+        '  --region=us-west1 `',
         '  --update-env-vars VAR_NAME=VALUE,VAR2=VALUE2',
     ], S))
 
@@ -661,7 +671,7 @@ def build():
     story.append(Paragraph('Check Current Deployed Revision', S['h2']))
     story.append(code_block([
         'gcloud run services describe petclub-backend `',
-        '  --region=us-central1 `',
+        '  --region=us-west1 `',
         '  --format="value(status.latestReadyRevisionName,status.conditions[0].lastTransitionTime)"',
     ], S))
 
@@ -669,8 +679,8 @@ def build():
     story.append(Paragraph('Force Redeploy Backend (no code change)', S['h2']))
     story.append(code_block([
         'gcloud run deploy petclub-backend `',
-        '  --region=us-central1 `',
-        '  --source=C:\\dev\\petclub-backend',
+        '  --region=us-west1 `',
+        '  --source=C:\\Users\\14697\\petclub-backend',
     ], S))
 
     story.append(sp(2))
@@ -773,34 +783,49 @@ def build():
     BLUE_BG  = HexColor('#eff6ff')
     BLUE_TXT = HexColor('#1d4ed8')
     for item, fix in [
-        ('RLS enabled on all 21 Supabase tables',
-         'Done June 1, 2026. service_role bypass policies applied to every table. No anon/authenticated access. Verified via pg_policies query.'),
-        ('Supabase grant migration applied',
-         'Done. supabase-grant-migration.sql run — explicit PostgREST GRANTs in place ahead of Oct 30, 2026 deadline.'),
-        ('Sentry error tracking added to frontend + backend',
-         'Code deployed. Activates automatically when SENTRY_DSN (backend) and VITE_SENTRY_DSN (frontend/Vercel) are set.'),
-        ('Secret Manager migration script ready',
-         'migrate-to-secret-manager.ps1 — fills in values, creates secrets, updates Cloud Run refs in one run.'),
-        ('Region migration script ready',
-         'migrate-region.ps1 — moves Cloud Run us-central1 to us-west1 (Oregon, co-located with Supabase).'),
+        ('RLS on all 21 Supabase tables + grant migration',
+         'Done June 1, 2026. service_role bypass policies applied. Explicit PostgREST GRANTs applied ahead of Oct 30, 2026 deadline.'),
+        ('Sentry error tracking — frontend + backend',
+         'Active when SENTRY_DSN (Cloud Run) and VITE_SENTRY_DSN (Vercel) are set. Both confirmed set.'),
+        ('SUPABASE_DB_PASSWORD added — rate limiter uses Postgres',
+         'Rate limit store now shared across all Cloud Run instances. Added June 27, 2026.'),
+        ('JWT_EXPIRES_IN = 30d',
+         'Tokens now last 30 days. Confirmed set on Cloud Run.'),
+        ('Cloud Run migrated to us-west1 Oregon',
+         'Co-located with Supabase (us-west-2 Oregon). Eliminates ~20ms cross-region latency. IAM allUsers binding preserved.'),
+        ('Cloud Build trigger uses cloudbuild.yaml from GitHub',
+         'No more hardcoded inline build config. Both main (prod) and develop (staging) branches have their own build files.'),
+        ('Pino structured JSON logging',
+         'Replaced 144 console.log/error/warn calls with pino logger. pino-http middleware logs all HTTP requests. Searchable in Cloud Logging.'),
+        ('Supabase Realtime replaces SSE polling on booking tracking',
+         'GET /api/bookings/:id/track now subscribes to postgres_changes on the bookings table. Tracking latency: 100ms vs 3000ms.'),
+        ('API versioning — /api/v1/* supported',
+         'Middleware rewrites /api/v1/* to /api/*. X-API-Version: 1 header on all responses.'),
+        ('Staging environment',
+         'develop branch → petclub-backend-staging Cloud Run service (us-west1, min-instances=0). Separate build trigger: cloudbuild-staging.yaml.'),
+        ('httpOnly cookie auth — localStorage removed',
+         'JWT issued as httpOnly; Secure; SameSite=Strict cookie. JS cannot read it. All fetches use credentials: include. Logout calls POST /api/auth/logout to expire cookie server-side.'),
+        ('Soft delete — users, bookings, pets',
+         'deleted_at TIMESTAMPTZ column added to all 3 tables. All admin/cron deletes now set deleted_at. Hard-purge cron runs daily and permanently erases records deleted >90 days ago (GDPR).'),
+        ('DELETE /api/pets/:id route added',
+         'Customers can now soft-delete their own pets. Verifies ownership, 404 if already deleted.'),
+        ('Cloud Monitoring uptime check + alert',
+         '/api/health checked every 5 minutes from multiple regions. Email alert to ksk.dev87@gmail.com when backend goes down.'),
     ]:
         story.append(alert('✅', item, fix, BLUE_BG, BLUE_TXT, S))
         story.append(sp(2))
 
     story.append(sp(2))
 
-    # ── Critical ───────────────────────────────────────────────────────────────
-    story.append(Paragraph('Critical — Action Required', S['h2']))
+    # ── Action Required ────────────────────────────────────────────────────────
+    story.append(Paragraph('Action Required', S['h2']))
     for item, fix in [
-        ('SUPABASE_DB_PASSWORD not set on Cloud Run',
-         'Rate limiter uses in-memory store (not shared across Cloud Run instances). '
-         'Add SUPABASE_DB_PASSWORD to Cloud Run: gcloud run services update petclub-backend --update-env-vars SUPABASE_DB_PASSWORD=VALUE'),
-        ('JWT_EXPIRES_IN = 07d — users log out every 7 days',
-         'Update Cloud Run: gcloud run services update petclub-backend --update-env-vars JWT_EXPIRES_IN=30d'),
-        ('Sentry DSN not yet set — error tracking is inactive',
-         'Create project at sentry.io → add SENTRY_DSN to Cloud Run and VITE_SENTRY_DSN to Vercel dashboard.'),
-        ('Secret Manager migration not yet run',
-         'Fill in values in migrate-to-secret-manager.ps1 and run it. Moves JWT_SECRET, SUPABASE_SERVICE_KEY, RESEND_API_KEY, TWILIO_AUTH_TOKEN, ADMIN_SECRET out of plain env vars.'),
+        ('Secret Manager not fully populated',
+         'Only firebase-service-account is in Secret Manager. JWT_SECRET, SUPABASE_SERVICE_KEY, RESEND_API_KEY, TWILIO_AUTH_TOKEN, ADMIN_SECRET are still plain Cloud Run env vars. '
+         'Run migrate-to-secret-manager.ps1 after updating it with current (rotated) values. '
+         'WARNING: do NOT run the old script — it has pre-rotation values and will overwrite current secrets.'),
+        ('No refresh token mechanism',
+         '30d JWT expiry forces a full re-login via OTP when it expires. Plan: add /auth/refresh endpoint + refresh_tokens table in Supabase. Deferred post-Razorpay.'),
     ]:
         story.append(alert('🔴', item, fix, RED_BG, RED_TXT, S))
         story.append(sp(2))
@@ -808,12 +833,8 @@ def build():
     story.append(sp(2))
     story.append(Paragraph('Deferred — Post Razorpay Integration', S['h2']))
     for item, fix in [
-        ('JWT stored in localStorage',
-         'XSS risk — any injected script can steal the token. Plan: move to httpOnly; Secure; SameSite=Strict cookie. Breaking change — affects both repos.'),
-        ('No refresh token mechanism',
-         'JWT expiry forces a full re-login via OTP. Plan: add /auth/refresh endpoint + refresh_tokens table in Supabase.'),
         ('Razorpay payments disabled',
-         'Entire payment module is blocked pending LLC registration. No user-facing impact until payments are needed.'),
+         'Entire payment module is blocked pending LLC registration. No user-facing impact until payments are needed. Pricing architecture defined: SP never sees prices, ₹150 subsidy, RBAC stripping on SP endpoints.'),
     ]:
         story.append(alert('🟡', item, fix, YELLOW_BG, YELLOW_TXT, S))
         story.append(sp(2))
@@ -821,12 +842,12 @@ def build():
     story.append(sp(2))
     story.append(Paragraph('Watch — Not Urgent', S['h2']))
     for item, fix in [
-        ('Cloud Run region migration pending',
-         'Script ready: migrate-region.ps1. Moves us-central1 to us-west1 (Oregon) — eliminates ~20ms Supabase latency. Run after Secret Manager migration is confirmed working.'),
         ('Twilio SMS stubbed',
          'US +1 phone logins log a warning and do not send real SMS. Fine while the platform is India-only.'),
         ('Vercel Hobby plan bandwidth limit',
          '100 GB/month. Upgrade to Pro plan before sustained marketing campaigns or when traffic grows.'),
+        ('Admin panel has no soft-delete recovery UI',
+         'Soft-deleted users/bookings/pets can be restored via Supabase SQL editor (SET deleted_at = NULL). No admin panel UI for this yet.'),
     ]:
         story.append(alert('🟢', item, fix, GREEN_BG, GREEN_TXT, S))
         story.append(sp(2))
@@ -845,6 +866,7 @@ def build():
             ['Supabase',      'app.supabase.com',                    'Database, SQL editor, RLS policies, API logs'],
             ['Firebase',      'console.firebase.google.com',         'Phone auth, FCM push, service accounts'],
             ['Google Cloud',  'console.cloud.google.com/run',        'Cloud Run, Cloud Build, Secret Manager, GCP logs'],
+            ['Cloud Monitor', 'console.cloud.google.com/monitoring',  'Uptime checks, alert policies — /api/health every 5 min'],
             ['Vercel',        'vercel.com/kolanupaka92-s-projects',  'Frontend deploys, env vars, analytics'],
             ['Sentry',        'sentry.io',                           'Error tracking — frontend + backend crashes'],
             ['Resend',        'resend.com',                          'Email delivery logs, API keys'],
