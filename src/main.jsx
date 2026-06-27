@@ -23,7 +23,7 @@ import Login from "./Login.jsx";
 import PetclubApp from "./PetclubApp.jsx";
 import ProApp from "./App.jsx";
 import { loadSession, saveSession, clearSession } from "./utils/storage.js";
-import { clearToken, api } from "./api.js";
+import { clearToken, api, logout } from "./api.js";
 import { initPushNotifications } from "./firebase.js";
 import { clearGpsDb } from "./utils/gpsBuffer.js";
 
@@ -246,6 +246,7 @@ function Root() {
     clearToken();
     clearGpsDb(); // clear buffered GPS positions + auth token from IDB on logout
     setSession(null);
+    logout().catch(() => {}); // clear httpOnly cookie on backend (fire-and-forget)
     setWarnVisible(false);
   }, []);
 
