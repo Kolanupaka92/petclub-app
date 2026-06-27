@@ -3563,10 +3563,10 @@ const AdminDashboard = ({ session, onLogout }) => {
                 {loyaltyStats && (() => {
                   const s = loyaltyStats;
                   const statCards = [
-                    { icon:"💰", label:"Points Earned (30d)",   value:(s.total_earned_30d ?? 0).toLocaleString(),   color:"text-emerald-700", bg:"bg-emerald-50", border:"border-emerald-100" },
-                    { icon:"🎫", label:"Coupons Redeemed (30d)", value:(s.redeemed_coupons_30d ?? 0).toLocaleString(), color:"text-orange-700",  bg:"bg-orange-50",  border:"border-orange-100" },
-                    { icon:"🏦", label:"Active Coupons",         value:(s.active_coupons ?? 0).toLocaleString(),       color:"text-blue-700",    bg:"bg-blue-50",    border:"border-blue-100" },
-                    { icon:"👤", label:"Active Members",          value:(s.active_members ?? users.filter(u=>u.role==="customer" && (u.loyalty_points||0)>0).length).toLocaleString(), color:"text-violet-700", bg:"bg-violet-50", border:"border-violet-100" },
+                    { icon:"💰", label:"Points Earned (30d)",   value:(s.total_earned ?? 0).toLocaleString(),        color:"text-emerald-700", bg:"bg-emerald-50", border:"border-emerald-100" },
+                    { icon:"🎫", label:"Coupons Redeemed (30d)", value:(s.total_redeemed ?? 0).toLocaleString(),      color:"text-orange-700",  bg:"bg-orange-50",  border:"border-orange-100" },
+                    { icon:"🏦", label:"Active Coupons",         value:(s.active_coupons ?? 0).toLocaleString(),      color:"text-blue-700",    bg:"bg-blue-50",    border:"border-blue-100" },
+                    { icon:"👤", label:"Active Members",          value:(s.eligible_to_redeem ?? 0).toLocaleString(), color:"text-violet-700",  bg:"bg-violet-50",  border:"border-violet-100" },
                   ];
                   return (
                     <>
