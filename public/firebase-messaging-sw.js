@@ -120,21 +120,20 @@ async function swGetToken() {
 }
 
 async function flushGpsBuffer() {
-  const token = await swGetToken();
-  if (!token) return; // no token — nothing we can do, will retry on next sync
-
   const db        = await swOpenGpsDb();
   const positions = await swGetAllPositions(db);
   if (!positions.length) return;
 
   for (const pos of positions) {
     try {
+      // credentials:'include' sends the httpOnly auth cookie — no token in JS
       const res = await fetch(
         `${API_BASE}/bookings/${pos.bookingId}/location`,
         {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body:    JSON.stringify({ lat: pos.lat, lng: pos.lng }),
+          method:      'POST',
+          headers:     { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body:        JSON.stringify({ lat: pos.lat, lng: pos.lng }),
         }
       );
       if (res.ok) {

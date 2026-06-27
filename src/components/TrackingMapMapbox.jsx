@@ -226,9 +226,8 @@ export default function TrackingMapMapbox({ booking, onClose }) {
   /* ── 4. SSE live location ── */
   useEffect(() => {
     if (!booking?.id) return;
-    const token = localStorage.getItem("petclub_token");
-    const url   = `${BASE}/bookings/${booking.id}/track?token=${encodeURIComponent(token)}`;
-    const es = new EventSource(url);
+    const url = `${BASE}/bookings/${booking.id}/track`;
+    const es  = new EventSource(url, { withCredentials: true });
     esRef.current = es;
     es.onopen    = () => setLiveStatus("live");
     es.onerror   = () => setLiveStatus("reconnecting");

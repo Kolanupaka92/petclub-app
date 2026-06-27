@@ -227,10 +227,7 @@ export default function TrackingMapMappls({ booking, onClose }) {
         // Backend geocoding gateway — no API keys in frontend
         const addr = [booking?.address, booking?.city].filter(Boolean).join(", ");
         if (!addr) return;
-        const token = localStorage.getItem("petclub_token");
-        fetch(`${BASE}/geocode?q=${encodeURIComponent(addr)}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        })
+        fetch(`${BASE}/geocode?q=${encodeURIComponent(addr)}`, { credentials: 'include' })
           .then(r => r.json())
           .then(d => { if (d.lat && d.lng) setCustPos({ lat: d.lat, lng: d.lng }); })
           .catch(() => {});
@@ -258,9 +255,8 @@ export default function TrackingMapMappls({ booking, onClose }) {
   /* ── 4. SSE live location ── */
   useEffect(() => {
     if (!booking?.id) return;
-    const token = localStorage.getItem("petclub_token");
-    const url   = `${BASE}/bookings/${booking.id}/track?token=${encodeURIComponent(token)}`;
-    const es = new EventSource(url);
+    const url = `${BASE}/bookings/${booking.id}/track`;
+    const es  = new EventSource(url, { withCredentials: true });
     esRef.current = es;
     es.onopen    = () => setLiveStatus("live");
     es.onerror   = () => setLiveStatus("reconnecting");

@@ -837,8 +837,8 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
     setSharingLocId(bookingId);
     lastSentRef.current = 0;
 
-    // Save auth token to IndexedDB now so the SW can use it during Background Sync
-    saveTokenToGpsDb(localStorage.getItem('petclub_token')).catch(() => {});
+    // Token is now an httpOnly cookie — SW background sync uses credentials:'include'
+    saveTokenToGpsDb('').catch(() => {});
 
     // Acquire wake lock — keeps screen on so watchPosition isn't suspended
     acquireWakeLock();

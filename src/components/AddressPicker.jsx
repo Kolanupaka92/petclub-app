@@ -33,11 +33,8 @@ export function AddressPicker({ value, onChange, placeholder, className, token }
   const debounce  = useRef(null);
   const skipBlur  = useRef(false);
 
-  /* auth header — token prop preferred, then localStorage (key: petclub_token) */
-  const authHeader = () => {
-    const t = token || localStorage.getItem("petclub_token") || "";
-    return t ? { Authorization: `Bearer ${t}` } : {};
-  };
+  /* credentials:'include' sends the httpOnly auth cookie automatically */
+  const fetchOpts = { credentials: 'include' };
 
   /* sync external clear */
   useEffect(() => {
@@ -70,7 +67,7 @@ export function AddressPicker({ value, onChange, placeholder, className, token }
     try {
       const res = await fetch(
         `${API_BASE}/geocode?q=${encodeURIComponent(q)}`,
-        { headers: authHeader() }
+        fetchOpts
       );
       const list = res.ok ? await res.json() : [];
       setResults(list);
@@ -119,7 +116,7 @@ export function AddressPicker({ value, onChange, placeholder, className, token }
         try {
           const res = await fetch(
             `${API_BASE}/reverse-geocode?lat=${lat}&lng=${lng}`,
-            { headers: authHeader() }
+            fetchOpts
           );
           const r = res.ok ? await res.json() : {};
           if (r.full && !r.full.match(/^-?\d+\.\d+/)) {

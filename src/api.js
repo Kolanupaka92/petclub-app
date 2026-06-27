@@ -11,14 +11,14 @@ const BASE = _stripBom(import.meta.env.VITE_API_URL) || (() => {
   return 'https://api.mypetclub.app/api';
 })();
 
-const getToken = () => localStorage.getItem('petclub_token');
-
 const req = async (method, path, body, requireAuth = false, _swRetry = false) => {
   const headers = { 'Content-Type': 'application/json' };
-  if (requireAuth) headers['Authorization'] = `Bearer ${getToken()}`;
+  // Auth via httpOnly cookie — browser sends it automatically with credentials:'include'
+  // No token in JS memory; XSS cannot steal it
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers,
+    credentials: 'include',   // send cookie on every request, auth and non-auth alike
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -44,11 +44,9 @@ const req = async (method, path, body, requireAuth = false, _swRetry = false) =>
     if (!res.ok) throw new Error(`Server error (${res.status}). Please try again.`);
     return {};
   }
-  // 401 — JWT expired or invalid: clear local session and signal the app to re-login
+  // 401 — cookie expired or missing: clear local session and signal the app to re-login
   if (res.status === 401) {
-    localStorage.removeItem('petclub_token');
     localStorage.removeItem('petclub_session');
-    // Dispatch a custom event — Root in main.jsx listens and calls doLogout()
     window.dispatchEvent(new CustomEvent('petclub:unauthorized'));
     throw new Error('Your session has expired. Please sign in again.');
   }
@@ -179,6 +177,10 @@ export const api = {
   adminHealth: () => req('GET', '/admin/health', null, true),
 };
 
-export const saveToken = (token) => localStorage.setItem('petclub_token', token);
-export const clearToken = () => localStorage.removeItem('petclub_token');
-export const hasToken = () => !!getToken();
+// Token is now an httpOnly cookie set by the backend — not accessible from JS.
+// These stubs remain for call-site compat; they are no-ops.
+export const saveToken = (_token) => {};
+export const clearToken = () => {};
+export const hasToken = () => true;  // backend /api/users/me is authoritative
+
+export const logout = () => req('POST', '/auth/logout');
