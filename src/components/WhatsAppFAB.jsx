@@ -3,7 +3,7 @@
  * Appears above the bottom nav in both the customer and pro apps.
  * Number is pulled from VITE_WHATSAPP_NUMBER env var (fallback hardcoded).
  */
-const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '919347411132';
+const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '16097215754';
 
 const MESSAGES = {
   customer:     'Hi PETclub! I need help with my booking. 🐾',

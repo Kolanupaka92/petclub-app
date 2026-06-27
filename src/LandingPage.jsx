@@ -21,7 +21,7 @@ const DARK3   = "#1c0e00";
 const CREAM   = "#fff8f0";
 const CREAM2  = "#fff1e0";
 
-const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '919347411132';
+const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '16097215754';
 
 /* ── Brand logo ── */
 const PawMark = ({ size = 30 }) => (
