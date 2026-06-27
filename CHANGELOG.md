@@ -1,3 +1,10 @@
+## [1.40.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.2...v1.40.3) (2026-06-27)
+
+
+### Bug Fixes
+
+* **auth:** call api.logout() on sign-out to clear httpOnly cookie ([7050889](https://github.com/Kolanupaka92/petclub-app/commit/7050889f6a09689e6f4ed341a6456ff6151b154c))
+
 ## [1.40.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.1...v1.40.2) (2026-06-27)
 
 
