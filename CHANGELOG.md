@@ -1,3 +1,10 @@
+## [1.40.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.0...v1.40.1) (2026-06-27)
+
+
+### Bug Fixes
+
+* **contact:** update WhatsApp number to +16097215754 ([1cb3eb9](https://github.com/Kolanupaka92/petclub-app/commit/1cb3eb9e21a1529ae8880a7d228eccc2cddd04ba))
+
 # [1.40.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.39.1...v1.40.0) (2026-06-01)
 
 
