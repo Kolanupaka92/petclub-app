@@ -1,3 +1,10 @@
+## [1.40.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.1...v1.40.2) (2026-06-27)
+
+
+### Bug Fixes
+
+* **loyalty:** fix broken stat card field names in admin loyalty panel ([c52a142](https://github.com/Kolanupaka92/petclub-app/commit/c52a14274baa3be506043adb498f68e684d191df))
+
 ## [1.40.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.0...v1.40.1) (2026-06-27)
 
 
