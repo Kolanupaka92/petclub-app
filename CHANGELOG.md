@@ -1,3 +1,10 @@
+## [1.40.5](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.4...v1.40.5) (2026-06-28)
+
+
+### Bug Fixes
+
+* **currency:** region-based currency symbol from phone prefix ([728fa93](https://github.com/Kolanupaka92/petclub-app/commit/728fa93def80ed0a643d226b14fcecac257e6685))
+
 ## [1.40.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.3...v1.40.4) (2026-06-28)
 
 
