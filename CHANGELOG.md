@@ -1,3 +1,10 @@
+## [1.40.8](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.7...v1.40.8) (2026-06-28)
+
+
+### Bug Fixes
+
+* **i18n:** eliminate all hardcoded INR/en-IN from customer and provider views ([3c205a5](https://github.com/Kolanupaka92/petclub-app/commit/3c205a54139622d867f13121e5463bba8019fc77))
+
 ## [1.40.7](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.6...v1.40.7) (2026-06-28)
 
 
