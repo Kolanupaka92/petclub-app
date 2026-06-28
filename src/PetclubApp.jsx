@@ -174,17 +174,17 @@ function Toast({ msg, type, onDone }) {
 
 /* ══════════ MAIN APP ══════════ */
 export default function PetclubApp({ session, onLogout }) {
-  // Derive currency symbol from the user's phone country prefix
-  const currencySymbol = (() => {
+  // Derive currency symbol and number locale from the user's phone country prefix
+  const { currencySymbol, numLocale } = (() => {
     const phone = session?.phone || "";
-    if (phone.startsWith("+91"))  return "₹";   // India
-    if (phone.startsWith("+1"))   return "$";   // USA / Canada
-    if (phone.startsWith("+44"))  return "£";   // UK
-    if (phone.startsWith("+61"))  return "A$";  // Australia
-    if (phone.startsWith("+971")) return "AED"; // UAE
-    if (phone.startsWith("+65"))  return "S$";  // Singapore
-    if (phone.startsWith("+60"))  return "RM";  // Malaysia
-    return "₹"; // default — platform is India-first
+    if (phone.startsWith("+91"))  return { currencySymbol: "₹",   numLocale: "en-IN" };
+    if (phone.startsWith("+1"))   return { currencySymbol: "$",   numLocale: "en-US" };
+    if (phone.startsWith("+44"))  return { currencySymbol: "£",   numLocale: "en-GB" };
+    if (phone.startsWith("+61"))  return { currencySymbol: "A$",  numLocale: "en-AU" };
+    if (phone.startsWith("+971")) return { currencySymbol: "AED", numLocale: "ar-AE" };
+    if (phone.startsWith("+65"))  return { currencySymbol: "S$",  numLocale: "en-SG" };
+    if (phone.startsWith("+60"))  return { currencySymbol: "RM",  numLocale: "ms-MY" };
+    return { currencySymbol: "₹", numLocale: "en-IN" };
   })();
 
   const [pets, setPets] = useState(() => loadPets(INITIAL_PETS));
@@ -792,8 +792,8 @@ export default function PetclubApp({ session, onLogout }) {
                     {b.status === "cancelled" && (b.refund_amount != null || b.cancellation_fee != null) && (
                       <div className="mt-3 bg-red-50 border border-red-100 rounded-xl p-3 text-xs space-y-0.5">
                         <div className="font-bold text-red-700">Booking Cancelled</div>
-                        {b.cancellation_fee > 0 && <div className="text-red-600">Cancellation fee: ₹{parseFloat(b.cancellation_fee).toFixed(2)}</div>}
-                        {b.refund_amount > 0 && <div className="text-emerald-700 font-semibold">Refund: ₹{parseFloat(b.refund_amount).toFixed(2)} — {b.refund_status === 'processed' ? 'Processed ✓' : 'Pending (2-5 days)'}</div>}
+                        {b.cancellation_fee > 0 && <div className="text-red-600">Cancellation fee: {currencySymbol}{parseFloat(b.cancellation_fee).toFixed(2)}</div>}
+                        {b.refund_amount > 0 && <div className="text-emerald-700 font-semibold">Refund: {currencySymbol}{parseFloat(b.refund_amount).toFixed(2)} — {b.refund_status === 'processed' ? 'Processed ✓' : 'Pending (2-5 days)'}</div>}
                         {b.cancelled_by === "no_show" && <div className="text-gray-500">Reason: Customer no-show at location</div>}
                       </div>
                     )}
@@ -1869,8 +1869,8 @@ export default function PetclubApp({ session, onLogout }) {
                             <div className="text-xs text-gray-400">{pkg.desc}</div>
                           </div>
                           <div className="text-right">
-                            <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>₹{price}</div>
-                            <div className="text-[10px] text-emerald-600 font-semibold">Save ₹{PLATFORM_DISCOUNT}</div>
+                            <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{price}</div>
+                            <div className="text-[10px] text-emerald-600 font-semibold">Save {currencySymbol}{PLATFORM_DISCOUNT}</div>
                           </div>
                           {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
                         </button>
@@ -1898,7 +1898,7 @@ export default function PetclubApp({ session, onLogout }) {
                             <div className={`font-semibold text-xs ${checked ? "text-blue-700" : "text-gray-700"}`}>{addon.label}</div>
                             <div className="text-[10px] text-gray-400">{addon.desc}</div>
                           </div>
-                          <span className={`text-xs font-bold ${checked ? "text-blue-600" : "text-gray-500"}`}>+₹{addon.price}</span>
+                          <span className={`text-xs font-bold ${checked ? "text-blue-600" : "text-gray-500"}`}>+{currencySymbol}{addon.price}</span>
                         </label>
                       );
                     })}
@@ -1921,8 +1921,8 @@ export default function PetclubApp({ session, onLogout }) {
                           <div className="text-xs text-gray-400">{pkg.desc}</div>
                         </div>
                         <div className="text-right">
-                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>₹{pkg.price.toLocaleString("en-IN")}</div>
-                          <div className="text-[10px] text-emerald-600 font-semibold">Save ₹{PLATFORM_DISCOUNT}</div>
+                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{pkg.price.toLocaleString(numLocale)}</div>
+                          <div className="text-[10px] text-emerald-600 font-semibold">Save {currencySymbol}{PLATFORM_DISCOUNT}</div>
                         </div>
                         {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
                       </button>
@@ -1946,8 +1946,8 @@ export default function PetclubApp({ session, onLogout }) {
                           <div className="text-xs text-gray-400">{pkg.desc}</div>
                         </div>
                         <div className="text-right">
-                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>₹{pkg.price.toLocaleString("en-IN")}</div>
-                          <div className="text-[10px] text-emerald-600 font-semibold">Save ₹{activePlatformDiscount}</div>
+                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{pkg.price.toLocaleString(numLocale)}</div>
+                          <div className="text-[10px] text-emerald-600 font-semibold">Save {currencySymbol}{activePlatformDiscount}</div>
                         </div>
                         {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
                       </button>
@@ -1975,8 +1975,8 @@ export default function PetclubApp({ session, onLogout }) {
                           <div className="text-xs text-gray-400">{pkg.desc}</div>
                         </div>
                         <div className="text-right">
-                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>₹{pkg.price.toLocaleString("en-IN")}</div>
-                          <div className="text-[10px] text-emerald-600 font-semibold">Save ₹{activePlatformDiscount}</div>
+                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{pkg.price.toLocaleString(numLocale)}</div>
+                          <div className="text-[10px] text-emerald-600 font-semibold">Save {currencySymbol}{activePlatformDiscount}</div>
                         </div>
                         {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
                       </button>
@@ -2133,21 +2133,21 @@ export default function PetclubApp({ session, onLogout }) {
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Price Breakdown</p>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>{bookingForm.service_name}</span>
-                    <span className="font-semibold">₹{pricing.base.toLocaleString("en-IN")}</span>
+                    <span className="font-semibold">{currencySymbol}{pricing.base.toLocaleString(numLocale)}</span>
                   </div>
                   {pricing.addonSum > 0 && (
                     <div className="flex justify-between text-sm text-gray-600">
                       <span>Add-on services</span>
-                      <span className="font-semibold">+₹{pricing.addonSum.toLocaleString("en-IN")}</span>
+                      <span className="font-semibold">+{currencySymbol}{pricing.addonSum.toLocaleString(numLocale)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm text-emerald-600">
                     <span>🎁 PETclub Offer</span>
-                    <span className="font-semibold">−₹{pricing.discount.toLocaleString("en-IN")}</span>
+                    <span className="font-semibold">−{currencySymbol}{pricing.discount.toLocaleString(numLocale)}</span>
                   </div>
                   <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
                     <span className="font-bold text-gray-800">Total</span>
-                    <span className="font-extrabold text-orange-600 text-lg">₹{pricing.total.toLocaleString("en-IN")}</span>
+                    <span className="font-extrabold text-orange-600 text-lg">{currencySymbol}{pricing.total.toLocaleString(numLocale)}</span>
                   </div>
                   <p className="text-[10px] text-gray-400">Payment collected at service. No advance required.</p>
                 </div>
@@ -2194,8 +2194,8 @@ export default function PetclubApp({ session, onLogout }) {
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-xs text-amber-800 space-y-1">
                 <div className="font-bold text-amber-900 flex items-center gap-1.5">📋 Cancellation Policy</div>
                 <div className="flex items-start gap-2"><span className="text-emerald-600 font-bold shrink-0">✓</span><span>Cancel <strong>2+ hours</strong> before booking — <strong>full refund</strong>, no charge</span></div>
-                <div className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0">✗</span><span>Cancel <strong>under 2 hours</strong> before — ₹300 cancellation fee, rest refunded</span></div>
-                <div className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0">✗</span><span>Customer <strong>no-show</strong> at location — ₹300 fee, rest refunded</span></div>
+                <div className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0">✗</span><span>Cancel <strong>under 2 hours</strong> before — {currencySymbol}300 cancellation fee, rest refunded</span></div>
+                <div className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0">✗</span><span>Customer <strong>no-show</strong> at location — {currencySymbol}300 fee, rest refunded</span></div>
                 <div className="flex items-start gap-2"><span className="text-gray-500 font-bold shrink-0">⊘</span><span><strong>Rescheduling is not available</strong> under any circumstances</span></div>
               </div>
 
@@ -2353,16 +2353,16 @@ export default function PetclubApp({ session, onLogout }) {
               <div className={`rounded-2xl p-4 mb-4 ${cancelModal.preview.fee_free ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"}`}>
                 {cancelModal.preview.fee_free ? (
                   <>
-                    <p className="text-sm font-extrabold text-emerald-700">✅ Full Refund — ₹{cancelModal.preview.total_amount?.toFixed(2)}</p>
+                    <p className="text-sm font-extrabold text-emerald-700">✅ Full Refund — {currencySymbol}{cancelModal.preview.total_amount?.toFixed(2)}</p>
                     <p className="text-xs text-emerald-600 mt-1">You're cancelling more than 2 hours in advance. No cancellation fee.</p>
                   </>
                 ) : (
                   <>
                     <p className="text-sm font-extrabold text-amber-800">⚠️ Cancellation Fee Applies</p>
                     <div className="mt-2 space-y-1 text-xs text-amber-700">
-                      <div className="flex justify-between"><span>Total paid</span><span>₹{cancelModal.preview.total_amount?.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-red-600"><span>Cancellation fee (under 2hr)</span><span>−₹{cancelModal.preview.cancellation_fee?.toFixed(2)}</span></div>
-                      <div className="flex justify-between font-extrabold text-amber-900 border-t border-amber-300 pt-1 mt-1"><span>Refund</span><span>₹{cancelModal.preview.refund_amount?.toFixed(2)}</span></div>
+                      <div className="flex justify-between"><span>Total paid</span><span>{currencySymbol}{cancelModal.preview.total_amount?.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-red-600"><span>Cancellation fee (under 2hr)</span><span>−{currencySymbol}{cancelModal.preview.cancellation_fee?.toFixed(2)}</span></div>
+                      <div className="flex justify-between font-extrabold text-amber-900 border-t border-amber-300 pt-1 mt-1"><span>Refund</span><span>{currencySymbol}{cancelModal.preview.refund_amount?.toFixed(2)}</span></div>
                     </div>
                     <p className="text-[10px] text-amber-600 mt-2">Refund processed within 2–5 business days after cancellation.</p>
                   </>
