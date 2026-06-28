@@ -1,3 +1,10 @@
+## [1.40.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.3...v1.40.4) (2026-06-28)
+
+
+### Bug Fixes
+
+* **auth:** clear stale localStorage token + force SW reload on update ([13b648f](https://github.com/Kolanupaka92/petclub-app/commit/13b648f8ef3e5a4aca4f51393a3077817af920e3))
+
 ## [1.40.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.2...v1.40.3) (2026-06-27)
 
 
