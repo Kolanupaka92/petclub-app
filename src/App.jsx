@@ -2017,8 +2017,8 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [revenueLoading, setRevenueLoading] = useState(false);
   const [revenueFrom,    setRevenueFrom]    = useState(() => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0,10); });
   const [revenueTo,      setRevenueTo]      = useState(() => new Date().toISOString().slice(0,10));
-  // PETclub operates exclusively in India — all platform revenue is in INR.
-  // Admin's phone may be a non-Indian number but the currency is always ₹.
+  // Admin panel shows split INR (India) and USD (US) revenue.
+  // currencySymbol used only for legacy stat cards; revenue card uses explicit symbols.
   const currencySymbol = "₹";
 
   /* ── Admin UX additions ── */
@@ -2275,6 +2275,23 @@ const AdminDashboard = ({ session, onLogout }) => {
   // Short date formatter used in user cards
   const fmtShort = d => { try { return new Date(d).toLocaleDateString(undefined, { day:"numeric", month:"short", year:"numeric" }); } catch { return "—"; } };
 
+  // Revenue split by currency — derived from customer phone prefix stored on each booking
+  const completedAll  = bookings.filter(b => b.status === "completed");
+  const inrBookings   = completedAll.filter(b => !b.users?.phone?.startsWith("+1"));
+  const usdBookings   = completedAll.filter(b =>  b.users?.phone?.startsWith("+1"));
+  const revINR = {
+    gross:    inrBookings.reduce((s,b) => s + parseFloat(b.total_amount||b.amount||0), 0),
+    platform: inrBookings.reduce((s,b) => s + parseFloat(b.platform_fee||0), 0),
+    provider: inrBookings.reduce((s,b) => s + parseFloat(b.provider_earnings||0), 0),
+    count:    inrBookings.length,
+  };
+  const revUSD = {
+    gross:    usdBookings.reduce((s,b) => s + parseFloat(b.total_amount||b.amount||0), 0),
+    platform: usdBookings.reduce((s,b) => s + parseFloat(b.platform_fee||0), 0),
+    provider: usdBookings.reduce((s,b) => s + parseFloat(b.provider_earnings||0), 0),
+    count:    usdBookings.length,
+  };
+
   const NAV = [
     { id:"overview", icon:"📊", label:"Overview" },
     { id:"live",     icon:"🗺️", label:"Live",     badge: bookings.filter(b=>["on_the_way","in_progress"].includes(b.assignment_status)).length || 0 },
@@ -2364,32 +2381,65 @@ const AdminDashboard = ({ session, onLogout }) => {
                 <StatCard icon="📅" label="Total Bookings" value={bookings.length}  gradient="bg-gradient-to-br from-gray-600 to-gray-800" onClick={() => setView("bookings")}/>
                 <StatCard icon="🏁" label="Completion Rate" value={bookings.length ? `${Math.round(bookings.filter(b=>b.status==="completed").length/bookings.length*100)}%` : "—"} sub={`${bookings.filter(b=>b.status==="completed").length} done`} gradient="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={() => setView("bookings")}/>
               </div>
-              {/* Revenue card — full width */}
+              {/* Revenue card — split INR / USD */}
               <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-4 mb-5">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <div className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">Gross Revenue (Customer Paid)</div>
-                    <div className="text-white text-3xl font-extrabold">
-                      {currencySymbol}{(stats?.revenue ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.total_amount||b.amount||0),0)).toLocaleString()}
+                    <div className="text-white text-2xl font-extrabold">
+                      ₹{revINR.gross.toLocaleString("en-IN")}
+                      {revUSD.count > 0 && <span className="text-gray-300 text-lg font-semibold"> · ${revUSD.gross.toLocaleString("en-US")}</span>}
                     </div>
-                    <div className="text-gray-400 text-xs mt-1">{bookings.filter(b=>b.status==="completed").length} completed bookings</div>
+                    <div className="text-gray-400 text-xs mt-1">
+                      {completedAll.length} completed · {revINR.count} INR · {revUSD.count} USD
+                    </div>
                   </div>
                   <div className="text-5xl opacity-30">💰</div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/10">
-                  <div className="bg-white/5 rounded-xl p-2.5 text-center">
-                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">PETclub Net</div>
-                    <div className="text-orange-400 font-extrabold text-sm">
-                      {currencySymbol}{(stats?.platform_net ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.platform_fee||0),0)).toLocaleString()}
+
+                {/* India (INR) */}
+                <div className="mb-2">
+                  <div className="text-gray-500 text-[10px] font-bold uppercase tracking-wide mb-1.5">🇮🇳 India (₹)</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-white/5 rounded-xl p-2 text-center">
+                      <div className="text-gray-400 text-[10px] font-semibold mb-0.5">Gross</div>
+                      <div className="text-white font-extrabold text-xs">₹{revINR.gross.toLocaleString("en-IN")}</div>
                     </div>
-                  </div>
-                  <div className="bg-white/5 rounded-xl p-2.5 text-center">
-                    <div className="text-gray-400 text-[10px] font-semibold mb-0.5">Provider Payouts</div>
-                    <div className="text-emerald-400 font-extrabold text-sm">
-                      {currencySymbol}{(stats?.provider_total ?? bookings.filter(b=>b.status==="completed").reduce((s,b)=>s+parseFloat(b.provider_earnings||0),0)).toLocaleString()}
+                    <div className="bg-white/5 rounded-xl p-2 text-center">
+                      <div className="text-gray-400 text-[10px] font-semibold mb-0.5">PETclub</div>
+                      <div className="text-orange-400 font-extrabold text-xs">₹{revINR.platform.toLocaleString("en-IN")}</div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-2 text-center">
+                      <div className="text-gray-400 text-[10px] font-semibold mb-0.5">Providers</div>
+                      <div className="text-emerald-400 font-extrabold text-xs">₹{revINR.provider.toLocaleString("en-IN")}</div>
                     </div>
                   </div>
                 </div>
+
+                {/* USA (USD) — only shown when there are USD bookings */}
+                {revUSD.count > 0 ? (
+                  <div className="mt-2 pt-2 border-t border-white/10">
+                    <div className="text-gray-500 text-[10px] font-bold uppercase tracking-wide mb-1.5">🇺🇸 USA ($)</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-white/5 rounded-xl p-2 text-center">
+                        <div className="text-gray-400 text-[10px] font-semibold mb-0.5">Gross</div>
+                        <div className="text-white font-extrabold text-xs">${revUSD.gross.toLocaleString("en-US")}</div>
+                      </div>
+                      <div className="bg-white/5 rounded-xl p-2 text-center">
+                        <div className="text-gray-400 text-[10px] font-semibold mb-0.5">PETclub</div>
+                        <div className="text-orange-400 font-extrabold text-xs">${revUSD.platform.toLocaleString("en-US")}</div>
+                      </div>
+                      <div className="bg-white/5 rounded-xl p-2 text-center">
+                        <div className="text-gray-400 text-[10px] font-semibold mb-0.5">Providers</div>
+                        <div className="text-emerald-400 font-extrabold text-xs">${revUSD.provider.toLocaleString("en-US")}</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-2 pt-2 border-t border-white/10 text-center">
+                    <span className="text-gray-600 text-[10px]">🇺🇸 No USD bookings yet</span>
+                  </div>
+                )}
               </div>
 
               {/* ── Role distribution ── */}
@@ -2913,9 +2963,10 @@ const AdminDashboard = ({ session, onLogout }) => {
             return matchStatus && matchService && matchSearch;
           });
           const completedFiltered = filtered.filter(b=>b.status==="completed");
-          const revenue     = completedFiltered.reduce((s,b)=>s+parseFloat(b.total_amount||b.amount||0),0);
-          const totalPlatform = completedFiltered.reduce((s,b)=>s+parseFloat(b.platform_fee||0),0);
-          const totalProvider = completedFiltered.reduce((s,b)=>s+parseFloat(b.provider_earnings||0),0);
+          const cfINR = completedFiltered.filter(b => !b.users?.phone?.startsWith("+1"));
+          const cfUSD = completedFiltered.filter(b =>  b.users?.phone?.startsWith("+1"));
+          const bRevINR = { gross: cfINR.reduce((s,b)=>s+parseFloat(b.total_amount||b.amount||0),0), platform: cfINR.reduce((s,b)=>s+parseFloat(b.platform_fee||0),0), provider: cfINR.reduce((s,b)=>s+parseFloat(b.provider_earnings||0),0) };
+          const bRevUSD = { gross: cfUSD.reduce((s,b)=>s+parseFloat(b.total_amount||b.amount||0),0), platform: cfUSD.reduce((s,b)=>s+parseFloat(b.platform_fee||0),0), provider: cfUSD.reduce((s,b)=>s+parseFloat(b.provider_earnings||0),0) };
           return (
           <div className="max-w-2xl mx-auto px-5 py-6">
             <div className="flex items-center justify-between mb-4">
@@ -2960,10 +3011,27 @@ const AdminDashboard = ({ session, onLogout }) => {
 
             {/* Revenue summary for filtered view */}
             {completedFiltered.length > 0 && (
-              <div className="bg-gray-900 rounded-2xl p-4 mb-4 grid grid-cols-3 gap-3 text-center">
-                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Gross Revenue</div><div className="text-white font-extrabold text-sm mt-0.5">₹{revenue.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
-                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">PETclub</div><div className="text-orange-400 font-extrabold text-sm mt-0.5">₹{totalPlatform.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
-                <div><div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Providers</div><div className="text-emerald-400 font-extrabold text-sm mt-0.5">₹{totalProvider.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+              <div className="bg-gray-900 rounded-2xl p-4 mb-4 space-y-3">
+                {/* INR row */}
+                <div>
+                  <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-1.5">🇮🇳 India (₹) · {cfINR.length} bookings</div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div><div className="text-[10px] text-gray-400 font-semibold">Gross</div><div className="text-white font-extrabold text-xs mt-0.5">₹{bRevINR.gross.toLocaleString("en-IN",{maximumFractionDigits:0})}</div></div>
+                    <div><div className="text-[10px] text-gray-400 font-semibold">PETclub</div><div className="text-orange-400 font-extrabold text-xs mt-0.5">₹{bRevINR.platform.toLocaleString("en-IN",{maximumFractionDigits:0})}</div></div>
+                    <div><div className="text-[10px] text-gray-400 font-semibold">Providers</div><div className="text-emerald-400 font-extrabold text-xs mt-0.5">₹{bRevINR.provider.toLocaleString("en-IN",{maximumFractionDigits:0})}</div></div>
+                  </div>
+                </div>
+                {/* USD row — only if any USD bookings in this filter */}
+                {cfUSD.length > 0 && (
+                  <div className="pt-2 border-t border-white/10">
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-1.5">🇺🇸 USA ($) · {cfUSD.length} bookings</div>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div><div className="text-[10px] text-gray-400 font-semibold">Gross</div><div className="text-white font-extrabold text-xs mt-0.5">${bRevUSD.gross.toLocaleString("en-US",{maximumFractionDigits:0})}</div></div>
+                      <div><div className="text-[10px] text-gray-400 font-semibold">PETclub</div><div className="text-orange-400 font-extrabold text-xs mt-0.5">${bRevUSD.platform.toLocaleString("en-US",{maximumFractionDigits:0})}</div></div>
+                      <div><div className="text-[10px] text-gray-400 font-semibold">Providers</div><div className="text-emerald-400 font-extrabold text-xs mt-0.5">${bRevUSD.provider.toLocaleString("en-US",{maximumFractionDigits:0})}</div></div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -3308,12 +3376,13 @@ const AdminDashboard = ({ session, onLogout }) => {
               const provider = summary.provider_total ?? rows.reduce((s,r) => s + parseFloat(r.provider_earnings || 0), 0);
               return (
                 <>
-                  {/* Summary banner */}
+                  {/* Summary banner — server-aggregated, mixed INR+USD */}
                   <div className="bg-gray-900 rounded-2xl p-5 grid grid-cols-3 gap-4 text-center">
                     <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Gross Revenue</div><div className="text-white text-xl font-extrabold">₹{parseFloat(gross).toLocaleString()}</div></div>
                     <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">PETclub Net</div><div className="text-orange-400 text-xl font-extrabold">₹{parseFloat(platform).toLocaleString()}</div></div>
                     <div><div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Providers</div><div className="text-emerald-400 text-xl font-extrabold">₹{parseFloat(provider).toLocaleString()}</div></div>
                   </div>
+                  <div className="text-[10px] text-gray-400 text-center mt-1">⚠️ Report totals are server-aggregated — INR and USD amounts are summed together. Use the Bookings tab for per-currency breakdown.</div>
 
                   {/* Per-professional breakdown */}
                   {rows.length > 0 ? (
@@ -3339,7 +3408,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                                 </div>
                                 <div className="text-right shrink-0">
                                   <div className="text-sm font-extrabold text-gray-800">₹{rowGross.toLocaleString()}</div>
-                                  <div className="text-xs text-gray-400">gross</div>
+                                  <div className="text-xs text-gray-400">gross (mixed)</div>
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2">
