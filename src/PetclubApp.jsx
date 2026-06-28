@@ -25,19 +25,25 @@ const INITIAL_PETS = [];
 // that any backend price change propagates immediately without a frontend deploy.
 // These DEFAULT constants are the offline/loading fallback ONLY — the live
 // values come from the useCatalog() hook below and override these on load.
-const PLATFORM_DISCOUNT = 150; // fallback — overridden by catalog.platform_discount
+const PLATFORM_DISCOUNT = 150; // fallback INR — overridden by catalog.platform_discount
+const PLATFORM_DISCOUNT_USD = 10; // USD equivalent platform subsidy
+
+// ── Regional pricing helpers ──────────────────────────────────────────────────
+// Each package carries both INR prices (India) and USD prices (USA market rates).
+// Other regions fall back to INR for now.
+// USD rates are based on 2025 US premium in-home/mobile pet service averages.
 
 // Grooming — tiered by pet size (fallback)
 // Small = small dog (up to 10 kg), Medium = mid-size dog (10–20 kg), Large = big dog (20 kg+), Cat = all cat breeds
 const GROOMING_PACKAGES = [
-  { name: "Essential Bath+",   prices: { Small: 800,  Medium: 900,  Large: 1000, Cat: 1000 }, icon: "🛁", desc: "Premium shampoo · Blow dry · FREE ear cleaning & nail trim · 45–60 min" },
-  { name: "Premium Bath+",     prices: { Small: 2000, Medium: 2200, Large: 2500, Cat: 2000 }, icon: "✨", desc: "Plus Puppy shampoo · Premium blow dry · FREE ear cleaning & nail trim" },
-  { name: "Complete Makeover", prices: { Small: 1700, Medium: 1750, Large: 1800, Cat: 1500 }, icon: "💆", desc: "Full groom · Premium shampoo · Nail trim + grind · Deshedding · 1.5–2 hrs" },
-  { name: "Luxury Makeover",   prices: { Small: 3000, Medium: 3100, Large: 3200, Cat: 3000 }, icon: "👑", desc: "Premium spa · Plus Puppy shampoo · Coat-specific care · Salon-quality finish" },
-  { name: "Trim & Style",      prices: { Small: 1300, Medium: 1400, Large: 1500, Cat: 1300 }, icon: "✂️", desc: "Haircut any size · Dog or cat" },
-  { name: "Care Combo",        prices: { Small: 500,  Medium: 500,  Large: 500,  Cat: 500  }, icon: "💅", desc: "Nails + ear cleaning + face trim" },
-  { name: "Puppy Dry Spa",     prices: { Small: 600,  Medium: 600,  Large: 600,  Cat: 600  }, icon: "🐾", desc: "Gentle dry bath for tiny puppies" },
-  { name: "Puppy Wet Bath",    prices: { Small: 800,  Medium: 800,  Large: 900,  Cat: 800  }, icon: "🐶", desc: "Gentle wet bath for puppies" },
+  { name: "Essential Bath+",   prices: { Small: 800,  Medium: 900,  Large: 1000, Cat: 1000 }, prices_usd: { Small: 35, Medium: 50, Large: 70,  Cat: 45  }, icon: "🛁", desc: "Premium shampoo · Blow dry · FREE ear cleaning & nail trim · 45–60 min" },
+  { name: "Premium Bath+",     prices: { Small: 2000, Medium: 2200, Large: 2500, Cat: 2000 }, prices_usd: { Small: 75, Medium: 95, Large: 120, Cat: 85  }, icon: "✨", desc: "Plus Puppy shampoo · Premium blow dry · FREE ear cleaning & nail trim" },
+  { name: "Complete Makeover", prices: { Small: 1700, Medium: 1750, Large: 1800, Cat: 1500 }, prices_usd: { Small: 65, Medium: 80, Large: 110, Cat: 75  }, icon: "💆", desc: "Full groom · Premium shampoo · Nail trim + grind · Deshedding · 1.5–2 hrs" },
+  { name: "Luxury Makeover",   prices: { Small: 3000, Medium: 3100, Large: 3200, Cat: 3000 }, prices_usd: { Small: 110, Medium: 140, Large: 175, Cat: 115 }, icon: "👑", desc: "Premium spa · Plus Puppy shampoo · Coat-specific care · Salon-quality finish" },
+  { name: "Trim & Style",      prices: { Small: 1300, Medium: 1400, Large: 1500, Cat: 1300 }, prices_usd: { Small: 55, Medium: 70, Large: 90,  Cat: 60  }, icon: "✂️", desc: "Haircut any size · Dog or cat" },
+  { name: "Care Combo",        prices: { Small: 500,  Medium: 500,  Large: 500,  Cat: 500  }, prices_usd: { Small: 25, Medium: 25, Large: 25,  Cat: 25  }, icon: "💅", desc: "Nails + ear cleaning + face trim" },
+  { name: "Puppy Dry Spa",     prices: { Small: 600,  Medium: 600,  Large: 600,  Cat: 600  }, prices_usd: { Small: 30, Medium: 30, Large: 35,  Cat: 30  }, icon: "🐾", desc: "Gentle dry bath for tiny puppies" },
+  { name: "Puppy Wet Bath",    prices: { Small: 800,  Medium: 800,  Large: 900,  Cat: 800  }, prices_usd: { Small: 35, Medium: 35, Large: 45,  Cat: 35  }, icon: "🐶", desc: "Gentle wet bath for puppies" },
 ];
 const PET_SIZES = [
   { id: "Small",  label: "Small",  sub: "Up to 10 kg" },
@@ -46,36 +52,36 @@ const PET_SIZES = [
   { id: "Cat",    label: "Cat",    sub: "All breeds"  },
 ];
 const GROOMING_ADDONS = [
-  { id: "dematting",  label: "De-matting",             price: 550, desc: "Long-haired breeds — Shih Tzu, Golden" },
-  { id: "tick_flea",  label: "Tick & Flea Treatment",   price: 750, desc: "Medicated treatment" },
-  { id: "anal_gland", label: "Anal Gland Expression",   price: 300, desc: "Hygienic value-add" },
+  { id: "dematting",  label: "De-matting",           price: 550, price_usd: 20, desc: "Long-haired breeds — Shih Tzu, Golden" },
+  { id: "tick_flea",  label: "Tick & Flea Treatment", price: 750, price_usd: 25, desc: "Medicated treatment" },
+  { id: "anal_gland", label: "Anal Gland Expression", price: 300, price_usd: 15, desc: "Hygienic value-add" },
 ];
 
 // Training — time-based packages (fallback)
 const TRAINING_PACKAGES = [
-  { name: "Consultation Session",           price: 650,   icon: "💬", desc: "60 min temperament & behaviour assessment" },
-  { name: "Puppy Basics",                   price: 650,   icon: "🐶", desc: "Gentle first sessions for pups under 6 months" },
-  { name: "Leash Training",                 price: 800,   icon: "🦮", desc: "Per session — walking & heel training" },
-  { name: "Behavioural Modification",       price: 1500,  icon: "🧠", desc: "Per session — anxiety, aggression, reactivity" },
-  { name: "Agility Training",               price: 1500,  icon: "⚡", desc: "Per session — obstacle & agility course" },
-  { name: "Advanced Obedience",             price: 1800,  icon: "🏆", desc: "Per session — off-leash & complex commands" },
-  { name: "Basic Obedience (10 Sessions)",  price: 10000, icon: "🎓", desc: "Full package — sit, stay, recall & leash basics" },
+  { name: "Consultation Session",           price: 650,   price_usd: 75,  icon: "💬", desc: "60 min temperament & behaviour assessment" },
+  { name: "Puppy Basics",                   price: 650,   price_usd: 65,  icon: "🐶", desc: "Gentle first sessions for pups under 6 months" },
+  { name: "Leash Training",                 price: 800,   price_usd: 80,  icon: "🦮", desc: "Per session — walking & heel training" },
+  { name: "Behavioural Modification",       price: 1500,  price_usd: 150, icon: "🧠", desc: "Per session — anxiety, aggression, reactivity" },
+  { name: "Agility Training",               price: 1500,  price_usd: 135, icon: "⚡", desc: "Per session — obstacle & agility course" },
+  { name: "Advanced Obedience",             price: 1800,  price_usd: 160, icon: "🏆", desc: "Per session — off-leash & complex commands" },
+  { name: "Basic Obedience (10 Sessions)",  price: 10000, price_usd: 750, icon: "🎓", desc: "Full package — sit, stay, recall & leash basics" },
 ];
 
 // Dog Walking — duration-based packages
 const WALKING_PACKAGES = [
-  { name: "30-min Walk",             price: 250,  icon: "🦮", desc: "GPS-tracked 30-minute walk, solo" },
-  { name: "60-min Walk",             price: 400,  icon: "🐕", desc: "GPS-tracked 60-minute walk, solo" },
-  { name: "5-Walk Weekly Pack",      price: 1600, icon: "📅", desc: "5 x 30-min walks, Mon–Fri (save ₹650)" },
-  { name: "Monthly Pack (22 Walks)", price: 5500, icon: "🏆", desc: "22 daily walks — best value per walk" },
+  { name: "30-min Walk",             price: 250,  price_usd: 20,  icon: "🦮", desc: "GPS-tracked 30-minute walk, solo" },
+  { name: "60-min Walk",             price: 400,  price_usd: 32,  icon: "🐕", desc: "GPS-tracked 60-minute walk, solo" },
+  { name: "5-Walk Weekly Pack",      price: 1600, price_usd: 90,  icon: "📅", desc: "5 x 30-min walks, Mon–Fri (save on per-walk rate)" },
+  { name: "Monthly Pack (22 Walks)", price: 5500, price_usd: 330, icon: "🏆", desc: "22 daily walks — best value per walk" },
 ];
 
 // Pet Boarding — cage-free, home-based
 const BOARDING_PACKAGES = [
-  { name: "Overnight Stay",         price: 800,  icon: "🌙", desc: "1 night · cage-free home · updates sent" },
-  { name: "Weekend Stay",           price: 1400, icon: "📅", desc: "Fri eve to Sun eve · 2 nights" },
-  { name: "5-Night Stay",           price: 3200, icon: "🏠", desc: "5 nights · daily photo updates" },
-  { name: "Weekly Stay (7 Nights)", price: 4200, icon: "⭐", desc: "7 nights · best rate · holiday special" },
+  { name: "Overnight Stay",         price: 800,  price_usd: 45,  icon: "🌙", desc: "1 night · cage-free home · updates sent" },
+  { name: "Weekend Stay",           price: 1400, price_usd: 85,  icon: "📅", desc: "Fri eve to Sun eve · 2 nights" },
+  { name: "5-Night Stay",           price: 3200, price_usd: 200, icon: "🏠", desc: "5 nights · daily photo updates" },
+  { name: "Weekly Stay (7 Nights)", price: 4200, price_usd: 270, icon: "⭐", desc: "7 nights · best rate · holiday special" },
 ];
 
 // SVC_OPTS — used for pet health RECORDS only (not booking flow)
@@ -186,6 +192,8 @@ export default function PetclubApp({ session, onLogout }) {
     if (phone.startsWith("+60"))  return { currencySymbol: "RM",  numLocale: "ms-MY" };
     return { currencySymbol: "₹", numLocale: "en-IN" };
   })();
+  // true only for USD — used to select regional price fields
+  const isUSD = currencySymbol === "$";
 
   const [pets, setPets] = useState(() => loadPets(INITIAL_PETS));
   const [apiMode, setApiMode] = useState(false);
@@ -480,36 +488,52 @@ export default function PetclubApp({ session, onLogout }) {
 
   // O-3 fix: resolved pricing uses live catalog when available; falls back to
   // module-level constants while the catalog is loading or if fetch failed.
-  const activePlatformDiscount = catalog?.platform_discount ?? PLATFORM_DISCOUNT;
+  // USD users get USD price fields; all others get the default INR prices.
+  const activePlatformDiscount = isUSD
+    ? PLATFORM_DISCOUNT_USD
+    : (catalog?.platform_discount ?? PLATFORM_DISCOUNT);
   const activeGroomingPackages = catalog?.grooming?.packages ?? GROOMING_PACKAGES;
   const activeGroomingAddons   = catalog?.grooming?.addons   ?? GROOMING_ADDONS;
   const activeTrainingPackages = catalog?.training?.packages ?? TRAINING_PACKAGES;
   const activeWalkingPackages  = catalog?.walking?.packages  ?? WALKING_PACKAGES;
   const activeBoardingPackages = catalog?.boarding?.packages ?? BOARDING_PACKAGES;
 
+  // Helper: pick the right per-package price based on region
+  const pkgPrice     = (pkg) => isUSD ? (pkg.price_usd   ?? pkg.price)   : pkg.price;
+  const pkgPriceSize = (pkg, size) => isUSD
+    ? ((pkg.prices_usd?.[size]) ?? pkg.prices?.[size] ?? 0)
+    : (pkg.prices?.[size] ?? 0);
+  const addonPrice   = (addon) => isUSD ? (addon.price_usd ?? addon.price) : addon.price;
+
   // Calculate final booking amount shown to customer (platform discount applied)
   const calcAmount = (form) => {
     if (form.service_type === "Groomer") {
       const pkg = activeGroomingPackages.find(p => p.name === form.service_name);
       if (!pkg || !form.pet_size) return null;
-      const base     = pkg.prices[form.pet_size] || 0;
-      const addonSum = (form.addons || []).reduce((s, id) => s + (activeGroomingAddons.find(a => a.id === id)?.price || 0), 0);
+      const base     = pkgPriceSize(pkg, form.pet_size);
+      const addonSum = (form.addons || []).reduce((s, id) => {
+        const a = activeGroomingAddons.find(a => a.id === id);
+        return s + (a ? addonPrice(a) : 0);
+      }, 0);
       return { base, addonSum, discount: activePlatformDiscount, total: Math.max(0, base + addonSum - activePlatformDiscount) };
     }
     if (form.service_type === "Trainer") {
       const pkg = activeTrainingPackages.find(p => p.name === form.service_name);
       if (!pkg) return null;
-      return { base: pkg.price, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, pkg.price - activePlatformDiscount) };
+      const base = pkgPrice(pkg);
+      return { base, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, base - activePlatformDiscount) };
     }
     if (form.service_type === "Walker") {
       const pkg = activeWalkingPackages.find(p => p.name === form.service_name);
       if (!pkg) return null;
-      return { base: pkg.price, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, pkg.price - activePlatformDiscount) };
+      const base = pkgPrice(pkg);
+      return { base, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, base - activePlatformDiscount) };
     }
     if (form.service_type === "Boarding") {
       const pkg = activeBoardingPackages.find(p => p.name === form.service_name);
       if (!pkg) return null;
-      return { base: pkg.price, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, pkg.price - activePlatformDiscount) };
+      const base = pkgPrice(pkg);
+      return { base, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, base - activePlatformDiscount) };
     }
     return null; // Vet — quoted on-site
   };
@@ -1858,7 +1882,7 @@ export default function PetclubApp({ session, onLogout }) {
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Choose Package *</p>
                   <div className="space-y-2 mb-4">
                     {activeGroomingPackages.map(pkg => {
-                      const price = pkg.prices[bookingForm.pet_size];
+                      const price = pkgPriceSize(pkg, bookingForm.pet_size);
                       const sel   = bookingForm.service_name === pkg.name;
                       return (
                         <button key={pkg.name} onClick={() => setBookingForm(f => ({ ...f, service_name: pkg.name }))}
@@ -1870,7 +1894,7 @@ export default function PetclubApp({ session, onLogout }) {
                           </div>
                           <div className="text-right">
                             <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{price}</div>
-                            <div className="text-[10px] text-emerald-600 font-semibold">Save {currencySymbol}{PLATFORM_DISCOUNT}</div>
+                            <div className="text-[10px] text-emerald-600 font-semibold">Save {currencySymbol}{activePlatformDiscount}</div>
                           </div>
                           {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
                         </button>
@@ -1898,7 +1922,7 @@ export default function PetclubApp({ session, onLogout }) {
                             <div className={`font-semibold text-xs ${checked ? "text-blue-700" : "text-gray-700"}`}>{addon.label}</div>
                             <div className="text-[10px] text-gray-400">{addon.desc}</div>
                           </div>
-                          <span className={`text-xs font-bold ${checked ? "text-blue-600" : "text-gray-500"}`}>+{currencySymbol}{addon.price}</span>
+                          <span className={`text-xs font-bold ${checked ? "text-blue-600" : "text-gray-500"}`}>+{currencySymbol}{addonPrice(addon)}</span>
                         </label>
                       );
                     })}
@@ -1921,8 +1945,8 @@ export default function PetclubApp({ session, onLogout }) {
                           <div className="text-xs text-gray-400">{pkg.desc}</div>
                         </div>
                         <div className="text-right">
-                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{pkg.price.toLocaleString(numLocale)}</div>
-                          <div className="text-[10px] text-emerald-600 font-semibold">Save {currencySymbol}{PLATFORM_DISCOUNT}</div>
+                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{pkgPrice(pkg).toLocaleString(numLocale)}</div>
+                          <div className="text-[10px] text-emerald-600 font-semibold">Save {currencySymbol}{activePlatformDiscount}</div>
                         </div>
                         {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
                       </button>
@@ -1946,7 +1970,7 @@ export default function PetclubApp({ session, onLogout }) {
                           <div className="text-xs text-gray-400">{pkg.desc}</div>
                         </div>
                         <div className="text-right">
-                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{pkg.price.toLocaleString(numLocale)}</div>
+                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{pkgPrice(pkg).toLocaleString(numLocale)}</div>
                           <div className="text-[10px] text-emerald-600 font-semibold">Save {currencySymbol}{activePlatformDiscount}</div>
                         </div>
                         {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
@@ -1975,7 +1999,7 @@ export default function PetclubApp({ session, onLogout }) {
                           <div className="text-xs text-gray-400">{pkg.desc}</div>
                         </div>
                         <div className="text-right">
-                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{pkg.price.toLocaleString(numLocale)}</div>
+                          <div className={`font-extrabold text-sm ${sel ? "text-orange-600" : "text-gray-700"}`}>{currencySymbol}{pkgPrice(pkg).toLocaleString(numLocale)}</div>
                           <div className="text-[10px] text-emerald-600 font-semibold">Save {currencySymbol}{activePlatformDiscount}</div>
                         </div>
                         {sel && <span className="text-orange-500 font-bold text-sm">✓</span>}
