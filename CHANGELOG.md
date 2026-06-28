@@ -1,3 +1,10 @@
+## [1.40.7](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.6...v1.40.7) (2026-06-28)
+
+
+### Bug Fixes
+
+* **currency:** wire USD prices to all service package cards and add-ons ([4ab0363](https://github.com/Kolanupaka92/petclub-app/commit/4ab03633d10a4297058f5f5e615156eb507a9aa7))
+
 ## [1.40.6](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.5...v1.40.6) (2026-06-28)
 
 
