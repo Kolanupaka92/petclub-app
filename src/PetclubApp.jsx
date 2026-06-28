@@ -174,9 +174,18 @@ function Toast({ msg, type, onDone }) {
 
 /* ══════════ MAIN APP ══════════ */
 export default function PetclubApp({ session, onLogout }) {
-  // Derive currency from phone prefix — instant, no API round-trip needed
-  // +91 → India (₹)  |  everything else → USA/international ($)
-  const currencySymbol = session?.phone?.startsWith("+91") ? "₹" : "$";
+  // Derive currency symbol from the user's phone country prefix
+  const currencySymbol = (() => {
+    const phone = session?.phone || "";
+    if (phone.startsWith("+91"))  return "₹";   // India
+    if (phone.startsWith("+1"))   return "$";   // USA / Canada
+    if (phone.startsWith("+44"))  return "£";   // UK
+    if (phone.startsWith("+61"))  return "A$";  // Australia
+    if (phone.startsWith("+971")) return "AED"; // UAE
+    if (phone.startsWith("+65"))  return "S$";  // Singapore
+    if (phone.startsWith("+60"))  return "RM";  // Malaysia
+    return "₹"; // default — platform is India-first
+  })();
 
   const [pets, setPets] = useState(() => loadPets(INITIAL_PETS));
   const [apiMode, setApiMode] = useState(false);

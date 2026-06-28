@@ -912,7 +912,17 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const cfg      = ROLE_CONFIG[subRole] || ROLE_CONFIG.Groomer;
   const idTypes  = getIdTypes(session.phone);
   const isIndia  = session.phone?.startsWith("+91");
-  const currencySymbol = isIndia ? "₹" : "$";
+  const currencySymbol = (() => {
+    const phone = session?.phone || "";
+    if (phone.startsWith("+91"))  return "₹";
+    if (phone.startsWith("+1"))   return "$";
+    if (phone.startsWith("+44"))  return "£";
+    if (phone.startsWith("+61"))  return "A$";
+    if (phone.startsWith("+971")) return "AED";
+    if (phone.startsWith("+65"))  return "S$";
+    if (phone.startsWith("+60"))  return "RM";
+    return "₹";
+  })();
 
   const refreshRequests = () => api.getIncomingBookings().then(r => setRequests(r.bookings || [])).catch(() => {});
 
