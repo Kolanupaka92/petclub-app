@@ -12,9 +12,18 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 // Claim all open clients immediately after activation so the new SW takes effect
-// in already-open tabs without a reload.
+// in already-open tabs without a reload.  Then signal every open window to reload
+// so stale in-memory JS bundles (from the previous deploy) are replaced with the
+// current bundle.  This prevents old code (e.g. the pre-cookie auth api.js) from
+// running against the new backend after a deploy.
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    self.clients.claim().then(() =>
+      self.clients.matchAll({ type: 'window' }).then(clients =>
+        clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' }))
+      )
+    )
+  );
 });
 
 // ── API pass-through fetch guard ─────────────────────────────────────────────

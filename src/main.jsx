@@ -319,6 +319,21 @@ function Root() {
     return () => window.removeEventListener('petclub:unauthorized', handle);
   }, [doLogout]);
 
+  /* ── SW update → reload to pick up the latest JS bundle ── */
+  // When a new Service Worker activates it posts SW_UPDATED to all open windows.
+  // We reload so any stale in-memory bundle (e.g. old api.js from before the
+  // httpOnly cookie migration) is replaced with the freshly deployed code.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const handle = (event) => {
+      if (event.data?.type === 'SW_UPDATED') {
+        window.location.reload();
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handle);
+    return () => navigator.serviceWorker.removeEventListener('message', handle);
+  }, []);
+
   /* ── M-1: Server-side session re-validation on mount ────────────────────
    * Prevents a tampered localStorage session (e.g. role="admin" injected by
    * hand) from accessing the admin panel. We call getMe() once on load;

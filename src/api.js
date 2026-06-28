@@ -1,6 +1,14 @@
 // Strip UTF-8 BOM (﻿ / ﻿) that Vercel sometimes injects into env var values
 const _stripBom = (v) => (v || '').replace(/^﻿/, '').trim();
 
+// One-time migration: clear the old localStorage auth token.
+// Before v1.40 (Jun 27 2026) the JWT was stored in localStorage under this key.
+// Any leftover value (including the string "undefined" written by old code) would
+// cause stale bundles to send `Authorization: Bearer undefined`, breaking all API
+// calls after login.  Removing it here ensures the key is always absent on any
+// client that loads this module.
+try { localStorage.removeItem('petclub_token'); } catch { /* private-browsing or storage-full — harmless */ }
+
 const BASE = _stripBom(import.meta.env.VITE_API_URL) || (() => {
   if (import.meta.env.DEV) {
     // Hard-fail in dev — prevents accidentally hitting production from local builds
