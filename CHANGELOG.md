@@ -1,3 +1,10 @@
+## [1.40.6](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.5...v1.40.6) (2026-06-28)
+
+
+### Bug Fixes
+
+* **currency:** replace all hardcoded INR symbols with dynamic currencySymbol ([923e9ce](https://github.com/Kolanupaka92/petclub-app/commit/923e9cef8b5d6e0e0f7ba4f4d62871c53742fc5c))
+
 ## [1.40.5](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.4...v1.40.5) (2026-06-28)
 
 
