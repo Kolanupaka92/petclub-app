@@ -2275,10 +2275,10 @@ const AdminDashboard = ({ session, onLogout }) => {
   // Short date formatter used in user cards
   const fmtShort = d => { try { return new Date(d).toLocaleDateString(undefined, { day:"numeric", month:"short", year:"numeric" }); } catch { return "—"; } };
 
-  // Revenue split by currency — derived from customer phone prefix stored on each booking
+  // Revenue split by currency — use bookings.currency field set server-side at creation
   const completedAll  = bookings.filter(b => b.status === "completed");
-  const inrBookings   = completedAll.filter(b => !b.users?.phone?.startsWith("+1"));
-  const usdBookings   = completedAll.filter(b =>  b.users?.phone?.startsWith("+1"));
+  const inrBookings   = completedAll.filter(b => (b.currency || "INR") !== "USD");
+  const usdBookings   = completedAll.filter(b => (b.currency || "INR") === "USD");
   const revINR = {
     gross:    inrBookings.reduce((s,b) => s + parseFloat(b.total_amount||b.amount||0), 0),
     platform: inrBookings.reduce((s,b) => s + parseFloat(b.platform_fee||0), 0),
@@ -2963,8 +2963,8 @@ const AdminDashboard = ({ session, onLogout }) => {
             return matchStatus && matchService && matchSearch;
           });
           const completedFiltered = filtered.filter(b=>b.status==="completed");
-          const cfINR = completedFiltered.filter(b => !b.users?.phone?.startsWith("+1"));
-          const cfUSD = completedFiltered.filter(b =>  b.users?.phone?.startsWith("+1"));
+          const cfINR = completedFiltered.filter(b => (b.currency || "INR") !== "USD");
+          const cfUSD = completedFiltered.filter(b => (b.currency || "INR") === "USD");
           const bRevINR = { gross: cfINR.reduce((s,b)=>s+parseFloat(b.total_amount||b.amount||0),0), platform: cfINR.reduce((s,b)=>s+parseFloat(b.platform_fee||0),0), provider: cfINR.reduce((s,b)=>s+parseFloat(b.provider_earnings||0),0) };
           const bRevUSD = { gross: cfUSD.reduce((s,b)=>s+parseFloat(b.total_amount||b.amount||0),0), platform: cfUSD.reduce((s,b)=>s+parseFloat(b.platform_fee||0),0), provider: cfUSD.reduce((s,b)=>s+parseFloat(b.provider_earnings||0),0) };
           return (
