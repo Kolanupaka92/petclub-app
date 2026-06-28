@@ -1,3 +1,10 @@
+# [1.41.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.8...v1.41.0) (2026-06-28)
+
+
+### Features
+
+* **admin:** split revenue card into separate INR and USD sections ([eb60ac7](https://github.com/Kolanupaka92/petclub-app/commit/eb60ac77b55fe1544c1b0f09b30c55ab32abaf7f))
+
 ## [1.40.8](https://github.com/Kolanupaka92/petclub-app/compare/v1.40.7...v1.40.8) (2026-06-28)
 
 
