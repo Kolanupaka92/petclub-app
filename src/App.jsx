@@ -553,10 +553,10 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
 
             {/* Pricing */}
             <div className="mb-4">
-              <label className="block text-xs font-semibold text-gray-500 mb-2">Pricing per session ({isIndia ? "₹" : "$"})</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-2">Pricing per session ({currencySymbol})</label>
               <div className="grid grid-cols-3 gap-2">
-                <Inp label={cfg.pricing.a} type="number" placeholder={isIndia?"599":"29"} value={form.priceA} onChange={sf("priceA")}/>
-                <Inp label={cfg.pricing.b} type="number" placeholder={isIndia?"999":"59"} value={form.priceB} onChange={sf("priceB")}/>
+                <Inp label={cfg.pricing.a} type="number" placeholder={isIndia?"599":"29"}  value={form.priceA} onChange={sf("priceA")}/>
+                <Inp label={cfg.pricing.b} type="number" placeholder={isIndia?"999":"59"}  value={form.priceB} onChange={sf("priceB")}/>
                 <Inp label={cfg.pricing.c} type="number" placeholder={isIndia?"1499":"99"} value={form.priceC} onChange={sf("priceC")}/>
               </div>
             </div>
@@ -922,6 +922,17 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
     if (phone.startsWith("+65"))  return "S$";
     if (phone.startsWith("+60"))  return "RM";
     return "₹";
+  })();
+  const numLocale = (() => {
+    const phone = session?.phone || "";
+    if (phone.startsWith("+91"))  return "en-IN";
+    if (phone.startsWith("+1"))   return "en-US";
+    if (phone.startsWith("+44"))  return "en-GB";
+    if (phone.startsWith("+61"))  return "en-AU";
+    if (phone.startsWith("+971")) return "ar-AE";
+    if (phone.startsWith("+65"))  return "en-SG";
+    if (phone.startsWith("+60"))  return "ms-MY";
+    return "en-IN";
   })();
 
   const refreshRequests = () => api.getIncomingBookings().then(r => setRequests(r.bookings || [])).catch(() => {});
@@ -1460,7 +1471,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                             <button
                               disabled={noShowLoading === b.id}
                               onClick={async () => {
-                                if (!window.confirm("Mark customer as no-show? ₹300 cancellation fee will apply and remainder will be refunded.")) return;
+                                if (!window.confirm(`Mark customer as no-show? ${currencySymbol}${isIndia ? "300" : "10"} cancellation fee will apply and remainder will be refunded.`)) return;
                                 setNoShowLoading(b.id);
                                 try {
                                   await api.markNoShow(b.id);
@@ -1486,7 +1497,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                         <button
                           disabled={noShowLoading === b.id}
                           onClick={async () => {
-                            if (!window.confirm("Mark customer as no-show? ₹300 cancellation fee will apply.")) return;
+                            if (!window.confirm(`Mark customer as no-show? ${currencySymbol}${isIndia ? "300" : "10"} cancellation fee will apply.`)) return;
                             setNoShowLoading(b.id);
                             try {
                               await api.markNoShow(b.id);
@@ -1538,7 +1549,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
               const daysUntilSat = todayDow === 6 ? 0 : (6 - todayDow);
               const nextPayout = new Date(now);
               nextPayout.setDate(now.getDate() + daysUntilSat);
-              const fmtShort = d => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+              const fmtShort = d => d.toLocaleDateString(numLocale, { day: 'numeric', month: 'short' });
               const allBkgs  = earnings?.bookings || [];
               const thisWeekBkgs = allBkgs.filter(b => { const d = new Date(b.scheduled_at || b.completed_at || 0); return d >= thisMonday && d <= thisSat; });
               const lastWeekBkgs = allBkgs.filter(b => { const d = new Date(b.scheduled_at || b.completed_at || 0); return d >= lastMonday && d <= lastSat; });
@@ -1607,7 +1618,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                       <span className="text-lg shrink-0">💸</span>
                       <div>
                         <p className="text-xs font-bold text-violet-800">
-                          {daysUntilSat === 0 ? '🎉 Payout processing today — check your bank by 6 PM!' : `Payout in ${daysUntilSat} day${daysUntilSat !== 1 ? 's' : ''} — ${nextPayout.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' })}`}
+                          {daysUntilSat === 0 ? '🎉 Payout processing today — check your bank by 6 PM!' : `Payout in ${daysUntilSat} day${daysUntilSat !== 1 ? 's' : ''} — ${nextPayout.toLocaleDateString(numLocale, { weekday:'short', day:'numeric', month:'short' })}`}
                         </p>
                         <p className="text-[10px] text-violet-600 mt-0.5">This week's 70% share transferred directly to your bank. Every Saturday.</p>
                       </div>
@@ -1702,7 +1713,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                     <p className="font-bold text-sm text-gray-800">70% Service Commission</p>
                     <p className="text-xs text-gray-500 mt-0.5">You keep 70% of every service including upsells at the customer's doorstep. PETclub retains 30%.</p>
                     <div className="bg-gray-50 rounded-lg px-3 py-2 mt-1.5 text-xs text-gray-600">
-                      <strong>Example:</strong> ₹1,500 grooming → you earn <strong className="text-emerald-600">₹1,050</strong>. ₹300 add-on shampoo → +<strong className="text-emerald-600">₹210</strong> more.
+                      <strong>Example:</strong> {currencySymbol}{isIndia ? "1,500" : "100"} grooming → you earn <strong className="text-emerald-600">{currencySymbol}{isIndia ? "1,050" : "70"}</strong>. {currencySymbol}{isIndia ? "300" : "20"} add-on shampoo → +<strong className="text-emerald-600">{currencySymbol}{isIndia ? "210" : "14"}</strong> more.
                     </div>
                   </div>
                 </div>
@@ -1732,9 +1743,9 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">🏆 Performance Incentives</p>
                   <div className="space-y-1.5">
                     {[
-                      { icon:"🥇", label:"Elite Award",            desc:"Top performer monthly — ₹1,500 bonus + Gold badge 30 days" },
-                      { icon:"🔄", label:"Subscription Conversion", desc:"₹250 for every client on a recurring care package" },
-                      { icon:"✅", label:"Reliability Bonus",       desc:"₹750/month for 80+ jobs with zero last-minute cancellations" },
+                      { icon:"🥇", label:"Elite Award",            desc:`Top performer monthly — ${currencySymbol}${isIndia ? "1,500" : "50"} bonus + Gold badge 30 days` },
+                      { icon:"🔄", label:"Subscription Conversion", desc:`${currencySymbol}${isIndia ? "250" : "15"} for every client on a recurring care package` },
+                      { icon:"✅", label:"Reliability Bonus",       desc:`${currencySymbol}${isIndia ? "750" : "50"}/month for 80+ jobs with zero last-minute cancellations` },
                     ].map(item => (
                       <div key={item.label} className="flex items-center gap-2.5 bg-gray-50 rounded-xl px-3 py-2">
                         <span className="text-base shrink-0">{item.icon}</span>
@@ -1845,7 +1856,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                       { l: cfg.pricing.c, v: profile?.price_custom },
                     ].filter(p => p.v).map(p => (
                       <div key={p.l} className="rounded-xl p-3 text-center" style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
-                        <div className="text-base font-extrabold" style={{ color: cfg.accent }}>{isIndia ? "₹" : "$"}{p.v}</div>
+                        <div className="text-base font-extrabold" style={{ color: cfg.accent }}>{currencySymbol}{p.v}</div>
                         <div className="text-[10px] text-gray-500 mt-0.5 leading-tight">{p.l}</div>
                       </div>
                     ))}
@@ -1921,7 +1932,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
           {subRole === "Trainer" && <Inp label="Certifications" value={editForm.certification||""} onChange={e => setEditForm(f => ({...f, certification:e.target.value}))}/>}
           <Txta label="Bio / About Me" value={editForm.bio||""} onChange={e => setEditForm(f => ({...f, bio:e.target.value}))} rows={4}/>
           <div className="mt-4 mb-1">
-            <label className="block text-xs font-semibold text-gray-500 mb-2">Pricing ({isIndia ? "₹" : "$"} per session)</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-2">Pricing ({currencySymbol} per session)</label>
             <div className="grid grid-cols-3 gap-2">
               <Inp label={cfg.pricing.a} type="number" placeholder={isIndia?"599":"29"}  value={editForm.price_basic||""}  onChange={e => setEditForm(f => ({...f, price_basic:e.target.value}))}/>
               <Inp label={cfg.pricing.b} type="number" placeholder={isIndia?"999":"59"}  value={editForm.price_full||""}   onChange={e => setEditForm(f => ({...f, price_full:e.target.value}))}/>

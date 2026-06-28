@@ -895,9 +895,9 @@ export default function PetclubApp({ session, onLogout }) {
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-orange-600 uppercase tracking-wide">PETclub Credits</p>
               <p className="text-sm font-black text-gray-900">
-                {loyaltyData.balance.toLocaleString("en-IN")} pts
+                {loyaltyData.balance.toLocaleString(numLocale)} pts
                 <span className="text-xs font-semibold text-gray-400 ml-2">
-                  / {loyaltyData.threshold?.toLocaleString("en-IN") || "1,000"} for free Essential Bath
+                  / {loyaltyData.threshold?.toLocaleString(numLocale) || "1,000"} for free Essential Bath
                 </span>
               </p>
             </div>
@@ -1414,8 +1414,8 @@ export default function PetclubApp({ session, onLogout }) {
             {/* Progress */}
             <div className="mb-3">
               <div className="flex justify-between items-end mb-1.5">
-                <span className="text-2xl font-black text-gray-900">{bal.toLocaleString("en-IN")}</span>
-                <span className="text-xs text-gray-400 font-semibold">{threshold.toLocaleString("en-IN")} Credits</span>
+                <span className="text-2xl font-black text-gray-900">{bal.toLocaleString(numLocale)}</span>
+                <span className="text-xs text-gray-400 font-semibold">{threshold.toLocaleString(numLocale)} Credits</span>
               </div>
               <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
                 <div
@@ -1426,7 +1426,7 @@ export default function PetclubApp({ session, onLogout }) {
               <p className="text-xs text-gray-500 mt-1.5">
                 {canRedeem
                   ? "🎉 You've unlocked a free Essential Bath!"
-                  : `Earn ${needed.toLocaleString("en-IN")} more credits for a free Essential Bath!`}
+                  : `Earn ${needed.toLocaleString(numLocale)} more credits for a free Essential Bath!`}
               </p>
               {/* Fix 5: pending credits notice */}
               {pending > 0 && (
@@ -1455,7 +1455,7 @@ export default function PetclubApp({ session, onLogout }) {
                   <div key={c.code} className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
                     <div>
                       <p className="text-xs font-bold text-emerald-700 font-mono tracking-widest">{c.code}</p>
-                      <p className="text-[10px] text-emerald-600">Free {c.service_name} · Expires {new Date(c.expires_at).toLocaleDateString("en-IN")}</p>
+                      <p className="text-[10px] text-emerald-600">Free {c.service_name} · Expires {new Date(c.expires_at).toLocaleDateString(numLocale)}</p>
                     </div>
                     <span className="text-emerald-500 text-base">🎟️</span>
                   </div>
@@ -1468,7 +1468,7 @@ export default function PetclubApp({ session, onLogout }) {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">How to Earn</p>
               <div className="space-y-1.5">
                 {(ld?.earn_rules || [
-                  { icon:"📅", event:"Book & pay via app",    points:"1 per ₹10" },
+                  { icon:"📅", event:"Book & pay via app",    points: isUSD ? "1 per $1" : "1 per ₹10" },
                   { icon:"💳", event:"Pay in-app (Razorpay)", points:"+50 bonus" },
                   { icon:"⭐", event:"Write a review",         points:"+50"       },
                   { icon:"👥", event:"Refer a friend",          points:"+200"      },
@@ -1586,15 +1586,15 @@ export default function PetclubApp({ session, onLogout }) {
               <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-gray-500">1,000 credits =</span>
-                  <span className="font-bold text-emerald-600">1 Free Essential Bath (₹800+ value)</span>
+                  <span className="font-bold text-emerald-600">1 Free Essential Bath ({currencySymbol}{isUSD ? "35" : "800"}+ value)</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Earn rate:</span>
-                  <span className="font-bold text-gray-700">1 credit per ₹10 spent</span>
+                  <span className="font-bold text-gray-700">1 credit per {currencySymbol}{isUSD ? "1" : "10"} spent</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">To earn 1,000 credits from bookings alone:</span>
-                  <span className="font-bold text-gray-700">~₹10,000 in bookings</span>
+                  <span className="font-bold text-gray-700">~{currencySymbol}{isUSD ? "1,000" : "10,000"} in bookings</span>
                 </div>
               </div>
             </div>
@@ -1603,7 +1603,7 @@ export default function PetclubApp({ session, onLogout }) {
               <p className="text-xs font-bold text-gray-800 uppercase tracking-wide mb-2">🚀 Earn Faster</p>
               <div className="space-y-2">
                 {[
-                  { icon:"📅", label:"Book & pay via app",      val:"1 credit / ₹10",     note:"Every booking counts" },
+                  { icon:"📅", label:"Book & pay via app",      val:`1 credit / ${currencySymbol}${isUSD ? "1" : "10"}`, note:"Every booking counts" },
                   { icon:"💳", label:"Pay via Razorpay",         val:"+50 bonus",           note:"One-time bonus per payment" },
                   { icon:"⭐", label:"Write a review",            val:"+50 bonus",           note:"Once per booking" },
                   { icon:"👥", label:"Refer a friend",            val:"+200 bonus",          note:"You earn when they book" },
@@ -1640,7 +1640,7 @@ export default function PetclubApp({ session, onLogout }) {
                       <button
                         onClick={() => navigator.share({
                           title: "Join PETclub!",
-                          text: `Use my referral code ${loyaltyData.referral_code} on PETclub and get ₹150 off your first booking!`,
+                          text: `Use my referral code ${loyaltyData.referral_code} on PETclub and get ${currencySymbol}${activePlatformDiscount} off your first booking!`,
                           url: "https://app.mypetclub.app",
                         }).catch(() => {})}
                         className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded-lg hover:bg-orange-200 transition-colors">
