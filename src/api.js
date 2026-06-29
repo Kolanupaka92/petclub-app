@@ -196,6 +196,13 @@ export const api = {
   // Professional reviews (public)
   getProReviews: (profId, page = 1) => req('GET', `/professionals/${profId}/reviews?page=${page}&limit=10`),
 
+  // Reschedule
+  rescheduleBooking: (id, scheduled_at) => req('PUT', `/bookings/${id}/reschedule`, { scheduled_at }, true),
+
+  // Notification inbox
+  getNotifications: (limit = 20) => req('GET', `/notifications?limit=${limit}`, null, true),
+  markNotificationsRead: (ids) => req('PATCH', '/notifications/read', ids?.length ? { ids } : {}, true),
+
   getSignedDocUrl: (path) => req('GET', `/admin/signed-url?path=${encodeURIComponent(path)}`, null, true),
   getAdminStats: () => req('GET', '/admin/stats', null, true),
   // O-1 fix: paginated with optional search. page/limit/search are all optional.

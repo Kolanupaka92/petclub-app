@@ -182,6 +182,13 @@ export default function PetclubApp({ session, onLogout }) {
   const [catalog, setCatalog] = useState(null);
   const [trackingBooking, setTrackingBooking] = useState(null); // booking object → open TrackingMap
   const [loadedPetRecs, setLoadedPetRecs] = useState(new Set()); // tracks which pet IDs have had API records fetched
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [rescheduleModal, setRescheduleModal] = useState(null); // { booking }
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("10:00");
+  const [rescheduleLoading, setRescheduleLoading] = useState(false);
 
   const sf = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const bsf = k => e => setBookingForm(f => ({ ...f, [k]: typeof e === "string" ? e : e.target.value }));
@@ -236,15 +243,24 @@ export default function PetclubApp({ session, onLogout }) {
         setRatedBookings(prev => new Set([...prev, ...r.ratedIds]));
       }
     }).catch(() => {});
+    // Notification inbox
+    api.getNotifications().then(r => {
+      if (r.success) { setNotifications(r.notifications || []); setUnreadCount(r.unread || 0); }
+    }).catch(() => {});
   }, []);
 
-  // Smart polling: 5s when any booking is actively searching/offered, otherwise 30s
+  // Smart polling: 5s when searching/offered, 15s otherwise. Paused when tab is hidden.
   useEffect(() => {
     const hasActive = myBookings.some(b => b.assignment_status === "searching" || b.assignment_status === "offered");
-    const interval = setInterval(() => {
+    const delay = hasActive ? 5000 : 15000;
+    let tid = null;
+    const poll = () => {
+      if (document.visibilityState === "hidden") return;
       api.getBookings().then(r => setMyBookings(r.bookings || [])).catch(() => {});
-    }, hasActive ? 5000 : 30000);
-    return () => clearInterval(interval);
+    };
+    tid = setInterval(poll, delay);
+    document.addEventListener("visibilitychange", poll);
+    return () => { clearInterval(tid); document.removeEventListener("visibilitychange", poll); };
   }, [myBookings]);
 
   useEffect(() => { if (!apiMode) savePets(pets); }, [pets, apiMode]);
@@ -554,11 +570,18 @@ export default function PetclubApp({ session, onLogout }) {
             <p className="text-sm font-extrabold text-gray-900 leading-tight">{firstName}</p>
           </div>
         </div>
-        <button onClick={() => setModal("reminders")}
-          className="relative w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center text-lg hover:bg-orange-50 active:scale-95 transition-all">
-          🔔
-          {allUpcoming.length > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white flex items-center justify-center text-[8px] font-black text-white">{allUpcoming.length > 9 ? "9+" : allUpcoming.length}</span>}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => { setShowNotifs(v => !v); if (unreadCount > 0) { api.markNotificationsRead().then(() => { setUnreadCount(0); setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() }))); }).catch(() => {}); } }}
+            className="relative w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center text-lg hover:bg-orange-50 active:scale-95 transition-all">
+            🔔
+            {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white flex items-center justify-center text-[8px] font-black text-white">{unreadCount > 9 ? "9+" : unreadCount}</span>}
+          </button>
+          <button onClick={() => setModal("reminders")}
+            className="relative w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center text-lg hover:bg-orange-50 active:scale-95 transition-all">
+            📋
+            {allUpcoming.length > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-orange-400 rounded-full ring-2 ring-white" />}
+          </button>
+        </div>
       </div>
     </header>
   );
@@ -742,6 +765,14 @@ export default function PetclubApp({ session, onLogout }) {
                         onClick={() => setChatBooking(b)}
                         className="mt-3 w-full flex items-center justify-center gap-2 text-xs font-bold text-blue-600 border border-blue-200 bg-blue-50 rounded-xl py-2 hover:bg-blue-100 transition">
                         <span>💬</span> Chat with Provider
+                      </button>
+                    )}
+                    {/* Reschedule — for upcoming/searching/offered/confirmed bookings */}
+                    {["searching","offered","confirmed","upcoming"].includes(b.assignment_status) && !["completed","cancelled"].includes(b.status) && (
+                      <button
+                        onClick={() => { setRescheduleDate(""); setRescheduleTime("10:00"); setRescheduleModal({ booking: b }); }}
+                        className="mt-2 w-full flex items-center justify-center gap-2 text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 rounded-xl py-2 hover:bg-blue-100 transition">
+                        📅 Reschedule
                       </button>
                     )}
                     {/* Cancel booking — only for active (not yet completed/cancelled) */}
@@ -1746,6 +1777,65 @@ export default function PetclubApp({ session, onLogout }) {
           )}
           <Fld label="Notes"><Txta placeholder="Additional notes…" value={form.notes||""} onChange={sf("notes")} /></Fld>
           <button onClick={addRecord} disabled={!form.date} className="btn-primary mt-1">Save Record</button>
+        </Modal>
+      )}
+
+      {/* NOTIFICATION INBOX — slide-down panel */}
+      {showNotifs && (
+        <div className="fixed inset-0 z-50 flex flex-col" onClick={() => setShowNotifs(false)}>
+          <div className="bg-white border-b border-gray-100 shadow-xl max-w-lg mx-auto w-full mt-[64px] rounded-b-2xl max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <span className="font-bold text-gray-900 text-sm">Notifications</span>
+              <button onClick={() => setShowNotifs(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+            </div>
+            {notifications.length === 0
+              ? <p className="text-sm text-gray-400 py-8 text-center">No notifications yet</p>
+              : notifications.map(n => (
+                <div key={n.id} className={`px-4 py-3 border-b border-gray-50 last:border-0 ${!n.read_at ? "bg-orange-50" : ""}`}>
+                  <p className="text-sm font-bold text-gray-900">{n.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{n.body}</p>
+                  <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString("en-IN", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</p>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      )}
+
+      {/* RESCHEDULE MODAL */}
+      {rescheduleModal && (
+        <Modal title="Reschedule Booking 📅" onClose={() => setRescheduleModal(null)}>
+          <p className="text-sm text-gray-600 mb-4">
+            Choose a new date and time for <strong>{rescheduleModal.booking.service_name || rescheduleModal.booking.service_type}</strong>.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-bold text-gray-700 block mb-1">New Date</label>
+              <input type="date" min={today()} value={rescheduleDate} onChange={e => setRescheduleDate(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-700 block mb-1">New Time</label>
+              <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            </div>
+            <button
+              disabled={!rescheduleDate || rescheduleLoading}
+              onClick={async () => {
+                setRescheduleLoading(true);
+                try {
+                  const dt = `${rescheduleDate}T${rescheduleTime}:00`;
+                  await api.rescheduleBooking(rescheduleModal.booking.id, dt);
+                  setMyBookings(prev => prev.map(b => b.id === rescheduleModal.booking.id ? { ...b, scheduled_at: new Date(dt).toISOString(), rescheduled_from: b.scheduled_at } : b));
+                  showToast("Booking rescheduled! The professional has been notified.", "success");
+                  setRescheduleModal(null);
+                } catch (e) { showToast(e.message || "Failed to reschedule", "error"); }
+                finally { setRescheduleLoading(false); }
+              }}
+              className={`w-full font-bold py-3 rounded-2xl text-sm transition-all ${(!rescheduleDate || rescheduleLoading) ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-orange-500 text-white hover:bg-orange-600"}`}>
+              {rescheduleLoading ? "Rescheduling…" : "Confirm New Time"}
+            </button>
+          </div>
         </Modal>
       )}
 
