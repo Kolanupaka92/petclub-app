@@ -1,11 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Anon-key client — used ONLY for Realtime subscriptions (read-only, RLS-enforced)
-// All mutating API calls still go through the backend (httpOnly cookie auth)
-const supabaseAnon = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-);
+// Only created when both env vars are present — createClient throws on empty strings
+const _url = import.meta.env.VITE_SUPABASE_URL;
+const _key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseAnon = (_url && _key) ? createClient(_url, _key) : null;
 
 /**
  * Subscribe to booking changes for a customer.
@@ -13,9 +12,7 @@ const supabaseAnon = createClient(
  * Returns an unsubscribe function.
  */
 export const subscribeToBookings = (customerId, onUpdate) => {
-  if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-    return () => {};
-  }
+  if (!supabaseAnon) return () => {};
   const channel = supabaseAnon
     .channel(`bookings:customer:${customerId}`)
     .on('postgres_changes', {
