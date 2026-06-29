@@ -1,3 +1,11 @@
+# [1.45.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.44.1...v1.45.0) (2026-06-29)
+
+
+### Features
+
+* **pricing:** sync USD prices and wire vet care pricing into booking UI ([efe1b56](https://github.com/Kolanupaka92/petclub-app/commit/efe1b568d75d5421f79213c5212b8fca5aa4e5ca))
+* **pricing:** sync USD prices in frontend fallback to realistic US market rates ([5d08b74](https://github.com/Kolanupaka92/petclub-app/commit/5d08b7449d5c470939f5a77ccfb649cb0ca045f7))
+
 ## [1.44.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.44.0...v1.44.1) (2026-06-29)
 
 
