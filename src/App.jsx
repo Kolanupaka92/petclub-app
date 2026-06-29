@@ -2076,6 +2076,9 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [dbAuditLoading, setDbAuditLoading] = useState(false);
   const [dbCleanLoading, setDbCleanLoading] = useState(false);
 
+  /* ── Payout state ── */
+  const [payouts, setPayouts] = useState([]);
+
   /* ── Loyalty Award state ── */
   const [loyaltySearch,       setLoyaltySearch]       = useState("");
   const [loyaltyTarget,       setLoyaltyTarget]       = useState(null);   // selected user object
@@ -2184,6 +2187,12 @@ const AdminDashboard = ({ session, onLogout }) => {
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
+
+  // Load payouts whenever the payouts tab is opened
+  useEffect(() => {
+    if (view !== "payouts") return;
+    api.adminGetPayouts().then(r => setPayouts(r.payouts || [])).catch(() => {});
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load loyalty programme stats whenever the loyalty tab is opened
   useEffect(() => {
@@ -2373,6 +2382,7 @@ const AdminDashboard = ({ session, onLogout }) => {
     { id:"bookings", icon:"📅", label:"Bookings" },
     { id:"reports",  icon:"📈", label:"Reports" },
     { id:"loyalty",  icon:"🎁", label:"Loyalty" },
+    { id:"payouts",  icon:"💸", label:"Payouts" },
     { id:"dbhealth", icon:"🗄️", label:"DB" },
   ];
 
@@ -3948,6 +3958,71 @@ const AdminDashboard = ({ session, onLogout }) => {
             })()}
           </div>
         )}
+
+        {view === "payouts" && (() => {
+          return (
+            <div className="max-w-3xl mx-auto px-5 py-6 space-y-5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h1 className="text-xl font-extrabold text-gray-800">💸 Payout Requests</h1>
+                <button onClick={async () => {
+                  try { const r = await api.adminGetPayouts(); setPayouts(r.payouts || []); }
+                  catch (e) { showToast("❌ " + e.message, "error"); }
+                }} className="text-xs font-bold text-orange-600 border border-orange-200 bg-orange-50 px-4 py-2 rounded-xl hover:bg-orange-100 transition">
+                  🔄 Refresh
+                </button>
+              </div>
+              {payouts.length === 0 ? (
+                <div className="text-center py-16 text-gray-400 text-sm">No payout requests yet.</div>
+              ) : payouts.map(p => {
+                const pro = p.professional_profiles;
+                const user = pro?.users;
+                const hasPending = p.pending_inr > 0 || p.pending_usd > 0;
+                return (
+                  <div key={p.prof_id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div>
+                        <div className="font-bold text-gray-800 text-base">{user?.name || "—"}</div>
+                        <div className="text-xs text-gray-400">{pro?.sub_role} · {user?.phone} · {user?.email}</div>
+                      </div>
+                      <div className="text-right">
+                        {p.pending_inr > 0 && <div className="text-lg font-extrabold text-emerald-600">₹{p.pending_inr.toFixed(2)}</div>}
+                        {p.pending_usd > 0 && <div className="text-lg font-extrabold text-blue-600">${p.pending_usd.toFixed(2)}</div>}
+                        {!hasPending && <div className="text-xs text-gray-400">No pending earnings</div>}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-3 text-xs space-y-1">
+                      {p.payment_type === "upi" ? (
+                        <div><span className="font-semibold text-gray-600">UPI ID:</span> <span className="font-mono text-gray-800">{p.upi_id || "—"}</span></div>
+                      ) : (
+                        <>
+                          <div><span className="font-semibold text-gray-600">Bank:</span> {p.bank_name || "—"}</div>
+                          <div><span className="font-semibold text-gray-600">Account:</span> <span className="font-mono">{p.account_number || "—"}</span></div>
+                          <div><span className="font-semibold text-gray-600">Holder:</span> {p.account_holder || "—"}</div>
+                          <div><span className="font-semibold text-gray-600">IFSC:</span> <span className="font-mono">{p.ifsc_code || "—"}</span></div>
+                        </>
+                      )}
+                    </div>
+                    {hasPending && (
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Mark all pending earnings for ${user?.name} as paid?`)) return;
+                          try {
+                            await api.adminMarkPaid(p.prof_id);
+                            showToast("✅ Marked as paid");
+                            const r = await api.adminGetPayouts();
+                            setPayouts(r.payouts || []);
+                          } catch (e) { showToast("❌ " + e.message, "error"); }
+                        }}
+                        className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl transition">
+                        ✅ Mark Paid — Transfer {p.pending_inr > 0 ? `₹${p.pending_inr.toFixed(2)}` : `$${p.pending_usd.toFixed(2)}`}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
       </main>
 

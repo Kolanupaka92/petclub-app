@@ -210,6 +210,9 @@ export const api = {
   dbCleanup: (targets)   => req('DELETE', '/admin/db-cleanup', { targets }, true),
   setUserSubRole: (id, subRole) => req('PUT', `/admin/users/${id}/set-role`, { subRole }, true),
   adminEditUser: (id, data) => req('POST', `/admin/users/${id}/edit`, data, true),
+  // Admin payouts
+  adminGetPayouts: () => req('GET', '/admin/payouts', null, true),
+  adminMarkPaid: (profId) => req('POST', `/admin/payouts/${profId}/mark-paid`, {}, true),
   // Admin testing tools
   getOtp: (phone, cc = '91') => req('GET', `/admin/otp?phone=${encodeURIComponent(phone)}&cc=${cc}`, null, true),
 

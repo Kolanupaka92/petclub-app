@@ -727,7 +727,7 @@ export default function PetclubApp({ session, onLogout }) {
                         <button
                           onClick={() => {
                             const svc = SERVICES.find(s => s.role === b.service_type);
-                            setBookingForm(f => ({ ...f, service_type: b.service_type, service_name: b.service_name || "", pet_id: b.pet_id || "", city: b.city || "", address: "" }));
+                            setBookingForm(f => ({ ...f, service_type: b.service_type, service_name: b.service_name || "", pet_id: b.pet_id || "", city: b.city || "", address: "", pet_size: "", addons: [], date: "", time: "10:00", notes: "", coupon_code: "" }));
                             setBookingStep(svc ? 2 : 1);
                             setModal("bookService");
                           }}
