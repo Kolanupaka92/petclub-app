@@ -1,3 +1,10 @@
+## [1.42.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.42.0...v1.42.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* all dashboard audit gaps — broken routing, UI bugs, mobile admin nav ([e6c38ba](https://github.com/Kolanupaka92/petclub-app/commit/e6c38bab0460fb519cd9b541dbf762dac933b8c7))
+
 # [1.42.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.41.2...v1.42.0) (2026-06-29)
 
 
