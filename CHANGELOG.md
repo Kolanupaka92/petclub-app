@@ -1,3 +1,10 @@
+## [1.43.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.2...v1.43.3) (2026-06-29)
+
+
+### Bug Fixes
+
+* guard Supabase createClient against missing env vars at module load ([47c1210](https://github.com/Kolanupaka92/petclub-app/commit/47c121035c5c9bc8e0ccaf17bb06934e913962e8))
+
 ## [1.43.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.1...v1.43.2) (2026-06-29)
 
 
