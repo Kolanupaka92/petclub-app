@@ -2655,24 +2655,33 @@ const AdminDashboard = ({ session, onLogout }) => {
                 <h2 className="font-bold text-gray-700 text-sm mb-3">⚙️ Platform Status</h2>
                 <div className="space-y-2 text-xs">
                   {(() => {
-                    const svc = health?.services || {};
-                    const ok      = v => v?.startsWith("✅");
-                    const broken  = v => v != null && v.includes("unreachable");
-                    // green=healthy, red=broken, gray=pending/not-configured (not alarming)
-                    const hColor  = v => ok(v) ? "text-emerald-600" : broken(v) ? "text-red-600" : "text-gray-400";
-                    const svcVal  = (raw) => raw ? raw
-                      .replace(' live','').replace(' configured','')
-                      .replace(' (set FIREBASE_SERVICE_ACCOUNT_JSON)','')
-                      .replace(' (set env vars)','').replace(' (email fallback active)','')
-                      .replace(' not configured','').replace(' pending','').trim() || '—' : '—';
+                    const svcs = health?.services || {};
+                    // Backend returns "" (empty string) for healthy, "...unreachable" for broken,
+                    // or a pending/not-configured message for intentionally absent services.
+                    const ok     = v => v === "" || (typeof v === "string" && v.startsWith("✅"));
+                    const broken = v => typeof v === "string" && v.length > 0 && v.includes("unreachable");
+                    const hColor = v => ok(v) ? "text-emerald-600" : broken(v) ? "text-red-600" : "text-gray-400";
+                    // Use 'in' check so "" (healthy empty string) is not treated as missing
+                    const has    = key => svcs != null && key in svcs;
+                    const svcStr = (raw) => {
+                      if (raw === "") return "✅";
+                      if (raw == null) return "—";
+                      // strip leading non-word chars (emoji prefix), then clean known suffixes
+                      return raw.replace(/^[^\w]+\s*/u, '').trim()
+                        .replace(' live','').replace(' configured','')
+                        .replace('(set FIREBASE_SERVICE_ACCOUNT_JSON)','').replace('(set env vars)','')
+                        .replace('(email fallback active)','email fallback')
+                        .replace('not configured','email fallback').replace('pending','pending')
+                        .trim() || '—';
+                    };
                     const rows = [
-                      { label:"Backend API",  val: health ? (ok(svc.supabase) ? "Cloud Run ✅" : broken(svc.supabase) ? "Cloud Run ❌" : "Cloud Run ⚠️") : "Checking…", color: health ? hColor(svc.supabase) : "text-gray-400" },
-                      { label:"Frontend",     val: "Vercel ✅",                                                                          color: "text-emerald-600" },
-                      { label:"Database",     val: svc.supabase      ? `Supabase ${svcVal(svc.supabase)}`          : "Supabase —",        color: hColor(svc.supabase) },
-                      { label:"Auth / Push",  val: svc.firebase_auth ? `Firebase ${svcVal(svc.firebase_auth)}`     : "Firebase —",        color: hColor(svc.firebase_auth) },
-                      { label:"SMS Alerts",   val: svc.twilio_sms    ? `Twilio ${svcVal(svc.twilio_sms) || "email fallback"}` : "email fallback", color: hColor(svc.twilio_sms) },
-                      { label:"Email (SMTP)", val: svc.zoho_smtp     ? `Zoho ${svcVal(svc.zoho_smtp)}`             : "Zoho —",            color: hColor(svc.zoho_smtp) },
-                      { label:"Payments",     val: ok(svc.razorpay)  ? "Razorpay ✅" : "⏳ Pending LLC",                                  color: ok(svc.razorpay) ? "text-emerald-600" : "text-gray-400" },
+                      { label:"Backend API",  val: health ? (ok(svcs.supabase) ? "Cloud Run ✅" : broken(svcs.supabase) ? "Cloud Run ❌" : "Cloud Run ⚠️") : "Checking…", color: health ? hColor(svcs.supabase) : "text-gray-400" },
+                      { label:"Frontend",     val: "Vercel ✅",                                                                              color: "text-emerald-600" },
+                      { label:"Database",     val: has('supabase')      ? `Supabase ${svcStr(svcs.supabase)}`      : "Supabase —",           color: hColor(svcs.supabase) },
+                      { label:"Auth / Push",  val: has('firebase_auth') ? `Firebase ${svcStr(svcs.firebase_auth)}` : "Firebase —",           color: hColor(svcs.firebase_auth) },
+                      { label:"SMS Alerts",   val: has('twilio_sms')    ? `Twilio ${svcStr(svcs.twilio_sms)}`      : "email fallback",        color: hColor(svcs.twilio_sms) },
+                      { label:"Email (SMTP)", val: has('zoho_smtp')     ? `Zoho ${svcStr(svcs.zoho_smtp)}`         : "Zoho —",               color: hColor(svcs.zoho_smtp) },
+                      { label:"Payments",     val: ok(svcs.razorpay)   ? "Razorpay ✅"                             : "⏳ Pending LLC",         color: ok(svcs.razorpay) ? "text-emerald-600" : "text-gray-400" },
                     ];
                     return rows.map(s => (
                       <div key={s.label} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5 border border-gray-100">
