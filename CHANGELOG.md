@@ -1,3 +1,10 @@
+## [1.43.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.3...v1.43.4) (2026-06-29)
+
+
+### Bug Fixes
+
+* **admin:** improve platform status health display and mobile layout ([4d6dc08](https://github.com/Kolanupaka92/petclub-app/commit/4d6dc08b772666cffba1ad435879320a9deddad1))
+
 ## [1.43.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.2...v1.43.3) (2026-06-29)
 
 
