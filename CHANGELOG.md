@@ -1,3 +1,10 @@
+# [1.44.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.6...v1.44.0) (2026-06-29)
+
+
+### Features
+
+* **admin:** add manual refresh button to Platform Status widget ([31bd564](https://github.com/Kolanupaka92/petclub-app/commit/31bd56447ccc5c31a3599d54480ef5b842eb9198))
+
 ## [1.43.6](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.5...v1.43.6) (2026-06-29)
 
 
