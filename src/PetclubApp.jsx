@@ -16,6 +16,8 @@ import {
   TRAINING_PACKAGES,
   WALKING_PACKAGES,
   BOARDING_PACKAGES,
+  VET_PACKAGES,
+  VET_QUOTED_ON_SITE,
 } from "./pricingFallback.js";
 
 // Lazy-load heavy map component (Mapbox GL is ~500 KB)
@@ -475,6 +477,7 @@ export default function PetclubApp({ session, onLogout }) {
   const activeTrainingPackages = catalog?.training?.packages ?? TRAINING_PACKAGES;
   const activeWalkingPackages  = catalog?.walking?.packages  ?? WALKING_PACKAGES;
   const activeBoardingPackages = catalog?.boarding?.packages ?? BOARDING_PACKAGES;
+  const activeVetPackages      = catalog?.vet?.packages      ?? VET_PACKAGES;
 
   // Helper: pick the right per-package price based on region
   const pkgPrice     = (pkg) => isUSD ? (pkg.price_usd   ?? pkg.price)   : pkg.price;
@@ -513,7 +516,14 @@ export default function PetclubApp({ session, onLogout }) {
       const base = pkgPrice(pkg);
       return { base, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, base - activePlatformDiscount) };
     }
-    return null; // Vet — quoted on-site
+    if (form.service_type === "Vet") {
+      if (VET_QUOTED_ON_SITE.has(form.service_name)) return null;
+      const pkg = activeVetPackages.find(p => p.name === form.service_name);
+      if (!pkg) return null;
+      const base = pkgPrice(pkg);
+      return { base, addonSum: 0, discount: activePlatformDiscount, total: Math.max(0, base - activePlatformDiscount) };
+    }
+    return null;
   };
 
   const createBooking = async () => {
@@ -2065,7 +2075,7 @@ export default function PetclubApp({ session, onLogout }) {
                 </div>
               </>)}
 
-              {/* ── VET: dropdown (quoted on-site) ── */}
+              {/* ── VET: dropdown with contextual pricing hint ── */}
               {bookingForm.service_type === "Vet" && (
                 <Fld label="Service Type *">
                   <select className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-orange-400 bg-white"
@@ -2073,7 +2083,12 @@ export default function PetclubApp({ session, onLogout }) {
                     <option value="">Select service…</option>
                     {SVC_OPTS.vet.map(o => <option key={o}>{o}</option>)}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1 pl-1">💡 Our vet will confirm pricing after the initial assessment</p>
+                  {bookingForm.service_name && VET_QUOTED_ON_SITE.has(bookingForm.service_name)
+                    ? <p className="text-xs text-gray-400 mt-1 pl-1">💡 Pricing confirmed after on-site assessment — no surprise charges</p>
+                    : bookingForm.service_name
+                      ? (() => { const pkg = activeVetPackages.find(p => p.name === bookingForm.service_name); return pkg ? <p className="text-xs text-emerald-600 font-semibold mt-1 pl-1">Starting from {currencySymbol}{pkgPrice(pkg)} · {currencySymbol}{activePlatformDiscount} PETclub discount applied at checkout</p> : null; })()
+                      : <p className="text-xs text-gray-400 mt-1 pl-1">💡 Select a service to see pricing</p>
+                  }
                 </Fld>
               )}
 
@@ -2229,10 +2244,10 @@ export default function PetclubApp({ session, onLogout }) {
                 </div>
               )}
 
-              {/* Vet — quoted on-site notice */}
-              {bookingForm.service_type === "Vet" && (
+              {/* Vet — quoted on-site notice (Surgery / Emergency only) */}
+              {bookingForm.service_type === "Vet" && VET_QUOTED_ON_SITE.has(bookingForm.service_name) && (
                 <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 mb-4 text-xs text-rose-700">
-                  🏥 Vet service pricing is confirmed after the initial assessment. No surprise charges.
+                  🏥 Pricing for {bookingForm.service_name} is confirmed after the on-site assessment. No surprise charges.
                 </div>
               )}
 
