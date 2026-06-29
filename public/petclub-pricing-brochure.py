@@ -204,7 +204,7 @@ def draw_footer(c):
     # Contact details (right)
     c.setFillColor(white)
     c.setFont(FONT_REG, 8.5)
-    c.drawRightString(PAGE_W - 25, 42, "WhatsApp: +91 93474 11132")
+    c.drawRightString(PAGE_W - 25, 42, "WhatsApp: +1 609 721 5754")
     c.drawRightString(PAGE_W - 25, 30, "Email: support@mypetclub.app")
     c.setFont(FONT_ITAL, 7.5)
     c.drawRightString(PAGE_W - 25, 16, "Serving Hyderabad • Premium grooming at your doorstep 🐾")

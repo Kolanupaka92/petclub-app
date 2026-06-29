@@ -672,9 +672,9 @@ export default function LandingPage({ onGetStarted }) {
             >
               <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(34,197,94,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>💬</div>
               <div style={{ textAlign: "center", minWidth: 0, width: "100%" }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>WhatsApp · India</p>
-                <p style={{ fontSize: "clamp(14px,3.5vw,16px)", fontWeight: 800, color: "white", margin: "0 0 4px" }}>+91 93474 11132</p>
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>Mon – Sat · 9 AM – 8 PM IST</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>WhatsApp</p>
+                <p style={{ fontSize: "clamp(14px,3.5vw,16px)", fontWeight: 800, color: "white", margin: "0 0 4px" }}>+1 609 721 5754</p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>Mon – Sat · 9 AM – 8 PM EST</p>
               </div>
             </a>
 

@@ -173,7 +173,7 @@ def draw_cover_panel(c):
     c.drawCentredString(cx_mid, 52, "app.mypetclub.app")
     c.setFillColor(SLATE)
     c.setFont(FONT, 8.5)
-    c.drawCentredString(cx_mid, 40, "WhatsApp: +91 93474 11132")
+    c.drawCentredString(cx_mid, 40, "WhatsApp: +1 609 721 5754")
 
 
 def draw_complete_panel(c):
@@ -544,7 +544,7 @@ def draw_qr_panel(c):
     c.setFillColor(DARK)
     c.rect(x0, 0, PANEL_W, 50, fill=1, stroke=0)
     c.setFillColor(ORANGE); c.setFont(FONT_B, 11)
-    c.drawCentredString(cx_mid, 30, "💬 WhatsApp: +91 93474 11132")
+    c.drawCentredString(cx_mid, 30, "💬 WhatsApp: +1 609 721 5754")
     c.setFillColor(WHITE); c.setFont(FONT, 9)
     c.drawCentredString(cx_mid, 15, "support@mypetclub.app · Hyderabad")
 

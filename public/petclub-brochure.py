@@ -228,7 +228,7 @@ def draw_back_panel(c):
 
     # WhatsApp
     c.setFont(FONT, 8.5)
-    c.drawCentredString(x0 + PANEL_W / 2, qr_box_y - 78, "WhatsApp: +91 93474 11132")
+    c.drawCentredString(x0 + PANEL_W / 2, qr_box_y - 78, "WhatsApp: +1 609 721 5754")
 
     # Bottom footer band
     c.setFillColor(ORANGE)
