@@ -2426,18 +2426,14 @@ const AdminDashboard = ({ session, onLogout }) => {
       </aside>
 
       {/* Mobile header + slide-down menu */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gray-950 text-white flex items-center justify-between px-4 py-3 shadow-lg">
-        <div className="flex items-center gap-2">
-          <PawLogo sz={24}/>
-          <span className="font-extrabold text-orange-400 text-sm">PETclub</span>
-          <span className="text-xs text-red-400 font-bold tracking-widest ml-1">ADMIN</span>
-        </div>
-        <button onClick={() => setMobileMenuOpen(o => !o)} className="text-white p-1">
-          <span className="text-xl">{mobileMenuOpen ? "✕" : "☰"}</span>
-        </button>
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gray-950 text-white flex items-center px-4 py-3 shadow-lg gap-3">
+        <PawLogo sz={24}/>
+        <span className="font-extrabold text-orange-400 text-sm">PETclub</span>
+        <span className="text-xs text-red-400 font-bold tracking-widest">ADMIN</span>
+        {health && <span className="ml-auto text-[11px] font-semibold text-emerald-400">● Live</span>}
       </div>
       {mobileMenuOpen && (
-        <div className="md:hidden fixed top-12 left-0 right-0 z-40 bg-gray-950 text-white p-4 space-y-1 shadow-xl">
+        <div className="md:hidden fixed bottom-16 left-0 right-0 z-40 bg-gray-950 text-white p-4 space-y-1 shadow-2xl border-t border-white/10">
           {NAV.map(n => (
             <button key={n.id} onClick={() => { setView(n.id); setMobileMenuOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${view === n.id ? "bg-orange-500 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}>
@@ -2451,7 +2447,7 @@ const AdminDashboard = ({ session, onLogout }) => {
         </div>
       )}
 
-      <main className="flex-1 md:ml-60 pt-14 md:pt-0 pb-8 min-h-screen">
+      <main className="flex-1 md:ml-60 pt-14 md:pt-0 pb-24 md:pb-8 min-h-screen">
         {toast.msg && (
           <div className={`fixed top-16 md:top-4 left-1/2 -translate-x-1/2 z-50 text-sm font-medium px-5 py-3 rounded-full shadow-xl ${toast.type === "error" ? "bg-red-600 text-white" : "bg-gray-900 text-white"}`}>
             {toast.msg}
@@ -4038,18 +4034,42 @@ const AdminDashboard = ({ session, onLogout }) => {
 
       </main>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 flex shadow-nav safe-bottom">
-        {NAV.map(n => (
-          <button key={n.id} onClick={() => setView(n.id)}
-            className={`flex-1 flex flex-col items-center py-3 text-xs font-semibold transition-colors relative ${view === n.id ? "text-orange-500" : "text-gray-400"}`}>
-            {view === n.id && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-orange-500 rounded-full"/>}
-            <span className="text-xl mb-0.5 relative">
-              {n.icon}
-              {n.badge > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">{n.badge}</span>}
-            </span>
-            {n.label}
-          </button>
-        ))}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 shadow-nav">
+        <div className="flex">
+          {[
+            { id:"overview",  icon:"📊", label:"Overview" },
+            { id:"verify",    icon:"🔍", label:"Verify",  badge: NAV.find(n=>n.id==="verify")?.badge || 0 },
+            { id:"users",     icon:"👥", label:"Users" },
+            { id:"bookings",  icon:"📅", label:"Bookings" },
+          ].map(n => (
+            <button key={n.id} onClick={() => { setView(n.id); setMobileMenuOpen(false); }}
+              className={`flex-1 flex flex-col items-center py-3 text-xs font-semibold transition-colors relative ${view === n.id ? "text-orange-500" : "text-gray-400"}`}>
+              {view === n.id && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-orange-500 rounded-full"/>}
+              <span className="text-xl mb-0.5 relative">
+                {n.icon}
+                {n.badge > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{n.badge}</span>}
+              </span>
+              {n.label}
+            </button>
+          ))}
+          {/* More — opens the full nav dropdown; badge shows if secondary views have alerts */}
+          {(() => {
+            const moreBadge = NAV.filter(n => !["overview","verify","users","bookings"].includes(n.id))
+              .reduce((s, n) => s + (n.badge || 0), 0);
+            const moreActive = !["overview","verify","users","bookings"].includes(view);
+            return (
+              <button onClick={() => setMobileMenuOpen(o => !o)}
+                className={`flex-1 flex flex-col items-center py-3 text-xs font-semibold transition-colors relative ${moreActive || mobileMenuOpen ? "text-orange-500" : "text-gray-400"}`}>
+                {(moreActive || mobileMenuOpen) && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-orange-500 rounded-full"/>}
+                <span className="text-xl mb-0.5 relative">
+                  {mobileMenuOpen ? "✕" : "⋯"}
+                  {moreBadge > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{moreBadge}</span>}
+                </span>
+                More
+              </button>
+            );
+          })()}
+        </div>
       </nav>
 
       {/* ══ GLOBAL CONFIRM MODAL ══════════════════════════════════════════════
