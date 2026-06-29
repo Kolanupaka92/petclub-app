@@ -498,8 +498,8 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
                 {addrLoading && <div className="absolute right-3 top-9 w-4 h-4 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin"/>}
                 {!addrLoading && form.city && form.pincode.length >= 5 && <div className="absolute right-3 top-9 text-emerald-500 text-sm">✓</div>}
               </div>
-              <Inp label="Area / Locality" placeholder="LB Nagar" value={form.area} onChange={sf("area")}/>
-              <Inp label="City *" placeholder="Hyderabad" value={form.city} onChange={sf("city")}/>
+              <Inp label="Area / Locality" placeholder={isIndia ? "LB Nagar" : "Uptown"} value={form.area} onChange={sf("area")}/>
+              <Inp label="City *" placeholder={isIndia ? "Hyderabad" : "Richardson"} value={form.city} onChange={sf("city")}/>
             </div>
           </div>
         )}

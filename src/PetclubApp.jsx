@@ -2386,7 +2386,7 @@ export default function PetclubApp({ session, onLogout }) {
             )}
           </Fld>
           <Fld label="Area / Locality">
-            <Inp placeholder="e.g. LB Nagar, Sainikpuri" value={form.area||""} onChange={sf("area")} />
+            <Inp placeholder="e.g. Uptown, North Dallas" value={form.area||""} onChange={sf("area")} />
           </Fld>
           <button onClick={updateProfile} disabled={!form.name?.trim()} className="btn-primary mt-1">Save Profile</button>
         </Modal>
