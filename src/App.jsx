@@ -2072,6 +2072,8 @@ const AdminDashboard = ({ session, onLogout }) => {
   const [editUserSaving,setEditUserSaving]= useState(false);
   const [toast,      setToast]      = useState({ msg:"", type:"success" });
   const [health,     setHealth]     = useState(null);
+  const [healthRefreshing, setHealthRefreshing] = useState(false);
+  const [healthLastAt,     setHealthLastAt]     = useState(null);
   const [dbAudit,    setDbAudit]    = useState(null);
   const [dbAuditLoading, setDbAuditLoading] = useState(false);
   const [dbCleanLoading, setDbCleanLoading] = useState(false);
@@ -2161,17 +2163,27 @@ const AdminDashboard = ({ session, onLogout }) => {
       setPending(pendRes?.pending || []);
       setUsers(usersRes?.users || []);
       setBookings(bkRes?.bookings || []);
-      if (healthRes) setHealth(healthRes);
+      if (healthRes) { setHealth(healthRes); setHealthLastAt(new Date()); }
     }).finally(() => setLoading(false));
   }, []);
 
   // ── Platform Status auto-refresh every 60 s ──────────────────────────────
   useEffect(() => {
     const t = setInterval(() => {
-      api.adminHealth().then(r => { if (r) setHealth(r); }).catch(() => {});
+      api.adminHealth().then(r => { if (r) { setHealth(r); setHealthLastAt(new Date()); } }).catch(() => {});
     }, 60_000);
     return () => clearInterval(t);
   }, []);
+
+  const refreshHealth = async () => {
+    if (healthRefreshing) return;
+    setHealthRefreshing(true);
+    try {
+      const r = await api.adminHealth();
+      if (r) { setHealth(r); setHealthLastAt(new Date()); }
+    } catch {}
+    setHealthRefreshing(false);
+  };
 
   // Live tracking auto-refresh — poll every 15s when "live" tab is active
   useEffect(() => {
@@ -2648,7 +2660,22 @@ const AdminDashboard = ({ session, onLogout }) => {
 
               {/* ── Platform Status — driven from /health API ── */}
               <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4 mb-4">
-                <h2 className="font-bold text-gray-700 text-sm mb-3">⚙️ Platform Status</h2>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-bold text-gray-700 text-sm">⚙️ Platform Status</h2>
+                  <div className="flex items-center gap-2">
+                    {healthLastAt && (
+                      <span className="text-[10px] text-gray-400">
+                        {healthLastAt.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit" })}
+                      </span>
+                    )}
+                    <button
+                      onClick={refreshHealth}
+                      disabled={healthRefreshing}
+                      className="text-[11px] font-semibold text-orange-500 border border-orange-200 bg-orange-50 px-2.5 py-1 rounded-lg hover:bg-orange-100 transition disabled:opacity-50 flex items-center gap-1">
+                      {healthRefreshing ? "⏳" : "↻"} Refresh
+                    </button>
+                  </div>
+                </div>
                 <div className="space-y-2 text-xs">
                   {(() => {
                     const svcs = health?.services || {};
