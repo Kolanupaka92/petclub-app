@@ -546,7 +546,7 @@ def draw_qr_panel(c):
     c.setFillColor(ORANGE); c.setFont(FONT_B, 11)
     c.drawCentredString(cx_mid, 30, "💬 WhatsApp: +1 609 721 5754")
     c.setFillColor(WHITE); c.setFont(FONT, 9)
-    c.drawCentredString(cx_mid, 15, "support@mypetclub.app · Hyderabad")
+    c.drawCentredString(cx_mid, 15, "support@mypetclub.app · Richardson, TX")
 
 
 # ══════════════════════════════════════════════════════════════════════════

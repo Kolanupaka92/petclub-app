@@ -223,7 +223,7 @@ def draw_back_panel(c):
     c.drawCentredString(x0 + PANEL_W / 2, qr_box_y - 12, "Contact Us")
     c.setFont(FONT, 8.5)
     c.drawCentredString(x0 + PANEL_W / 2, qr_box_y - 30, "support@mypetclub.app")
-    c.drawCentredString(x0 + PANEL_W / 2, qr_box_y - 45, "Hyderabad, Telangana — India")
+    c.drawCentredString(x0 + PANEL_W / 2, qr_box_y - 45, "Richardson, TX 75082 — USA")
     c.drawCentredString(x0 + PANEL_W / 2, qr_box_y - 60, "www.mypetclub.app")
 
     # WhatsApp
@@ -471,7 +471,7 @@ def draw_how_panel(c):
     c.setFont(FONT_B, 13)
     c.drawCentredString(x0 + PANEL_W / 2, 78, "🌟 Now Available")
     c.setFont(FONT_B, 16)
-    c.drawCentredString(x0 + PANEL_W / 2, 58, "Hyderabad")
+    c.drawCentredString(x0 + PANEL_W / 2, 58, "Richardson, TX")
     c.setFont(FONT, 9)
     c.drawCentredString(x0 + PANEL_W / 2, 42, "Expanding to more cities soon")
 
