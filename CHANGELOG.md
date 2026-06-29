@@ -1,3 +1,10 @@
+## [1.43.6](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.5...v1.43.6) (2026-06-29)
+
+
+### Bug Fixes
+
+* **admin:** fix mobile bottom nav — 9 cramped tabs → 4 primary + More ([ab48c52](https://github.com/Kolanupaka92/petclub-app/commit/ab48c52f8580528e12430d043658e404fa9e6b9b))
+
 ## [1.43.5](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.4...v1.43.5) (2026-06-29)
 
 
