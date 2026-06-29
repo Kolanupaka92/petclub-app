@@ -297,6 +297,7 @@ const ProfessionalOnboarding = ({ session, onComplete }) => {
   const subRole  = session.subRole || "Groomer";
   const idTypes  = getIdTypes(session.phone);
   const isIndia  = session.phone?.startsWith("+91");
+  const currencySymbol = isIndia ? "₹" : "$";
 
   const [step, setStep]     = useState(1);
   const [saving, setSaving] = useState(false);
@@ -740,7 +741,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [editForm,  setEditForm]  = useState({});
   const [idForm,    setIdForm]    = useState({ idType: "", idNumber: "", idPhoto: null });
   const [saving,    setSaving]    = useState(false);
-  const [toast,     setToast]     = useState("");
+  const [toast,     setToast]     = useState({ msg: "", type: "success" });
   const [responding,   setResponding]   = useState({});
   const [earnings,     setEarnings]     = useState(null);  // { total, paid, pending, bookings[] }
   const [earningsLoad, setEarningsLoad] = useState(false);
@@ -986,7 +987,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
       .finally(() => setEarningsLoad(false));
   }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const showToast = msg => { setToast(msg); setTimeout(() => setToast(""), 3500); };
+  const showToast = (msg, type = "success") => { setToast({ msg, type }); setTimeout(() => setToast({ msg: "", type: "success" }), 3500); };
 
   const handleRespond = async (bookingId, action) => {
     setResponding(r => ({ ...r, [bookingId]: action }));
@@ -1090,9 +1091,9 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
 
       <main className="flex-1 md:ml-60 pb-24 md:pb-8 min-h-screen">
         {/* Toast */}
-        {toast && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-full shadow-xl">
-            {toast}
+        {toast.msg && (
+          <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 text-sm font-medium px-5 py-3 rounded-full shadow-xl ${toast.type === "error" ? "bg-red-600 text-white" : "bg-gray-900 text-white"}`}>
+            {toast.msg}
           </div>
         )}
 
@@ -1384,8 +1385,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                                 if (!window.confirm("Cancel this booking? The customer will be notified and we'll find them another professional. Only use this for genuine emergencies.")) return;
                                 try {
                                   await api.cancelBooking(b.id, "Professional unable to attend");
-                                  // Remove from pro's list immediately — backend clears professional_id
-                                  // so getBookings won't return it on next poll either
+                                  stopLocationSharing();
                                   setBookings(prev => prev.filter(bk => bk.id !== b.id));
                                   showToast("Booking returned to queue. Customer will be notified.", "success");
                                 } catch (e) { showToast("❌ " + (e.message || "Failed"), "error"); }
@@ -2057,6 +2057,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
 ══════════════════════════════════════════════ */
 const AdminDashboard = ({ session, onLogout }) => {
   const [view,       setView]       = useState("overview");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats,      setStats]      = useState(null);
   const [pending,    setPending]    = useState([]);
   const [users,      setUsers]      = useState([]);
@@ -2414,9 +2415,35 @@ const AdminDashboard = ({ session, onLogout }) => {
         </div>
       </aside>
 
-      <main className="flex-1 md:ml-60 pb-24 md:pb-8 min-h-screen">
+      {/* Mobile header + slide-down menu */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gray-950 text-white flex items-center justify-between px-4 py-3 shadow-lg">
+        <div className="flex items-center gap-2">
+          <PawLogo sz={24}/>
+          <span className="font-extrabold text-orange-400 text-sm">PETclub</span>
+          <span className="text-xs text-red-400 font-bold tracking-widest ml-1">ADMIN</span>
+        </div>
+        <button onClick={() => setMobileMenuOpen(o => !o)} className="text-white p-1">
+          <span className="text-xl">{mobileMenuOpen ? "✕" : "☰"}</span>
+        </button>
+      </div>
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed top-12 left-0 right-0 z-40 bg-gray-950 text-white p-4 space-y-1 shadow-xl">
+          {NAV.map(n => (
+            <button key={n.id} onClick={() => { setView(n.id); setMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${view === n.id ? "bg-orange-500 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}>
+              <span>{n.icon}</span><span>{n.label}</span>
+              {n.badge > 0 && <span className="ml-auto bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{n.badge}</span>}
+            </button>
+          ))}
+          <button onClick={onLogout} className="w-full text-xs text-gray-500 hover:text-red-400 flex items-center gap-2 px-4 py-3 rounded-xl hover:bg-white/5 transition">
+            🚪 Sign Out
+          </button>
+        </div>
+      )}
+
+      <main className="flex-1 md:ml-60 pt-14 md:pt-0 pb-8 min-h-screen">
         {toast.msg && (
-          <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 text-sm font-medium px-5 py-3 rounded-full shadow-xl ${toast.type === "error" ? "bg-red-600 text-white" : "bg-gray-900 text-white"}`}>
+          <div className={`fixed top-16 md:top-4 left-1/2 -translate-x-1/2 z-50 text-sm font-medium px-5 py-3 rounded-full shadow-xl ${toast.type === "error" ? "bg-red-600 text-white" : "bg-gray-900 text-white"}`}>
             {toast.msg}
           </div>
         )}
@@ -4154,7 +4181,7 @@ export default function ProApp({ session, onLogout }) {
       setNeedsOnboarding(incomplete);
       setProfileChecked(true);
     }).catch(() => { setNeedsOnboarding(false); setProfileChecked(true); });
-  }, [session]);
+  }, [session.id]); // depend on stable ID, not the whole object, to avoid repeat spinner
 
   if (!profileChecked) return <Spinner full/>;
   if (session.role === "admin")  return <AdminDashboard   session={session} onLogout={onLogout}/>;

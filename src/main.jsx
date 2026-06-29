@@ -386,7 +386,9 @@ function Root() {
       : <Login onLogin={handleLogin} initialHint={loginHint} />;
   } else {
     const { role, verificationStatus } = session;
-    if (role === "customer") {
+    if (role === "pending_role") {
+      content = <Login onLogin={handleLogin} initialHint="role" />;
+    } else if (role === "customer") {
       content = <PetclubApp session={session} onLogout={handleLogout} />;
     } else if (role === "admin") {
       content = <ProApp session={session} onLogout={handleLogout} />;

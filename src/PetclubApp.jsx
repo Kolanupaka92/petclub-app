@@ -1480,7 +1480,7 @@ export default function PetclubApp({ session, onLogout }) {
           Terms of Service
         </a>
         <span className="text-gray-200 text-xs">·</span>
-        <span className="text-[11px] text-gray-300 font-semibold">Privacy Policy</span>
+        <a href="https://mypetclub.app/privacy.html" target="_blank" rel="noopener noreferrer" className="text-[11px] text-gray-300 font-semibold hover:text-white transition">Privacy Policy</a>
       </div>
       <p className="text-center text-[10px] text-gray-300 font-semibold mt-1.5 pb-4">PETclub · Made with 🐾 for pets</p>
     </div>
