@@ -2203,13 +2203,18 @@ export default function PetclubApp({ session, onLogout }) {
                 </span>
               </label>
 
+              {bookingForm.address?.trim() && !bookingAddrMeta.lat && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 -mt-1">
+                  Select your address from the dropdown to verify your location before confirming.
+                </p>
+              )}
               <div className="flex gap-3">
                 <button onClick={() => setBookingStep(2)} className="flex-1 border border-gray-200 text-gray-600 font-bold py-3 rounded-2xl text-sm hover:bg-gray-50">← Back</button>
                 <button
-                  disabled={bookingLoading || !termsAccepted}
+                  disabled={bookingLoading || !termsAccepted || (bookingForm.address?.trim() && !bookingAddrMeta.lat)}
                   onClick={createBooking}
-                  title={!termsAccepted ? "Please accept the Terms of Service to continue" : undefined}
-                  className={`flex-1 font-bold py-3 rounded-2xl text-sm transition-all ${!termsAccepted ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-orange-500 text-white hover:bg-orange-600 active:scale-[0.98]"} disabled:opacity-70`}>
+                  title={!termsAccepted ? "Please accept the Terms of Service to continue" : (bookingForm.address?.trim() && !bookingAddrMeta.lat) ? "Please select your address from the dropdown to verify location" : undefined}
+                  className={`flex-1 font-bold py-3 rounded-2xl text-sm transition-all ${(!termsAccepted || (bookingForm.address?.trim() && !bookingAddrMeta.lat)) ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-orange-500 text-white hover:bg-orange-600 active:scale-[0.98]"} disabled:opacity-70`}>
                   {bookingLoading ? "Placing…" : "✅ Confirm Booking"}
                 </button>
               </div>

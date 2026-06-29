@@ -193,6 +193,9 @@ export const api = {
     req('POST', '/payments/verify', { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId }, true),
 
   // Admin
+  // Professional reviews (public)
+  getProReviews: (profId, page = 1) => req('GET', `/professionals/${profId}/reviews?page=${page}&limit=10`),
+
   getSignedDocUrl: (path) => req('GET', `/admin/signed-url?path=${encodeURIComponent(path)}`, null, true),
   getAdminStats: () => req('GET', '/admin/stats', null, true),
   // O-1 fix: paginated with optional search. page/limit/search are all optional.
@@ -205,7 +208,7 @@ export const api = {
   verifyProfessional: (id, action, reason) => req('PUT', `/admin/verify/${id}`, { action, reason }, true),
   suspendUser: (id) => req('PUT', `/admin/users/${id}/suspend`, {}, true),
   deleteUser: (id) => req('DELETE', `/admin/users/${id}`, null, true),
-  purgeAllSuspended: () => req('DELETE', '/admin/users/suspended/purge-all', null, true),
+  purgeAllSuspended: () => req('DELETE', '/admin/users/suspended/purge-all?confirm=yes', null, true),
   dbAudit:   ()          => req('GET',    '/admin/db-audit',   null, true),
   dbCleanup: (targets)   => req('DELETE', '/admin/db-cleanup', { targets }, true),
   setUserSubRole: (id, subRole) => req('PUT', `/admin/users/${id}/set-role`, { subRole }, true),
