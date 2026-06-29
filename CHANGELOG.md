@@ -1,3 +1,10 @@
+## [1.43.5](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.4...v1.43.5) (2026-06-29)
+
+
+### Bug Fixes
+
+* **admin:** correctly detect healthy services in platform status widget ([e8a58d5](https://github.com/Kolanupaka92/petclub-app/commit/e8a58d50d3a7478d9b002a7100eced975fb9acf5))
+
 ## [1.43.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.3...v1.43.4) (2026-06-29)
 
 
