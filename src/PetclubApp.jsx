@@ -102,13 +102,13 @@ function Fld({ label, children }) {
 }
 
 function Inp(props) {
-  return <input className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all" {...props} />;
+  return <input className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-base focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all touch-manipulation" {...props} />;
 }
 function Sel({ opts, ...props }) {
-  return <select className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-orange-400 bg-white" {...props}>{opts.map(o => <option key={o}>{o}</option>)}</select>;
+  return <select className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-base focus:outline-none focus:border-orange-400 bg-white touch-manipulation" {...props}>{opts.map(o => <option key={o}>{o}</option>)}</select>;
 }
 function Txta(props) {
-  return <textarea className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-orange-400 resize-none" rows={3} {...props} />;
+  return <textarea className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-base focus:outline-none focus:border-orange-400 resize-none touch-manipulation" rows={3} {...props} />;
 }
 
 function Stars({ n }) {
@@ -119,7 +119,7 @@ function Toast({ msg, type, onDone }) {
   useEffect(() => { const t = setTimeout(onDone, 3000); return () => clearTimeout(t); }, [onDone]);
   const bg = type === "error" ? "bg-red-500" : "bg-green-500";
   return (
-    <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 ${bg} text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-xl animate-slide-up max-w-xs text-center`}>
+    <div className={`fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-50 ${bg} text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-xl animate-slide-up max-w-xs text-center`}>
       {msg}
     </div>
   );
@@ -1531,7 +1531,7 @@ export default function PetclubApp({ session, onLogout }) {
   return (
     <div className="app-shell">
       <Header />
-      <main key={view} className="safe-bottom min-h-screen">
+      <main className="safe-bottom min-h-[100dvh]">
         {view === "home"      && <Home />}
         {view === "bookings"  && <BookingsView />}
         {view === "pets"      && <MyPets />}

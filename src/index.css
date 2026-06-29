@@ -18,14 +18,16 @@
 }
 
 @layer components {
-  .app-shell { @apply bg-slate-50 min-h-screen text-gray-800 text-sm max-w-lg mx-auto relative; }
+  .app-shell { @apply bg-slate-50 min-h-[100dvh] text-gray-800 text-sm max-w-lg mx-auto relative; }
   .card { @apply bg-white rounded-2xl border border-gray-100 shadow-card; }
   .card-interactive { @apply bg-white rounded-2xl border border-gray-100 shadow-card transition-all duration-200 active:scale-[0.98] hover:shadow-card-hover hover:border-orange-100; }
   .btn-primary { @apply w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none text-white font-bold py-3.5 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-orange; }
   .btn-secondary { @apply w-full border-2 border-gray-200 text-gray-600 font-semibold py-3 rounded-2xl text-sm hover:bg-gray-50 transition-colors; }
-  .input-field { @apply w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all bg-white placeholder-gray-400; }
+  .input-field { @apply w-full border border-gray-200 rounded-xl px-4 py-3.5 text-base focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all bg-white placeholder-gray-400; }
   .safe-bottom { padding-bottom: max(5rem, calc(5rem + env(safe-area-inset-bottom, 0px))); }
   .nav-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .modal-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  .touch-manipulation { touch-action: manipulation; }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .tab-active { @apply bg-orange-500 text-white shadow-sm; }

@@ -202,7 +202,7 @@ const Modal = ({ title, onClose, children, wide }) => (
         <h3 className="font-bold text-gray-800 text-base">{title}</h3>
         <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 text-xl transition">&times;</button>
       </div>
-      <div className="px-6 py-5 max-h-[75vh] overflow-y-auto">{children}</div>
+      <div className="px-6 py-5 max-h-[75dvh] modal-scroll">{children}</div>
     </div>
   </div>
 );
@@ -210,7 +210,7 @@ const Modal = ({ title, onClose, children, wide }) => (
 const Inp = ({ label, hint, ...p }) => (
   <div className="mb-4">
     {label && <label className="block text-xs font-semibold text-gray-500 mb-1.5">{label}</label>}
-    <input className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all bg-white placeholder-gray-400" {...p} />
+    <input className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all bg-white placeholder-gray-400 touch-manipulation" {...p} />
     {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
   </div>
 );
@@ -1089,7 +1089,7 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
         </div>
       </aside>
 
-      <main className="flex-1 md:ml-60 pb-24 md:pb-8 min-h-screen">
+      <main className="flex-1 md:ml-60 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-8 min-h-[100dvh]">
         {/* Toast */}
         {toast.msg && (
           <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 text-sm font-medium px-5 py-3 rounded-full shadow-xl ${toast.type === "error" ? "bg-red-600 text-white" : "bg-gray-900 text-white"}`}>
@@ -4026,7 +4026,7 @@ const AdminDashboard = ({ session, onLogout }) => {
 
       </main>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 flex shadow-nav">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 flex shadow-nav safe-bottom">
         {NAV.map(n => (
           <button key={n.id} onClick={() => setView(n.id)}
             className={`flex-1 flex flex-col items-center py-3 text-xs font-semibold transition-colors relative ${view === n.id ? "text-orange-500" : "text-gray-400"}`}>

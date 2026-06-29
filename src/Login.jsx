@@ -127,6 +127,11 @@ const getCertTypes = (role) => ({
 const OtpBox = ({ value, onChange, onKeyDown, inputRef, active }) => (
   <input ref={inputRef} type="text" inputMode="numeric" maxLength={1} value={value}
     onChange={onChange} onKeyDown={onKeyDown}
+    autoComplete="one-time-code"
+    autoCorrect="off"
+    autoCapitalize="none"
+    spellCheck="false"
+    style={{ touchAction: 'manipulation' }}
     className={`w-11 h-14 text-center text-2xl font-bold rounded-2xl border-2 transition-all focus:outline-none
       ${value ? "border-orange-500 bg-orange-50 text-orange-600 scale-105"
               : active ? "border-orange-400 bg-white" : "border-gray-200 bg-gray-50 text-gray-800"}
@@ -143,7 +148,8 @@ const CountryPicker = ({ value, onChange }) => {
   useEffect(() => {
     const h = e => { if (!ref.current?.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    document.addEventListener("touchstart", h, { passive: true });
+    return () => { document.removeEventListener("mousedown", h); document.removeEventListener("touchstart", h); };
   }, []);
 
   return (
@@ -604,7 +610,7 @@ export default function Login({ onLogin, initialHint }) {
   };
 
   /* ── Shared input class ── */
-  const inp = "w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all";
+  const inp = "w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-base font-semibold focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all";
 
   /* ─────────────────────────────────────
      RENDER
@@ -816,7 +822,7 @@ export default function Login({ onLogin, initialHint }) {
                   <div className="flex border-2 border-gray-200 rounded-2xl focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-50 transition-all bg-white h-14"
                     style={{overflow:"visible", position:"relative"}}>
                     <CountryPicker value={cc} onChange={v => { setCC(v); setPhone(""); setErr(""); }} />
-                    <input type="tel" inputMode="numeric" autoComplete="tel"
+                    <input type="tel" inputMode="numeric" autoComplete="tel-national" style={{ touchAction: 'manipulation' }}
                       placeholder={country.placeholder} maxLength={15}
                       value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g,"").slice(0,15)); setErr(""); }}
                       onKeyDown={e => e.key === "Enter" && sendOtp()}
@@ -829,7 +835,7 @@ export default function Login({ onLogin, initialHint }) {
                     <input type="email" autoComplete="email" placeholder="you@example.com"
                       value={email} onChange={e => { const v = e.target.value; setEmail(v); setErr(""); setEmailSuggestion(getEmailSuggestion(v) || ""); }}
                       onKeyDown={e => e.key === "Enter" && sendOtp()}
-                      className="w-full h-12 border-2 border-gray-200 rounded-2xl px-4 text-sm font-medium focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
+                      className="w-full h-12 border-2 border-gray-200 rounded-2xl px-4 text-base font-medium focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-50 bg-white placeholder-gray-300 transition-all" />
                     {emailSuggestion && (
                       <div className="flex items-center gap-2 mt-1.5 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                         <span className="text-amber-500 text-sm shrink-0">💡</span>
@@ -986,24 +992,24 @@ export default function Login({ onLogin, initialHint }) {
                 <p className="text-xs font-bold text-orange-600 uppercase tracking-wider">🐾 Your Pet</p>
                 <input type="text" placeholder="Pet's name * (e.g. Bruno)"
                   value={cust.petName} onChange={e => setCust(f => ({...f, petName: e.target.value}))}
-                  className="w-full h-11 border-2 border-orange-200 rounded-xl px-4 text-sm font-semibold focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400 transition-all" />
+                  className="w-full h-11 border-2 border-orange-200 rounded-xl px-4 text-base font-semibold focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400 transition-all" />
                 <div className="grid grid-cols-2 gap-2">
                   <select value={cust.petSpecies} onChange={e => setCust(f => ({...f, petSpecies: e.target.value}))}
-                    className="h-11 border-2 border-orange-200 rounded-xl px-3 text-sm font-semibold focus:outline-none focus:border-orange-400 bg-white">
+                    className="h-11 border-2 border-orange-200 rounded-xl px-3 text-base font-semibold focus:outline-none focus:border-orange-400 bg-white">
                     {SPECIES.map(s => <option key={s}>{s}</option>)}
                   </select>
                   <select value={cust.petGender} onChange={e => setCust(f => ({...f, petGender: e.target.value}))}
-                    className="h-11 border-2 border-orange-200 rounded-xl px-3 text-sm font-semibold focus:outline-none focus:border-orange-400 bg-white">
+                    className="h-11 border-2 border-orange-200 rounded-xl px-3 text-base font-semibold focus:outline-none focus:border-orange-400 bg-white">
                     {["Male","Female"].map(g => <option key={g}>{g}</option>)}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <input type="text" placeholder="Breed (optional)" value={cust.petBreed}
                     onChange={e => setCust(f => ({...f, petBreed: e.target.value}))}
-                    className="h-11 border-2 border-orange-200 rounded-xl px-3 text-sm focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400" />
+                    className="h-11 border-2 border-orange-200 rounded-xl px-3 text-base focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400" />
                   <input type="number" placeholder="Age (years)" min="0" max="30" value={cust.petAge}
                     onChange={e => setCust(f => ({...f, petAge: e.target.value}))}
-                    className="h-11 border-2 border-orange-200 rounded-xl px-3 text-sm focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400" />
+                    className="h-11 border-2 border-orange-200 rounded-xl px-3 text-base focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400" />
                 </div>
               </div>
 
@@ -1048,7 +1054,7 @@ export default function Login({ onLogin, initialHint }) {
                     value={custId.number}
                     maxLength={custId.type === "aadhar" ? 12 : 20}
                     onChange={e => setCustId(p => ({ ...p, number: e.target.value.replace(custId.type === "aadhar" ? /\D/g : /\s/g, "").slice(0, custId.type === "aadhar" ? 12 : 20) }))}
-                    className="w-full h-11 border-2 border-slate-200 rounded-xl px-4 text-sm font-mono tracking-widest focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400"
+                    className="w-full h-11 border-2 border-slate-200 rounded-xl px-4 text-base font-mono tracking-widest focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400"
                   />
                 )}
 
@@ -1176,7 +1182,7 @@ export default function Login({ onLogin, initialHint }) {
                     value={proId.number}
                     maxLength={proId.type === "aadhar" ? 12 : 20}
                     onChange={e => setProId(p => ({ ...p, number: e.target.value.replace(proId.type === "aadhar" ? /\D/g : /\s/g, "").slice(0, proId.type === "aadhar" ? 12 : 20) }))}
-                    className="w-full h-11 border-2 border-slate-200 rounded-xl px-4 text-sm font-mono tracking-widest focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400"
+                    className="w-full h-11 border-2 border-slate-200 rounded-xl px-4 text-base font-mono tracking-widest focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400"
                   />
                 )}
 
@@ -1212,7 +1218,7 @@ export default function Login({ onLogin, initialHint }) {
                 <select
                   value={proCert.type}
                   onChange={e => setProCert(p => ({ ...p, type: e.target.value }))}
-                  className="w-full h-11 border-2 rounded-xl px-3 text-sm font-semibold focus:outline-none focus:border-orange-400 bg-white"
+                  className="w-full h-11 border-2 rounded-xl px-3 text-base font-semibold focus:outline-none focus:border-orange-400 bg-white"
                   style={{borderColor: selRole.border}}>
                   <option value="">Select certification type *</option>
                   {certTypes.map(c => <option key={c} value={c}>{c}</option>)}
