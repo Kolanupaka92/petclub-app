@@ -1900,18 +1900,20 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
       </main>
 
       {/* Mobile nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 flex shadow-nav safe-bottom">
-        {NAV.map(n => (
-          <button key={n.id} onClick={() => setView(n.id)}
-            className={`flex-1 flex flex-col items-center py-3 text-xs font-semibold transition-colors relative ${view === n.id ? "text-orange-500" : "text-gray-400"}`}>
-            {view === n.id && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-orange-500 rounded-full"/>}
-            <span className="relative">
-              <span className="text-xl">{n.icon}</span>
-              {n.badge ? <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{n.badge}</span> : null}
-            </span>
-            <span className="mt-0.5">{n.label}</span>
-          </button>
-        ))}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 shadow-nav nav-safe">
+        <div className="flex">
+          {NAV.map(n => (
+            <button key={n.id} onClick={() => setView(n.id)}
+              className={`flex-1 flex flex-col items-center py-3 text-xs font-semibold transition-colors relative ${view === n.id ? "text-orange-500" : "text-gray-400"}`}>
+              {view === n.id && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-orange-500 rounded-full"/>}
+              <span className="relative">
+                <span className="text-xl">{n.icon}</span>
+                {n.badge ? <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{n.badge}</span> : null}
+              </span>
+              <span className="mt-0.5">{n.label}</span>
+            </button>
+          ))}
+        </div>
       </nav>
 
       {/* Edit Profile Modal */}
@@ -2459,7 +2461,7 @@ const AdminDashboard = ({ session, onLogout }) => {
         </div>
       )}
 
-      <main className="flex-1 md:ml-60 pt-14 md:pt-0 pb-24 md:pb-8 min-h-screen">
+      <main className="flex-1 md:ml-60 pt-14 md:pt-0 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-8 min-h-screen">
         {toast.msg && (
           <div className={`fixed top-16 md:top-4 left-1/2 -translate-x-1/2 z-50 text-sm font-medium px-5 py-3 rounded-full shadow-xl ${toast.type === "error" ? "bg-red-600 text-white" : "bg-gray-900 text-white"}`}>
             {toast.msg}
@@ -4061,7 +4063,7 @@ const AdminDashboard = ({ session, onLogout }) => {
 
       </main>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 shadow-nav">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 shadow-nav nav-safe">
         <div className="flex">
           {[
             { id:"overview",  icon:"📊", label:"Overview" },
