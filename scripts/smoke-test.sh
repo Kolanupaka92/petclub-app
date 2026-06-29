@@ -98,7 +98,7 @@ echo "── Backend (Cloud Run) ───────────────�
 #    Auth-route probes are intentionally omitted: specific backend routes
 #    depend on the Cloud Run deploy pipeline (separate from this frontend
 #    workflow) and would cause false failures when backend is mid-deploy.
-check_url "Backend /health" "$BACKEND_URL/api/health" "200" '.version != null' || true
+check_url "Backend /health" "$BACKEND_URL/api/health" "200" '.status == "ok"' || true
 
 echo ""
 echo "═══════════════════════════════════════════"
