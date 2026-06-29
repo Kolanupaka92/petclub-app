@@ -1,3 +1,10 @@
+## [1.44.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.44.0...v1.44.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* **mobile:** correct safe-area classes on Professional and Admin bottom navs ([34cf3d5](https://github.com/Kolanupaka92/petclub-app/commit/34cf3d556aaefd060179293b9a3e9e59fe3f72d7))
+
 # [1.44.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.6...v1.44.0) (2026-06-29)
 
 
