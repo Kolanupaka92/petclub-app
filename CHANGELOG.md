@@ -1,3 +1,10 @@
+# [1.42.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.41.2...v1.42.0) (2026-06-29)
+
+
+### Features
+
+* payout modal, silent refresh, booking flow improvements ([10b9ce7](https://github.com/Kolanupaka92/petclub-app/commit/10b9ce771556ec470d11badd8c8d9d7aac754f6d))
+
 ## [1.41.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.41.1...v1.41.2) (2026-06-29)
 
 
