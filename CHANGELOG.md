@@ -1,3 +1,10 @@
+## [1.45.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.0...v1.45.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* **ci:** smoke test health check against actual response shape ([327564d](https://github.com/Kolanupaka92/petclub-app/commit/327564d439ba2540db7c905022fe146ddad8d519))
+
 # [1.45.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.44.1...v1.45.0) (2026-06-29)
 
 
