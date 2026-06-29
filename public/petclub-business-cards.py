@@ -295,10 +295,10 @@ PEOPLE = [
         'name':     'Eshwar Kolanupaka',
         'title':    'CEO & Co-Founder',
         'email':    'eshwar.kolanupaka@mypetclub.app',
-        'whatsapp': 'WhatsApp: +91 93474-11132',
+        'whatsapp': 'WhatsApp: +1 609-721-5754',
         'location': 'Hyderabad, India',
         'flag_fn':  draw_india_flag,
-        'qr_url':   'https://wa.me/919347411132',
+        'qr_url':   'https://wa.me/16097215754',
     },
 ]
 

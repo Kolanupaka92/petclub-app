@@ -59,7 +59,7 @@ All must be prefixed with `VITE_` to be accessible in the browser bundle.
 |----------|---------|-----------|
 | `VITE_MAPBOX_TOKEN` | — | Mapbox GL token for live tracking map (USA users) |
 | `VITE_MAPPLS_KEY` | — | MapmyIndia token for tracking map (India +91 users) |
-| `VITE_WHATSAPP_NUMBER` | `919347411132` | WhatsApp support number |
+| `VITE_WHATSAPP_NUMBER` | `16097215754` | WhatsApp support number |
 | `VITE_PARTNER_CONTACT_EMAIL` | `partners@mypetclub.app` | Email shown in partner agreement panel |
 
 > For local dev, ask the lead for a `.env.local` file. Do **not** commit `.env.local` — it is gitignored.
