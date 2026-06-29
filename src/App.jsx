@@ -2461,20 +2461,16 @@ const AdminDashboard = ({ session, onLogout }) => {
         {view === "overview" && (
           <div className="max-w-3xl mx-auto">
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 px-6 pt-8 pb-16">
-              <div className="md:hidden flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2"><PawLogo sz={24}/><span className="font-bold text-orange-400">PETclub</span></div>
-                <button onClick={onLogout} className="text-gray-400 text-xs border border-gray-600 px-3 py-1.5 rounded-full">Sign out</button>
-              </div>
               <div className="flex items-start justify-between">
                 <div>
                   <h1 className="text-white text-2xl font-extrabold mb-1">Admin Dashboard</h1>
                   <p className="text-gray-400 text-sm">PETclub · Super Admin</p>
-                </div>
-                <div className="hidden md:block text-right">
-                  <div className="text-xs text-gray-500">{new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
                   <div className={`text-xs mt-1 font-semibold ${health ? "text-emerald-400" : "text-gray-500"}`}>
                     {health ? "● Platform Live" : "● Checking…"}
                   </div>
+                </div>
+                <div className="hidden md:block text-right">
+                  <div className="text-xs text-gray-500">{new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
                 </div>
               </div>
             </div>
@@ -2660,16 +2656,23 @@ const AdminDashboard = ({ session, onLogout }) => {
                 <div className="space-y-2 text-xs">
                   {(() => {
                     const svc = health?.services || {};
-                    const ok  = v => v?.startsWith("✅");
-                    const svcVal = (raw) => raw ? raw.replace(' live','').replace(' configured','').replace(' (set FIREBASE_SERVICE_ACCOUNT_JSON)','').replace(' (set env vars)','').replace(' (email fallback active)','') : '—';
+                    const ok      = v => v?.startsWith("✅");
+                    const broken  = v => v != null && v.includes("unreachable");
+                    // green=healthy, red=broken, gray=pending/not-configured (not alarming)
+                    const hColor  = v => ok(v) ? "text-emerald-600" : broken(v) ? "text-red-600" : "text-gray-400";
+                    const svcVal  = (raw) => raw ? raw
+                      .replace(' live','').replace(' configured','')
+                      .replace(' (set FIREBASE_SERVICE_ACCOUNT_JSON)','')
+                      .replace(' (set env vars)','').replace(' (email fallback active)','')
+                      .replace(' not configured','').replace(' pending','').trim() || '—' : '—';
                     const rows = [
-                      { label:"Backend API",  val: health ? (ok(svc.supabase) ? "Cloud Run ✅" : "Cloud Run ⚠️") : "Checking…",    color: health ? (ok(svc.supabase) ? "text-emerald-600":"text-amber-600") : "text-gray-400" },
-                      { label:"Frontend",     val: "Vercel ✅",                                                                       color: "text-emerald-600" },
-                      { label:"Database",     val: svc.supabase      ? `Supabase ${svcVal(svc.supabase)}`         : "Supabase —",     color: ok(svc.supabase)      ? "text-emerald-600":"text-amber-600" },
-                      { label:"Auth / Push",  val: svc.firebase_auth ? `Firebase ${svcVal(svc.firebase_auth)}`    : "Firebase —",     color: ok(svc.firebase_auth) ? "text-emerald-600":"text-amber-600" },
-                      { label:"SMS (OTP)",    val: svc.twilio_sms    ? `Twilio ${svcVal(svc.twilio_sms)}`         : "Twilio —",       color: ok(svc.twilio_sms)    ? "text-emerald-600":"text-amber-600" },
-                      { label:"Email (SMTP)", val: svc.zoho_smtp     ? `Zoho ${svcVal(svc.zoho_smtp)}`            : "Zoho —",         color: ok(svc.zoho_smtp)     ? "text-emerald-600":"text-amber-600" },
-                      { label:"Payments",     val: svc.razorpay      ? (ok(svc.razorpay) ? "Razorpay ✅" : "⏳ Pending LLC") : "⏳ Pending LLC", color: ok(svc.razorpay) ? "text-emerald-600":"text-amber-600" },
+                      { label:"Backend API",  val: health ? (ok(svc.supabase) ? "Cloud Run ✅" : broken(svc.supabase) ? "Cloud Run ❌" : "Cloud Run ⚠️") : "Checking…", color: health ? hColor(svc.supabase) : "text-gray-400" },
+                      { label:"Frontend",     val: "Vercel ✅",                                                                          color: "text-emerald-600" },
+                      { label:"Database",     val: svc.supabase      ? `Supabase ${svcVal(svc.supabase)}`          : "Supabase —",        color: hColor(svc.supabase) },
+                      { label:"Auth / Push",  val: svc.firebase_auth ? `Firebase ${svcVal(svc.firebase_auth)}`     : "Firebase —",        color: hColor(svc.firebase_auth) },
+                      { label:"SMS Alerts",   val: svc.twilio_sms    ? `Twilio ${svcVal(svc.twilio_sms) || "email fallback"}` : "email fallback", color: hColor(svc.twilio_sms) },
+                      { label:"Email (SMTP)", val: svc.zoho_smtp     ? `Zoho ${svcVal(svc.zoho_smtp)}`             : "Zoho —",            color: hColor(svc.zoho_smtp) },
+                      { label:"Payments",     val: ok(svc.razorpay)  ? "Razorpay ✅" : "⏳ Pending LLC",                                  color: ok(svc.razorpay) ? "text-emerald-600" : "text-gray-400" },
                     ];
                     return rows.map(s => (
                       <div key={s.label} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5 border border-gray-100">
