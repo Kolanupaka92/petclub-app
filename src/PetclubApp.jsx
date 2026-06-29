@@ -1,4 +1,5 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { subscribeToBookings } from "./utils/realtimeBookings.js";
 import { api } from "./api.js";
 import { loadPets, savePets } from "./utils/storage.js";
 import { TC, fmtDate } from "./data/mockData.js";
@@ -262,6 +263,15 @@ export default function PetclubApp({ session, onLogout }) {
     document.addEventListener("visibilitychange", poll);
     return () => { clearInterval(tid); document.removeEventListener("visibilitychange", poll); };
   }, [myBookings]);
+
+  // Supabase Realtime: instant booking updates (replaces the need to wait for next poll)
+  useEffect(() => {
+    if (!session?.id) return;
+    const unsub = subscribeToBookings(session.id, () => {
+      api.getBookings().then(r => setMyBookings(r.bookings || [])).catch(() => {});
+    });
+    return unsub;
+  }, [session?.id]);
 
   useEffect(() => { if (!apiMode) savePets(pets); }, [pets, apiMode]);
   useEffect(() => { localStorage.setItem("petclub_rated", JSON.stringify([...ratedBookings])); }, [ratedBookings]);

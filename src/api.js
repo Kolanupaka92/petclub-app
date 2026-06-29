@@ -171,6 +171,7 @@ export const api = {
 
   // ID Documents
   uploadUserIdPhoto: (data) => req('POST', '/users/upload-id-photo', data, true),
+  presignUserIdPhoto: (docType, docNumber, ext) => req('POST', '/users/upload-id-photo/presign', { docType, docNumber, ext }, true),
 
   // Auth — Firebase Phone Auth token exchange (kept for backwards compat)
   firebaseVerify: (idToken) => req('POST', '/auth/firebase-verify', { idToken }),
