@@ -1,3 +1,10 @@
+## [1.41.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.41.1...v1.41.2) (2026-06-29)
+
+
+### Bug Fixes
+
+* wire petclub:unauthorized event to global logout handler ([d878b1b](https://github.com/Kolanupaka92/petclub-app/commit/d878b1b5a41f896b8a762f2726698941c4817773))
+
 ## [1.41.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.41.0...v1.41.1) (2026-06-28)
 
 
