@@ -1,3 +1,10 @@
+## [1.43.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.1...v1.43.2) (2026-06-29)
+
+
+### Bug Fixes
+
+* remaining medium and low mobile compatibility issues ([7674a51](https://github.com/Kolanupaka92/petclub-app/commit/7674a51eeeabe19e92b89c8d2b87db636f16a9a3))
+
 ## [1.43.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.43.0...v1.43.1) (2026-06-29)
 
 
