@@ -84,14 +84,19 @@ const SkeletonCard = () => (
 const Bdg = ({ text, cls }) => <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>{text}</span>;
 
 function Modal({ title, onClose, children }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl max-h-[90dvh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
           <h3 className="font-extrabold text-gray-900">{title}</h3>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 text-lg transition-colors">✕</button>
         </div>
-        <div className="overflow-y-auto flex-1 p-5">{children}</div>
+        <div className="modal-scroll flex-1 p-5">{children}</div>
       </div>
     </div>
   );
@@ -574,7 +579,7 @@ export default function PetclubApp({ session, onLogout }) {
       <div className="absolute top-0 inset-x-0 h-[3px] bg-brand-gradient" />
       <div className="flex items-center justify-between gap-3 pt-0.5">
         <div className="flex items-center gap-3">
-          <img src="/icon.svg" alt="PETclub" className="w-10 h-10 rounded-2xl shadow-orange shrink-0" />
+          <img src="/icon.svg" alt="PETclub" className="w-10 h-10 rounded-2xl shadow-orange shrink-0" loading="lazy" />
           <div>
             <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">PETclub</p>
             <p className="text-sm font-extrabold text-gray-900 leading-tight">{firstName}</p>

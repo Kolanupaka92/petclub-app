@@ -654,7 +654,7 @@ export default function Login({ onLogin, initialHint }) {
 
         <div className="relative z-10 flex flex-col justify-between p-10 w-full">
           <div className="flex items-center gap-2">
-            <img src="/icon.svg" alt="PETclub" className="w-10 h-10 rounded-xl" />
+            <img src="/icon.svg" alt="PETclub" className="w-10 h-10 rounded-xl" loading="lazy" />
             <span className="text-white font-extrabold text-2xl tracking-tight">PET<span className="text-orange-400">club</span></span>
           </div>
           <div>
