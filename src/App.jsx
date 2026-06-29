@@ -749,6 +749,9 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
   const [chatBooking,     setChatBooking]     = useState(null);  // booking open in chat
   const [serviceNotes,    setServiceNotes]    = useState({});    // { [bookingId]: text }
   const [noShowLoading,   setNoShowLoading]   = useState(null);  // bookingId being marked
+  const [payoutModal,     setPayoutModal]     = useState(false);
+  const [payoutForm,      setPayoutForm]      = useState({ payment_type: "upi", upi_id: "", bank_name: "", account_number: "", account_holder: "", ifsc_code: "" });
+  const [payoutSaving,    setPayoutSaving]    = useState(false);
   const watchIdRef        = useRef(null);  // watchPosition ID
   const lastSentRef       = useRef(0);     // throttle: min 10s between sends
   const wakeLockRef       = useRef(null);  // Screen Wake Lock sentinel (keeps screen on during transit)
@@ -1648,15 +1651,10 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
                 </div>
               )}
               <p className="text-[11px] text-white/50 mt-3">Settled every Saturday via direct bank transfer. 70% of every completed service.</p>
-              {/* Payout request button */}
+              {/* Payout request button — opens bank-details modal */}
               {(earnings?.pending ?? 0) > 0 && (
                 <button
-                  onClick={async () => {
-                    try {
-                      await api.requestPayout();
-                      showToast("✅ Payout request sent! You'll receive payment within 2 business days.");
-                    } catch (e) { showToast("❌ " + (e.message || "Payout request failed")); }
-                  }}
+                  onClick={() => setPayoutModal(true)}
                   className="mt-3 w-full bg-white/20 hover:bg-white/30 active:scale-[0.98] text-white font-bold text-sm py-2.5 rounded-xl transition-all">
                   💰 Request Payout — {currencySymbol}{parseFloat(earnings?.pending ?? 0).toFixed(2)} Pending
                 </button>
@@ -1972,6 +1970,80 @@ const ProfessionalDashboard = ({ session, onLogout }) => {
           currentUserId={session.id}
           onClose={() => setChatBooking(null)}
         />
+      )}
+
+      {/* Payout request modal — collect bank / UPI details before submitting */}
+      {payoutModal && (
+        <Modal title="Request Payout 💰" onClose={() => setPayoutModal(false)}>
+          <p className="text-xs text-gray-500 mb-4">
+            Enter your payout details. Admin will transfer your pending earnings within 2 business days.
+          </p>
+
+          {/* Payment type toggle */}
+          <div className="flex gap-2 mb-4">
+            {["upi", "bank"].map(t => (
+              <button
+                key={t}
+                onClick={() => setPayoutForm(f => ({ ...f, payment_type: t }))}
+                className={`flex-1 py-2 rounded-xl text-sm font-bold border transition ${payoutForm.payment_type === t ? "bg-orange-500 text-white border-orange-500" : "bg-white text-gray-600 border-gray-200"}`}>
+                {t === "upi" ? "📱 UPI" : "🏦 Bank Transfer"}
+              </button>
+            ))}
+          </div>
+
+          {payoutForm.payment_type === "upi" ? (
+            <div className="mb-3">
+              <label className="block text-xs font-semibold text-gray-500 mb-1">UPI ID *</label>
+              <input
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                placeholder="yourname@upi"
+                value={payoutForm.upi_id}
+                onChange={e => setPayoutForm(f => ({ ...f, upi_id: e.target.value }))}
+              />
+            </div>
+          ) : (
+            <>
+              {[
+                { key: "bank_name",      label: "Bank Name *",          placeholder: "e.g. HDFC Bank" },
+                { key: "account_holder", label: "Account Holder Name *", placeholder: "Full name as on passbook" },
+                { key: "account_number", label: "Account Number *",      placeholder: "10–18 digit account number" },
+                { key: "ifsc_code",      label: "IFSC Code *",           placeholder: "e.g. HDFC0001234" },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key} className="mb-3">
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">{label}</label>
+                  <input
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    placeholder={placeholder}
+                    value={payoutForm[key]}
+                    onChange={e => setPayoutForm(f => ({ ...f, [key]: e.target.value }))}
+                  />
+                </div>
+              ))}
+            </>
+          )}
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-4 text-xs text-amber-800">
+            ⚠️ Double-check your details — incorrect information may delay your payout.
+          </div>
+
+          <button
+            disabled={payoutSaving || (payoutForm.payment_type === "upi" ? !payoutForm.upi_id.trim() : !payoutForm.account_number.trim() || !payoutForm.ifsc_code.trim())}
+            onClick={async () => {
+              setPayoutSaving(true);
+              try {
+                const payload = payoutForm.payment_type === "upi"
+                  ? { payment_type: "upi", upi_id: payoutForm.upi_id.trim() }
+                  : { payment_type: "bank", bank_name: payoutForm.bank_name.trim(), account_holder: payoutForm.account_holder.trim(), account_number: payoutForm.account_number.trim(), ifsc_code: payoutForm.ifsc_code.trim().toUpperCase() };
+                await api.requestPayout(payload);
+                setPayoutModal(false);
+                showToast("✅ Payout request sent! You'll receive payment within 2 business days.");
+              } catch (e) { showToast("❌ " + (e.message || "Payout request failed")); }
+              finally { setPayoutSaving(false); }
+            }}
+            className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold py-3.5 rounded-2xl transition">
+            {payoutSaving ? "Submitting…" : "Submit Payout Request"}
+          </button>
+        </Modal>
       )}
 
       {/* WhatsApp support chat */}

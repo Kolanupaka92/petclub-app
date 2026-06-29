@@ -19,7 +19,25 @@ const BASE = _stripBom(import.meta.env.VITE_API_URL) || (() => {
   return 'https://api.mypetclub.app/api';
 })();
 
-const req = async (method, path, body, requireAuth = false, _swRetry = false) => {
+// Tracks whether a refresh is already in-flight so concurrent 401s share one refresh call
+let _refreshPromise = null;
+
+const _silentRefresh = async () => {
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = fetch(`${BASE}/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+  }).then(r => {
+    _refreshPromise = null;
+    return r.ok;
+  }).catch(() => {
+    _refreshPromise = null;
+    return false;
+  });
+  return _refreshPromise;
+};
+
+const req = async (method, path, body, requireAuth = false, _swRetry = false, _refreshed = false) => {
   const headers = { 'Content-Type': 'application/json' };
   // Auth via httpOnly cookie — browser sends it automatically with credentials:'include'
   // No token in JS memory; XSS cannot steal it
@@ -40,7 +58,22 @@ const req = async (method, path, body, requireAuth = false, _swRetry = false) =>
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map(r => r.unregister()));
     } catch { /* ignore — proceed with retry regardless */ }
-    return req(method, path, body, requireAuth, true);
+    return req(method, path, body, requireAuth, true, _refreshed);
+  }
+
+  // ── 401 — silent refresh, then retry once ────────────────────────────────
+  // Access tokens are 15m. On 401 we silently try POST /auth/refresh (which
+  // rotates the httpOnly refresh cookie and sets a new access token cookie).
+  // Only if refresh also fails do we force logout.
+  if (res.status === 401 && !_refreshed) {
+    const ok = await _silentRefresh();
+    if (ok) {
+      return req(method, path, body, requireAuth, _swRetry, true);
+    }
+    // Refresh failed — session is truly expired
+    localStorage.removeItem('petclub_session');
+    window.dispatchEvent(new CustomEvent('petclub:unauthorized'));
+    throw new Error('Your session has expired. Please sign in again.');
   }
 
   // Safely parse JSON — handles empty bodies & rate-limit HTML responses
@@ -52,8 +85,8 @@ const req = async (method, path, body, requireAuth = false, _swRetry = false) =>
     if (!res.ok) throw new Error(`Server error (${res.status}). Please try again.`);
     return {};
   }
-  // 401 — cookie expired or missing: clear local session and signal the app to re-login
   if (res.status === 401) {
+    // Already retried after refresh and still 401 — force logout
     localStorage.removeItem('petclub_session');
     window.dispatchEvent(new CustomEvent('petclub:unauthorized'));
     throw new Error('Your session has expired. Please sign in again.');
@@ -119,7 +152,7 @@ export const api = {
     req('GET', `/professionals?city=${city || ''}&sub_role=${role || ''}`),
   getMyProProfile: () => req('GET', '/professionals/me', null, true),
   getEarnings:    () => req('GET',  '/professionals/earnings', null, true),
-  requestPayout:  () => req('POST', '/professionals/payout',   {},   true),
+  requestPayout:  (data) => req('POST', '/professionals/payout', data || {}, true),
   updateMyProProfile: (data) => req('PUT', '/professionals/me', data, true),
   uploadIdPhoto: (data) => req('POST', '/professionals/upload-id-photo', data, true),
   setAvailability: (is_available) => req('PUT', '/professionals/availability', { is_available }, true),

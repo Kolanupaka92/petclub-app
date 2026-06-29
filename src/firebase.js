@@ -269,7 +269,7 @@ export const openRazorpayCheckout = async ({ amount, bookingId, userName, userPh
   try {
     const { order, key, coming_soon } = await api.createPaymentOrder(amount, bookingId);
     if (coming_soon) {
-      alert('💳 Payments coming soon! LLC registration is in progress. Your booking is confirmed, pay in person.');
+      onSuccess?.({ offline: true });
       return;
     }
     if (!window.Razorpay) {
