@@ -250,6 +250,13 @@ function Root() {
     setWarnVisible(false);
   }, []);
 
+  /* ── Global session-expired handler ── */
+  useEffect(() => {
+    const onUnauthorized = () => doLogout();
+    window.addEventListener('petclub:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('petclub:unauthorized', onUnauthorized);
+  }, [doLogout]);
+
   /* ── Reset inactivity clock ── */
   const resetTimer = useCallback(() => {
     if (!sessionRef.current) return;
