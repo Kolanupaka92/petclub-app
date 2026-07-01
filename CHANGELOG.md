@@ -1,3 +1,10 @@
+## [1.45.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.2...v1.45.3) (2026-07-01)
+
+
+### Bug Fixes
+
+* regenerate brochure/pricing PDFs with Richardson, TX 75082 address ([b8e8303](https://github.com/Kolanupaka92/petclub-app/commit/b8e830361dad156b070d983e2d291efafc0fcdcf))
+
 ## [1.45.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.1...v1.45.2) (2026-07-01)
 
 ## [1.45.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.0...v1.45.1) (2026-06-29)
