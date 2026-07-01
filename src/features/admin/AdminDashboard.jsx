@@ -1864,7 +1864,8 @@ export const AdminDashboard = ({ session, onLogout }) => {
               if (a.orphans?.pets > 0)                  issues.push({ key: "orphan_profiles",     label: `${a.orphans.pets} orphaned pet records`, severity: "red" });
               if (a.otp_tokens?.expired > 0)            issues.push({ key: "expired_otps",        label: `${a.otp_tokens.expired} expired OTP tokens`, severity: "amber" });
               if (a.bookings?.cancelled > 0)            issues.push({ key: "cancelled_bookings",  label: `${a.bookings.cancelled} cancelled bookings`, severity: "amber" });
-              if (a.bookings?.stale_upcoming > 0)       issues.push({ key: "cancelled_bookings",  label: `${a.bookings.stale_upcoming} stale upcoming bookings (>30d)`, severity: "amber" });
+              if (a.bookings?.stale_upcoming > 0)       issues.push({ key: "stale_upcoming",      label: `${a.bookings.stale_upcoming} stale upcoming bookings (>30d)`, severity: "amber" });
+              if (a.bookings?.no_pros_available > 0)    issues.push({ key: "no_pros_available",   label: `${a.bookings.no_pros_available} bookings stuck with no pro found`, severity: "amber" });
               if (a.website_leads?.older_than_30d > 0)  issues.push({ key: "stale_leads",         label: `${a.website_leads.older_than_30d} website leads older than 30 days`, severity: "amber" });
               const cleanTargets = [...new Set(issues.filter(i => i.severity !== "green").map(i => i.key))];
 
