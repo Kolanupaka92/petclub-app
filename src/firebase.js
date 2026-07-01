@@ -276,8 +276,12 @@ export const openRazorpayCheckout = async ({ amount, bookingId, userName, userPh
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = resolve;
-        script.onerror = reject;
+        // 8s cap — checkout.js is a third-party CDN load; don't leave the user
+        // staring at a spinner forever if the request stalls (script.onerror
+        // only fires on hard network failure, not on a hung connection).
+        const timer = setTimeout(() => reject(new Error('Razorpay checkout script timed out')), 8000);
+        script.onload  = () => { clearTimeout(timer); resolve(); };
+        script.onerror = () => { clearTimeout(timer); reject(new Error('Failed to load Razorpay checkout script')); };
         document.head.appendChild(script);
       });
     }

@@ -189,9 +189,9 @@ export const api = {
 
   // Payments (Razorpay — active after LLC registration)
   getPaymentConfig: () => req('GET', '/payments/config', null, true),
-  createPaymentOrder: (amount, bookingId, notes) => req('POST', '/payments/create-order', { amount, bookingId, notes }, true),
+  createPaymentOrder: (amount, bookingId, notes) => req('POST', '/payments/create-order', { amount, booking_id: bookingId, notes }, true),
   verifyPayment: (razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId) =>
-    req('POST', '/payments/verify', { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId }, true),
+    req('POST', '/payments/verify', { razorpay_order_id, razorpay_payment_id, razorpay_signature, booking_id: bookingId }, true),
 
   // Admin
   // Professional reviews (public)

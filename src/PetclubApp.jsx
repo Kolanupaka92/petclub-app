@@ -19,119 +19,16 @@ import {
   VET_PACKAGES,
   VET_QUOTED_ON_SITE,
 } from "./pricingFallback.js";
+import {
+  today, getGreeting, daysUntil, isDueSoon, speciesEmoji, addDays,
+  HEALTH_RECORD_TYPES, TAB_META, VACCINE_SCHEDULE, SERVICES,
+} from "./features/customer/customerData.js";
+import { Spinner, Skeleton, SkeletonCard, Bdg, Modal, Fld, Inp, Sel, Txta, Stars, Toast } from "./features/customer/ui.jsx";
 
 // Lazy-load heavy map component (Mapbox GL is ~500 KB)
 const TrackingMap = lazy(() => import("./components/TrackingMap.jsx"));
 
-/* ── helpers ── */
-const today = () => new Date().toISOString().split("T")[0];
-const getGreeting = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; };
-const daysUntil = s => Math.ceil((new Date(s) - Date.now()) / 864e5);
-const isDueSoon = (s, d) => { const n = daysUntil(s); return n >= 0 && n <= d; };
-const speciesEmoji = s => s === "cat" ? "🐈" : "🐕";
-const addDays = (dateStr, n) => { const d = new Date(dateStr || today()); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
-
 const INITIAL_PETS = [];
-
-
-// SVC_OPTS — used for pet health RECORDS only (not booking flow)
-const SVC_OPTS = {
-  grooming: ["Essential Bath+","Premium Bath+","Complete Makeover","Luxury Makeover","Trim & Style","Care Combo","Puppy Dry Spa","Puppy Wet Bath","De-matting","Tick & Flea Treatment","Anal Gland Expression","Puppy/Kitten First Groom","Herbal Bath","Spa Treatment"],
-  training: ["Consultation Session","Puppy Basics","Basic Obedience","Behavioural Modification","Advanced Obedience","Leash Training","Agility Training"],
-  food:     ["Dry Food","Wet Food","Raw Diet","Treats","Supplement"],
-  vet:      ["General Check-up","Vaccination","Deworming","Dental Care","Surgery","Emergency Care"],
-};
-
-const TAB_META = {
-  grooming: { icon:"✂️", label:"Grooming", color:"blue" },
-  training: { icon:"🐕‍🦺", label:"Training", color:"purple" },
-  food:     { icon:"🍖", label:"Food",     color:"green" },
-  vet:      { icon:"🏥", label:"Vet",      color:"rose" },
-};
-
-// ── Vaccine schedule — auto-calculates next due date on selection ─────────────
-// days = default interval until next dose after administration
-const VACCINE_SCHEDULE = [
-  { name: "Rabies",                      days: 365, icon: "💉", species: ["dog","cat"], note: "Annual booster" },
-  { name: "DHPP (Distemper · Parvo)",    days: 365, icon: "💉", species: ["dog"],       note: "Annual booster" },
-  { name: "Bordetella (Kennel Cough)",   days: 180, icon: "💉", species: ["dog"],       note: "Every 6 months" },
-  { name: "Leptospirosis",               days: 365, icon: "💉", species: ["dog"],       note: "Annual booster" },
-  { name: "Lyme Disease",                days: 365, icon: "💉", species: ["dog"],       note: "Annual booster" },
-  { name: "Canine Influenza (H3N2)",     days: 365, icon: "💉", species: ["dog"],       note: "Annual booster" },
-  { name: "FVRCP (Cat Flu · Enteritis)", days: 365, icon: "💉", species: ["cat"],       note: "Annual booster" },
-  { name: "FeLV (Feline Leukaemia)",     days: 365, icon: "💉", species: ["cat"],       note: "Annual booster" },
-  { name: "Deworming",                   days: 90,  icon: "🪱", species: ["dog","cat"], note: "Every 3 months" },
-  { name: "Flea & Tick Treatment",       days: 30,  icon: "🦟", species: ["dog","cat"], note: "Monthly" },
-  { name: "Heartworm Prevention",        days: 30,  icon: "🩺", species: ["dog","cat"], note: "Monthly" },
-];
-
-const SERVICES = [
-  { id:"grooming", icon:"✂️",  label:"Grooming",   bg:"bg-blue-50",   tc:"text-blue-600",   desc:"Doorstep grooming",    role:"Groomer"  },
-  { id:"walking",  icon:"🦮",  label:"Dog Walking", bg:"bg-green-50",  tc:"text-green-600",  desc:"GPS-tracked walks",    role:"Walker"   },
-  { id:"training", icon:"🐕‍🦺", label:"Training",   bg:"bg-purple-50", tc:"text-purple-600", desc:"Certified trainers",   role:"Trainer"  },
-  { id:"boarding", icon:"🏠",  label:"Boarding",   bg:"bg-amber-50",  tc:"text-amber-600",  desc:"Cage-free home stays", role:"Boarding" },
-  { id:"vet",      icon:"🏥",  label:"Vet Care",   bg:"bg-rose-50",   tc:"text-rose-600",   desc:"In-home vet visits",   role:"Vet"      },
-  { id:"food",     icon:"🍖",  label:"Pet Food",   bg:"bg-orange-50", tc:"text-orange-600", desc:"Free delivery",        role:null       },
-];
-
-/* ── Shared UI ── */
-const Spinner = ({ sm }) => <div className={`border-2 border-orange-400 border-t-transparent rounded-full animate-spin ${sm ? "w-4 h-4" : "w-8 h-8"}`} />;
-const Skeleton = ({ h = "h-4", w = "w-full", cls = "" }) => <div className={`${h} ${w} bg-gray-200 rounded-xl animate-pulse ${cls}`} />;
-const SkeletonCard = () => (
-  <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-    <div className="flex items-center gap-3"><Skeleton h="h-10" w="w-10" cls="rounded-xl shrink-0"/><div className="flex-1 space-y-2"><Skeleton h="h-4" w="w-3/4"/><Skeleton h="h-3" w="w-1/2"/></div></div>
-    <Skeleton h="h-3" w="w-full"/><Skeleton h="h-3" w="w-2/3"/>
-  </div>
-);
-const Bdg = ({ text, cls }) => <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>{text}</span>;
-
-function Modal({ title, onClose, children }) {
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl max-h-[90dvh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
-          <h3 className="font-extrabold text-gray-900">{title}</h3>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 text-lg transition-colors">✕</button>
-        </div>
-        <div className="modal-scroll flex-1 p-5">{children}</div>
-      </div>
-    </div>
-  );
-}
-
-function Fld({ label, children }) {
-  return <div className="mb-3.5"><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>{children}</div>;
-}
-
-function Inp(props) {
-  return <input className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-base focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all touch-manipulation" {...props} />;
-}
-function Sel({ opts, ...props }) {
-  return <select className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-base focus:outline-none focus:border-orange-400 bg-white touch-manipulation" {...props}>{opts.map(o => <option key={o}>{o}</option>)}</select>;
-}
-function Txta(props) {
-  return <textarea className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-base focus:outline-none focus:border-orange-400 resize-none touch-manipulation" rows={3} {...props} />;
-}
-
-function Stars({ n }) {
-  return <span>{Array.from({length:5},(_,i)=><span key={i} className={i<n?"text-amber-400":"text-gray-200"}>★</span>)}</span>;
-}
-
-function Toast({ msg, type, onDone }) {
-  useEffect(() => { const t = setTimeout(onDone, 3000); return () => clearTimeout(t); }, [onDone]);
-  const bg = type === "error" ? "bg-red-500" : "bg-green-500";
-  return (
-    <div className={`fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-50 ${bg} text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-xl animate-slide-up max-w-xs text-center`}>
-      {msg}
-    </div>
-  );
-}
-
 
 /* ══════════ MAIN APP ══════════ */
 export default function PetclubApp({ session, onLogout }) {
@@ -1732,7 +1629,7 @@ export default function PetclubApp({ session, onLogout }) {
       {modal === "addRecord" && pet && (
         <Modal title={`Add ${TAB_META[activeTab].label} Record`} onClose={() => { setModal(null); setForm({}); }}>
           <Fld label={activeTab==="food"?"Product":"Service Type"}>
-            <Sel opts={SVC_OPTS[activeTab]} value={form.service||""} onChange={v => {
+            <Sel opts={HEALTH_RECORD_TYPES[activeTab]} value={form.service||""} onChange={v => {
               setForm(f => {
                 // Clear vaccine-specific fields when switching service type
                 const next = { ...f, service: v, vaccineType: "", nextDue: "" };
@@ -2081,7 +1978,7 @@ export default function PetclubApp({ session, onLogout }) {
                   <select className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-orange-400 bg-white"
                     value={bookingForm.service_name} onChange={bsf("service_name")}>
                     <option value="">Select service…</option>
-                    {SVC_OPTS.vet.map(o => <option key={o}>{o}</option>)}
+                    {HEALTH_RECORD_TYPES.vet.map(o => <option key={o}>{o}</option>)}
                   </select>
                   {bookingForm.service_name && VET_QUOTED_ON_SITE.has(bookingForm.service_name)
                     ? <p className="text-xs text-gray-400 mt-1 pl-1">💡 Pricing confirmed after on-site assessment — no surprise charges</p>
