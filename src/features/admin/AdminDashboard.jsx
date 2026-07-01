@@ -1857,7 +1857,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
             {dbAudit && (() => {
               const a = dbAudit;
               const issues = [];
-              if (a.users?.suspended > 0)              issues.push({ key: "purge_suspended",     label: `${a.users.suspended} suspended account${a.users.suspended !== 1 ? "s" : ""}`, severity: "red" });
+              if (a.users?.suspended > 0)              issues.push({ key: "purge_suspended",     label: `${a.users.suspended} suspended account${a.users.suspended !== 1 ? "s" : ""} — resolve via Purge All Suspended in Users tab`, severity: "red" });
               if (a.users?.pending_role > 0)            issues.push({ key: "stale_pending_users", label: `${a.stale_pending_users?.count || 0} incomplete signups (>7 days old)`, severity: a.stale_pending_users?.count > 0 ? "amber" : "green" });
               if (a.orphans?.professional_profiles > 0) issues.push({ key: "orphan_profiles",     label: `${a.orphans.professional_profiles} orphaned professional profiles`, severity: "red" });
               if (a.orphans?.customer_profiles > 0)    issues.push({ key: "orphan_profiles",     label: `${a.orphans.customer_profiles} orphaned customer profiles`, severity: "red" });
@@ -1867,7 +1867,10 @@ export const AdminDashboard = ({ session, onLogout }) => {
               if (a.bookings?.stale_upcoming > 0)       issues.push({ key: "stale_upcoming",      label: `${a.bookings.stale_upcoming} stale upcoming bookings (>30d)`, severity: "amber" });
               if (a.bookings?.no_pros_available > 0)    issues.push({ key: "no_pros_available",   label: `${a.bookings.no_pros_available} bookings stuck with no pro found`, severity: "amber" });
               if (a.website_leads?.older_than_30d > 0)  issues.push({ key: "stale_leads",         label: `${a.website_leads.older_than_30d} website leads older than 30 days`, severity: "amber" });
-              const cleanTargets = [...new Set(issues.filter(i => i.severity !== "green").map(i => i.key))];
+              // purge_suspended is deliberately excluded from bulk auto-clean — permanently
+              // deleting user accounts is destructive and already has its own confirm-modal
+              // gated flow (the "Purge All Suspended" button in the Users tab).
+              const cleanTargets = [...new Set(issues.filter(i => i.severity !== "green" && i.key !== "purge_suspended").map(i => i.key))];
 
               return (
                 <>
