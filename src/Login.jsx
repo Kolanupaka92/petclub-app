@@ -541,12 +541,7 @@ export default function Login({ onLogin, initialHint }) {
         const ceSugg = getEmailSuggestion(ce);
         if (ceSugg) return showErr(`"${ce.split('@')[1]}" is not a valid domain. Did you mean ${ceSugg}?`);
       }
-      // ID verification
-      if (!custId.type)         return showErr("Select an ID type for verification");
-      if (!custId.number.trim()) return showErr(`Enter your ${getIdTypes(cc).find(t=>t.value===custId.type)?.label || "ID"} number`);
-      const idErr = validateIdNumber(custId.type, custId.number, cc);
-      if (idErr) return showErr(idErr);
-      if (!custId.photo)        return showErr("Upload a photo of your ID document");
+      // ID verification removed for customers — pet owners are not required to submit KYC.
     } else {
       if (!pro.name.trim())     return showErr("Enter your full name");
       if (!pro.email.trim())    return showErr("Email is required for approval notification");
@@ -593,11 +588,7 @@ export default function Login({ onLogin, initialHint }) {
       );
       saveToken(res.token);
 
-      if (isCust) {
-        // Upload customer government ID (non-blocking)
-        api.uploadUserIdPhoto({ docType: custId.type, docNumber: custId.number.trim(), docPhoto: custId.photo })
-          .catch(e => console.warn("Customer ID upload:", e.message));
-      } else {
+      if (!isCust) {
         // Upload professional government ID + certification
         api.uploadIdPhoto({ docType: proId.type, docNumber: proId.number.trim(), docPhoto: proId.photo,
           certType: proCert.type, certPhoto: proCert.photo })
@@ -1013,70 +1004,9 @@ export default function Login({ onLogin, initialHint }) {
                 </div>
               </div>
 
-              {/* ── Identity Verification ── */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">🪪</span>
-                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Identity Verification</p>
-                  <span className="text-[10px] font-bold bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full">Required</span>
-                </div>
-                <p className="text-xs text-slate-500">
-                  {isIndia
-                    ? "Required by Indian regulations. Your data is encrypted and only visible to PETclub admins."
-                    : "Required for account security. Your ID is encrypted and visible only to PETclub admins."}
-                </p>
+              {/* Identity verification removed — pet owners (customers) are not required to submit KYC. */}
 
-                {/* ID type selector */}
-                <div className="grid grid-cols-2 gap-2">
-                  {idTypes.map(t => (
-                    <button key={t.value} type="button"
-                      onClick={() => setCustId(p => ({ ...p, type: t.value, number: "", photo: null, preview: null }))}
-                      className={`p-2.5 rounded-xl border-2 text-left transition-all ${
-                        custId.type === t.value
-                          ? "border-orange-400 bg-orange-50"
-                          : "border-slate-200 bg-white hover:border-slate-300"
-                      }`}>
-                      <div className="text-xs font-bold text-gray-800 flex items-center gap-1">
-                        {t.label}
-                        {t.required && <span className="text-red-400">*</span>}
-                      </div>
-                      <div className="text-[10px] text-gray-400 mt-0.5">{t.hint}</div>
-                    </button>
-                  ))}
-                </div>
-
-                {/* ID number input */}
-                {custId.type && (
-                  <input
-                    type={custId.type === "aadhar" ? "tel" : "text"}
-                    inputMode={custId.type === "aadhar" ? "numeric" : "text"}
-                    placeholder={idTypes.find(t => t.value === custId.type)?.hint || "ID number"}
-                    value={custId.number}
-                    maxLength={custId.type === "aadhar" ? 12 : 20}
-                    onChange={e => setCustId(p => ({ ...p, number: e.target.value.replace(custId.type === "aadhar" ? /\D/g : /\s/g, "").slice(0, custId.type === "aadhar" ? 12 : 20) }))}
-                    className="w-full h-11 border-2 border-slate-200 rounded-xl px-4 text-base font-mono tracking-widest focus:outline-none focus:border-orange-400 bg-white placeholder-gray-400"
-                  />
-                )}
-
-                {/* Aadhar digit counter */}
-                {custId.type === "aadhar" && custId.number && (
-                  <p className={`text-xs font-semibold ${custId.number.length === 12 ? "text-emerald-600" : "text-amber-600"}`}>
-                    {custId.number.length}/12 digits {custId.number.length === 12 ? "✓" : ""}
-                  </p>
-                )}
-
-                {/* ID photo upload */}
-                <DocUploadBox
-                  preview={custId.preview}
-                  onFile={handleCustIdPhoto}
-                  onClear={() => setCustId(p => ({ ...p, photo: null, photoName: "", preview: null }))}
-                  label="Upload ID photo"
-                  hint="Front side · JPG / PNG · Max 5 MB"
-                />
-                <p className="text-xs text-slate-400">🔒 Encrypted & visible only to PETclub admins. Never shared publicly.</p>
-              </div>
-
-              {err && <div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
+              {err &&<div className="flex items-center gap-2 text-red-500 text-sm font-semibold bg-red-50 border border-red-100 rounded-xl px-4 py-3"><span>⚠️</span>{err}</div>}
 
               <button onClick={submit} disabled={loading}
                 className="w-full h-14 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] disabled:opacity-60 text-white font-bold text-base rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2">
