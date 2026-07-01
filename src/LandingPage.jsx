@@ -506,7 +506,7 @@ export default function LandingPage({ onGetStarted }) {
               Every booking earns you{" "}<span style={{ color: "#4ade80" }}>points.</span>
             </h2>
             <p style={{ fontSize: 15, color: "#c2956a", margin: "0 0 24px", lineHeight: 1.7 }}>
-              Earn 1 credit per ₹10 spent on any booking. Bonus credits for reviews (+50) and referrals (+200). Hit 1,000 credits and get a Free Essential Bath — redeemed automatically, no codes needed.
+              Earn credits on every booking. Bonus credits for reviews (+50) and referrals (+200). Hit 1,000 credits and get a Free Essential Bath — redeemed automatically, no codes needed.
             </p>
             <button
               onClick={() => onGetStarted("customer")}
