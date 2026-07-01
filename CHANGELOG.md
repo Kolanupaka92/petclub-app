@@ -1,3 +1,10 @@
+## [1.45.8](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.7...v1.45.8) (2026-07-01)
+
+
+### Bug Fixes
+
+* app landing consistency + remove customer ID/KYC verification ([#3](https://github.com/Kolanupaka92/petclub-app/issues/3)) ([8b4be98](https://github.com/Kolanupaka92/petclub-app/commit/8b4be98d8cef50fc75cfcc8ee3bb4d6a24e7b5e2)), closes [#1](https://github.com/Kolanupaka92/petclub-app/issues/1)
+
 ## [1.45.7](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.6...v1.45.7) (2026-07-01)
 
 
