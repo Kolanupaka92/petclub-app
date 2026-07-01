@@ -1,3 +1,10 @@
+## [1.45.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.3...v1.45.4) (2026-07-01)
+
+
+### Bug Fixes
+
+* repair mojibake corruption in AdminDashboard.jsx ([019ee66](https://github.com/Kolanupaka92/petclub-app/commit/019ee665dafcb30950cec475fff652d7aa8bc558))
+
 ## [1.45.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.2...v1.45.3) (2026-07-01)
 
 
