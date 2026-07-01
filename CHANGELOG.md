@@ -1,3 +1,10 @@
+## [1.45.5](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.4...v1.45.5) (2026-07-01)
+
+
+### Bug Fixes
+
+* **admin:** stale upcoming bookings issue reused cancelled_bookings key ([745bc02](https://github.com/Kolanupaka92/petclub-app/commit/745bc020423725a63561941b1d68e6a920438054))
+
 ## [1.45.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.3...v1.45.4) (2026-07-01)
 
 
