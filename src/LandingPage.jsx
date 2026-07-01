@@ -366,10 +366,10 @@ export default function LandingPage({ onGetStarted }) {
         <div style={{ maxWidth: 1120, margin: "0 auto", display: "flex", alignItems: "center", gap: 56, flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 1 }}>
           <div style={{ flex: "1 1 420px", maxWidth: 560, minWidth: 0 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.20)", borderRadius: 100, padding: "5px 14px", marginBottom: 28, backdropFilter: "blur(8px)" }}>
-              <img src="https://flagcdn.com/20x15/in.png" alt="India" style={{ borderRadius: 2 }} />
+              <img src="/flags/in.svg" alt="India" width="20" height="15" style={{ borderRadius: 2, display: "block" }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,220,180,1)" }}>India's #1 Pet Care Platform</span>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>·</span>
-              <img src="https://flagcdn.com/20x15/us.png" alt="USA" style={{ borderRadius: 2 }} />
+              <img src="/flags/us.svg" alt="USA" width="20" height="15" style={{ borderRadius: 2, display: "block" }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,220,180,1)" }}>Now in USA</span>
             </div>
 
