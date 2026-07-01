@@ -1,3 +1,10 @@
+## [1.45.6](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.5...v1.45.6) (2026-07-01)
+
+
+### Bug Fixes
+
+* **admin:** exclude purge_suspended from bulk db-cleanup auto-clean ([7cf8117](https://github.com/Kolanupaka92/petclub-app/commit/7cf8117f40dbc58e76fe2beef127f4b2cde4b629))
+
 ## [1.45.5](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.4...v1.45.5) (2026-07-01)
 
 
