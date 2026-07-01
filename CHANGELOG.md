@@ -1,3 +1,10 @@
+## [1.45.7](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.6...v1.45.7) (2026-07-01)
+
+
+### Bug Fixes
+
+* replace broken CDN flag images with self-hosted SVGs ([f7d9ded](https://github.com/Kolanupaka92/petclub-app/commit/f7d9dedeb6dc15365a74d4e93fabddd2a6579a0b))
+
 ## [1.45.6](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.5...v1.45.6) (2026-07-01)
 
 
