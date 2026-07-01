@@ -209,7 +209,7 @@ const FAQS = [
   { q: "How are professionals verified?", a: "Every pro submits a government-issued photo ID plus their professional certification. Our team manually reviews and approves each application — no shortcuts. The ✅ Verified badge only shows after that review is complete (typically 24–48 hours)." },
   { q: "What does it cost? Are there hidden fees?", a: "Prices are shown upfront at checkout — no surprises. There's no subscription or platform fee for customers. For professionals, PETclub takes 30% and pays out 70% every Saturday." },
   { q: "Is there a live GPS on every booking?", a: "Yes — not just for dog walking. Every groomer, trainer, and boarding drop-off shows a live map from the moment they start their journey. You also get a push notification when they're 10 minutes away." },
-  { q: "How do loyalty points work?", a: "You earn 1 credit for every ₹10 spent on any booking. Bonus credits: +50 for writing a review, +200 for referring a friend. 1,000 credits = 1 Free Essential Bath (₹800+ value) — applied automatically at checkout, no codes needed." },
+  { q: "How do loyalty points work?", a: "You earn credits on every booking. Bonus credits: +50 for writing a review, +200 for referring a friend. 1,000 credits = 1 Free Essential Bath — applied automatically at checkout, no codes needed." },
 ];
 
 function FaqAccordion({ dark = false }) {
@@ -367,10 +367,10 @@ export default function LandingPage({ onGetStarted }) {
           <div style={{ flex: "1 1 420px", maxWidth: 560, minWidth: 0 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.20)", borderRadius: 100, padding: "5px 14px", marginBottom: 28, backdropFilter: "blur(8px)" }}>
               <img src="/flags/in.svg" alt="India" width="20" height="15" style={{ borderRadius: 2, display: "block" }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,220,180,1)" }}>India's #1 Pet Care Platform</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,220,180,1)" }}>Pet Care for Dogs &amp; Cats</span>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>·</span>
               <img src="/flags/us.svg" alt="USA" width="20" height="15" style={{ borderRadius: 2, display: "block" }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,220,180,1)" }}>Now in USA</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,220,180,1)" }}>Launching in the USA</span>
             </div>
 
             <h1 style={{ fontSize: "clamp(36px, 5vw, 58px)", fontWeight: 900, lineHeight: 1.08, color: "white", margin: "0 0 22px", letterSpacing: "-0.03em", textShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
@@ -399,10 +399,10 @@ export default function LandingPage({ onGetStarted }) {
 
             <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
               {[
-                { v: "50,000+", l: "Happy Pets" },
-                { v: "1,200+",  l: "Verified Pros" },
-                { v: "100+",    l: "Cities" },
-                { v: "4.9★",    l: "App Rating" },
+                { v: "100%",  l: "Verified Pros" },
+                { v: "70km",  l: "Smart Matching" },
+                { v: "GPS",   l: "Live Tracking" },
+                { v: "Free",  l: "To Join" },
               ].map(s => (
                 <div key={s.l}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: "white" }}>{s.v}</div>
@@ -455,7 +455,7 @@ export default function LandingPage({ onGetStarted }) {
           </div>
           <div style={{ display: "flex", gap: 32, flexWrap: "wrap", justifyContent: "center", position: "relative" }}>
             <div style={{ position: "absolute", top: 28, left: "16%", right: "16%", height: 1, background: `linear-gradient(90deg, transparent, ${AMBER}44, transparent)`, pointerEvents: "none" }}/>
-            <HowStep num={1} icon="🔍" title="Choose a service" body="Browse 5 certified service types near you. Filter by rating, availability, and specialty. No account needed to browse." />
+            <HowStep num={1} icon="🔍" title="Choose a service" body="Pick from 5 certified service types near you — filter by rating, availability, and specialty. Free to sign up in 60 seconds." />
             <HowStep num={2} icon="📅" title="Confirm your booking" body="Pick a time, add your pet's health notes, and pay securely. Instant confirmation with pro contact details." />
             <HowStep num={3} icon="📍" title="Track live until arrival" body="Watch your provider move on a real-time map. Get notified when they're 10 minutes out — then earn loyalty points." />
           </div>
@@ -517,7 +517,7 @@ export default function LandingPage({ onGetStarted }) {
           </div>
           <div style={{ flex: "1 1 280px", minWidth: 0, display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
             {[
-              { icon: "💰", label: "Every Booking",  pts: "1 / ₹10"  },
+              { icon: "💰", label: "Every Booking",  pts: "Earn credits"  },
               { icon: "⭐", label: "Write a Review",  pts: "+50"       },
               { icon: "👥", label: "Refer a Friend",  pts: "+200"      },
               { icon: "🎁", label: "Free Essential Bath", pts: "1,000 pts" },
@@ -558,27 +558,21 @@ export default function LandingPage({ onGetStarted }) {
       <section style={{ background: CREAM2, borderTop: `1px solid ${ORANGE}15`, padding: "72px 24px" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 2, textTransform: "uppercase", margin: "0 0 10px" }}>What pet owners say</p>
+            <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 2, textTransform: "uppercase", margin: "0 0 10px" }}>Founding members</p>
             <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "#1a0500", margin: 0 }}>
-              Trusted by 50,000+ pet families.
+              Get in before everyone else.
             </h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
             {[
-              { quote: "The groomer knew my dog's allergies before arriving. The pet health profile feature is a game changer — no forms at the door, no awkward briefing.", name: "Priya R.", city: "Bangalore", stars: 5 },
-              { quote: "GPS tracking for every service, not just walking. I was at work and watched my trainer arrive on the map. That kind of transparency is rare.", name: "Arjun M.", city: "Mumbai", stars: 5 },
-              { quote: "Booked in under 2 minutes, no app download. The pro called me 10 minutes before arrival exactly like the app said. Impressed.", name: "Deepika S.", city: "Hyderabad", stars: 5 },
-            ].map(({ quote, name, city, stars }) => (
-              <div key={name} style={{ background: "white", border: `1px solid ${ORANGE}22`, borderRadius: 20, padding: "28px 24px", borderTop: `3px solid ${ORANGE}`, boxShadow: `0 4px 20px ${ORANGE}0f` }}>
-                <div style={{ fontSize: 16, marginBottom: 14 }}>{"⭐".repeat(stars)}</div>
-                <p style={{ fontSize: 14, color: "#92400e", lineHeight: 1.75, margin: "0 0 20px", fontStyle: "italic" }}>"{quote}"</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg, ${ORANGE}33, ${AMBER}22)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🐾</div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "#1a0500" }}>{name}</div>
-                    <div style={{ fontSize: 11, color: "#92400e", fontWeight: 600 }}>{city}</div>
-                  </div>
-                </div>
+              { icon: "🎖️", title: "Founding member badge", body: "Join before public launch and keep a founding-member badge on your profile — a permanent thank-you for backing us early." },
+              { icon: "🏆", title: "Loyalty rewards from day one", body: "Earn credits on every booking from your very first visit. Hit 1,000 credits and your Essential Bath is on us." },
+              { icon: "📍", title: "First pick of local pros", body: "Early members are matched first with the nearest verified groomers, vets, trainers, walkers and boarders." },
+            ].map(({ icon, title, body }) => (
+              <div key={title} style={{ background: "white", border: `1px solid ${ORANGE}22`, borderRadius: 20, padding: "28px 24px", borderTop: `3px solid ${ORANGE}`, boxShadow: `0 4px 20px ${ORANGE}0f` }}>
+                <div style={{ fontSize: 30, marginBottom: 14 }}>{icon}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#1a0500", marginBottom: 8 }}>{title}</div>
+                <p style={{ fontSize: 14, color: "#92400e", lineHeight: 1.7, margin: 0 }}>{body}</p>
               </div>
             ))}
           </div>
@@ -674,7 +668,7 @@ export default function LandingPage({ onGetStarted }) {
               <div style={{ textAlign: "center", minWidth: 0, width: "100%" }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>WhatsApp</p>
                 <p style={{ fontSize: "clamp(14px,3.5vw,16px)", fontWeight: 800, color: "white", margin: "0 0 4px" }}>+1 609 721 5754</p>
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>Mon – Sat · 9 AM – 8 PM EST</p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>Mon – Sat · 9 AM – 8 PM IST</p>
               </div>
             </a>
 

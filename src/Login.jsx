@@ -661,10 +661,10 @@ export default function Login({ onLogin, initialHint }) {
             {/* Trust stats strip */}
             <div className="flex flex-wrap gap-x-6 gap-y-2 mb-6">
               {[
-                { icon: "🐾", val: "50,000+", label: "Pets Served" },
-                { icon: "✅", val: "1,200+",  label: "Verified Pros" },
-                { icon: "📍", val: "100+",    label: "Cities" },
-                { icon: "⭐", val: "4.9",     label: "Rating" },
+                { icon: "✅", val: "100%",  label: "Verified Pros" },
+                { icon: "📍", val: "70km",  label: "Smart Matching" },
+                { icon: "🛰️", val: "GPS",   label: "Live Tracking" },
+                { icon: "🎉", val: "Free",  label: "To Join" },
               ].map(s => (
                 <div key={s.label} className="flex items-center gap-1.5">
                   <span className="text-base">{s.icon}</span>
@@ -713,7 +713,7 @@ export default function Login({ onLogin, initialHint }) {
             <div className="space-y-6">
               <div>
                 <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Welcome to PETclub</h1>
-                <p className="text-gray-500 text-sm mt-1">India's #1 pet care platform — no password needed.</p>
+                <p className="text-gray-500 text-sm mt-1">Pet care for dogs &amp; cats — no password needed.</p>
               </div>
 
               <button onClick={() => { setMode("signin"); setStep("phone"); setErr(""); }}
