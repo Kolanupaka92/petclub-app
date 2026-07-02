@@ -1,3 +1,10 @@
+# [1.46.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.8...v1.46.0) (2026-07-02)
+
+
+### Features
+
+* **analytics:** add Vercel Web Analytics (cookieless, prod-only) ([d9c6907](https://github.com/Kolanupaka92/petclub-app/commit/d9c690778d1870db8ad5e2674619e16767a1db49))
+
 ## [1.45.8](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.7...v1.45.8) (2026-07-01)
 
 
