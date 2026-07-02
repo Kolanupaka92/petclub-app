@@ -1,3 +1,10 @@
+## [1.46.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.0...v1.46.1) (2026-07-02)
+
+
+### Bug Fixes
+
+* **loyalty:** region-aware payment labels in rewards explainer and earn rules ([422b7a8](https://github.com/Kolanupaka92/petclub-app/commit/422b7a81cbd58a04ae0c16ab79e181fcb8ed0931))
+
 # [1.46.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.45.8...v1.46.0) (2026-07-02)
 
 
