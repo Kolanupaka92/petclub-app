@@ -24,6 +24,15 @@ export const aStatusLabel = s => ({
   no_pros_available: "⚠️ No Pros", offered: "📤 Offered",
 })[s] || s?.replace(/_/g, ' ');
 
+// Friendly label for a user's account role — used wherever u.role is rendered
+// directly (e.g. "pending_role" → "Pending Signup" instead of the raw enum).
+export const roleLabel = r => ({
+  pending_role: "Pending Signup",
+  customer:     "Customer",
+  professional: "Professional",
+  admin:        "Admin",
+})[r] || r?.replace(/_/g, ' ');
+
 // Detect country from phone and return appropriate ID types
 export const getIdTypes = phone => {
   if (phone?.startsWith("+91")) return [

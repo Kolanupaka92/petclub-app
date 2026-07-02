@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../api.js";
-import { fmtDate, fmtTime, rIcon, rColor, sColor, aStatusLabel } from "../../shared/proData.js";
+import { fmtDate, fmtTime, rIcon, rColor, sColor, aStatusLabel, roleLabel } from "../../shared/proData.js";
 import { Bdg, Modal, Inp, Sel, Txta, Spinner, EmptyState, StatCard, PawLogo } from "../../shared/ui.jsx";
 
 /* ══════════════════════════════════════════════
@@ -601,7 +601,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                       <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center text-base shrink-0">{rIcon(proRole || u.role)}</div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold text-gray-800 truncate">{u.name || "—"}</div>
-                        <div className="text-xs text-gray-400 capitalize">{proRole || u.role} · {u.phone}</div>
+                        <div className="text-xs text-gray-400 capitalize">{proRole || roleLabel(u.role)} · {u.phone}</div>
                       </div>
                       <Bdg text={u.is_active ? "active" : "suspended"} cls={sColor(u.is_active ? "active" : "suspended")}/>
                     </div>
@@ -894,7 +894,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                           {/* Info */}
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-sm text-gray-800 truncate">{u.name || "—"}</div>
-                            <div className="text-xs text-gray-400 capitalize truncate">{proRole || u.role} · {u.phone}</div>
+                            <div className="text-xs text-gray-400 capitalize truncate">{proRole || roleLabel(u.role)} · {u.phone}</div>
                             {u.email && <div className="text-xs text-gray-400 truncate">{u.email}</div>}
 
                             {/* Date Registered + Last Active */}
