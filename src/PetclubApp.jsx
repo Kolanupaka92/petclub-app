@@ -1369,7 +1369,7 @@ export default function PetclubApp({ session, onLogout }) {
               <div className="space-y-1.5">
                 {(ld?.earn_rules || [
                   { icon:"📅", event:"Book & pay via app",    points: isUSD ? "1 per $1" : "1 per ₹10" },
-                  { icon:"💳", event:"Pay in-app (Razorpay)", points:"+50 bonus" },
+                  { icon:"💳", event: isUSD ? "Pay in-app" : "Pay in-app (Razorpay)", points:"+50 bonus" },
                   { icon:"⭐", event:"Write a review",         points:"+50"       },
                   { icon:"👥", event:"Refer a friend",          points:"+200"      },
                 ]).map(r => (
@@ -1504,7 +1504,7 @@ export default function PetclubApp({ session, onLogout }) {
               <div className="space-y-2">
                 {[
                   { icon:"📅", label:"Book & pay via app",      val:`1 credit / ${currencySymbol}${isUSD ? "1" : "10"}`, note:"Every booking counts" },
-                  { icon:"💳", label:"Pay via Razorpay",         val:"+50 bonus",           note:"One-time bonus per payment" },
+                  { icon:"💳", label: isUSD ? "Pay in-app" : "Pay via Razorpay", val:"+50 bonus",           note:"One-time bonus per payment" },
                   { icon:"⭐", label:"Write a review",            val:"+50 bonus",           note:"Once per booking" },
                   { icon:"👥", label:"Refer a friend",            val:"+200 bonus",          note:"You earn when they book" },
                 ].map(r => (
