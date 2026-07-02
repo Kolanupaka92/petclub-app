@@ -1466,7 +1466,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
             {revenueData && (() => {
               const rows     = revenueData.rows || revenueData.report || [];
               const summary  = revenueData.summary || {};
-              const gross    = summary.total_gross    ?? rows.reduce((s,r) => s + parseFloat(r.gross_revenue || r.total || 0), 0);
+              const gross    = summary.total_gross    ?? rows.reduce((s,r) => s + parseFloat(r.gross_revenue || r.total_revenue || r.total || 0), 0);
               const platform = summary.platform_total ?? rows.reduce((s,r) => s + parseFloat(r.platform_fee || 0), 0);
               const provider = summary.provider_total ?? rows.reduce((s,r) => s + parseFloat(r.provider_earnings || 0), 0);
               return (
@@ -1488,7 +1488,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                       </div>
                       <div className="divide-y divide-gray-50">
                         {rows.map((r, i) => {
-                          const rowGross = parseFloat(r.gross_revenue || r.total || 0);
+                          const rowGross = parseFloat(r.gross_revenue || r.total_revenue || r.total || 0);
                           const rowPro   = parseFloat(r.provider_earnings || rowGross * 0.45 || 0);
                           const rowPlat  = parseFloat(r.platform_fee || rowGross * 0.55 || 0);
                           return (
@@ -1499,7 +1499,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="font-semibold text-sm text-gray-800 truncate">{r.name || r.professional_name || "—"}</div>
-                                  <div className="text-xs text-gray-400">{r.sub_role || "—"} · {r.bookings_count ?? r.count ?? 0} bookings</div>
+                                  <div className="text-xs text-gray-400">{r.sub_role || "—"} · {r.bookings_count ?? r.total_bookings ?? r.count ?? 0} bookings</div>
                                 </div>
                                 <div className="text-right shrink-0">
                                   <div className="text-sm font-extrabold text-gray-800">₹{rowGross.toLocaleString()}</div>
