@@ -13,6 +13,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { silentRefresh } from "../api.js";
 
 // Strip UTF-8 BOM that Vercel sometimes injects into env var values
 const _stripBom = (v) => (v || '').replace(/^﻿/, '').trim();
@@ -60,8 +61,11 @@ export function AddressPicker({ value, onChange, placeholder, className, token }
     };
   }, [results.length, calcPos]);
 
-  /* ── Forward geocode via backend gateway ── */
-  const search = async (q) => {
+  /* ── Forward geocode via backend gateway ──
+   * The access-token cookie is 15m-lived. Unlike api.js's req(), this bypasses
+   * the shared retry wrapper, so on 401 (cookie expired mid-session) we do our
+   * own silent-refresh-then-retry-once instead of just returning empty results. */
+  const search = async (q, _retried = false) => {
     if (!q || q.length < 3) { setResults([]); return; }
     setLoading(true);
     try {
@@ -69,6 +73,10 @@ export function AddressPicker({ value, onChange, placeholder, className, token }
         `${API_BASE}/geocode?q=${encodeURIComponent(q)}`,
         fetchOpts
       );
+      if (res.status === 401 && !_retried) {
+        const ok = await silentRefresh();
+        if (ok) { setLoading(false); return search(q, true); }
+      }
       const list = res.ok ? await res.json() : [];
       setResults(list);
       if (list.length) calcPos();
@@ -114,10 +122,13 @@ export function AddressPicker({ value, onChange, placeholder, className, token }
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
-          const res = await fetch(
+          let res = await fetch(
             `${API_BASE}/reverse-geocode?lat=${lat}&lng=${lng}`,
             fetchOpts
           );
+          if (res.status === 401 && await silentRefresh()) {
+            res = await fetch(`${API_BASE}/reverse-geocode?lat=${lat}&lng=${lng}`, fetchOpts);
+          }
           const r = res.ok ? await res.json() : {};
           if (r.full && !r.full.match(/^-?\d+\.\d+/)) {
             setQuery(r.full);

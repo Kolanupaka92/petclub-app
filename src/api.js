@@ -22,7 +22,10 @@ const BASE = _stripBom(import.meta.env.VITE_API_URL) || (() => {
 // Tracks whether a refresh is already in-flight so concurrent 401s share one refresh call
 let _refreshPromise = null;
 
-const _silentRefresh = async () => {
+// Exported so components that call fetch() directly instead of req() (e.g.
+// AddressPicker's geocode/reverse-geocode calls) can retry once on 401
+// instead of silently failing when the 15m access-token cookie expires.
+export const silentRefresh = async () => {
   if (_refreshPromise) return _refreshPromise;
   _refreshPromise = fetch(`${BASE}/auth/refresh`, {
     method: 'POST',
@@ -66,7 +69,7 @@ const req = async (method, path, body, requireAuth = false, _swRetry = false, _r
   // rotates the httpOnly refresh cookie and sets a new access token cookie).
   // Only if refresh also fails do we force logout.
   if (res.status === 401 && !_refreshed) {
-    const ok = await _silentRefresh();
+    const ok = await silentRefresh();
     if (ok) {
       return req(method, path, body, requireAuth, _swRetry, true);
     }
