@@ -1,3 +1,10 @@
+## [1.46.7](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.6...v1.46.7) (2026-07-02)
+
+
+### Bug Fixes
+
+* **bookings:** send addons:[] instead of null when no add-ons selected ([2976cfe](https://github.com/Kolanupaka92/petclub-app/commit/2976cfe53e23cb9ea94a0a030e51b3ce93b78129))
+
 ## [1.46.6](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.5...v1.46.6) (2026-07-02)
 
 
