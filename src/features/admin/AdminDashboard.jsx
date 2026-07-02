@@ -1858,7 +1858,9 @@ export const AdminDashboard = ({ session, onLogout }) => {
               const a = dbAudit;
               const issues = [];
               if (a.users?.suspended > 0)              issues.push({ key: "purge_suspended",     label: `${a.users.suspended} suspended account${a.users.suspended !== 1 ? "s" : ""} — resolve via Purge All Suspended in Users tab`, severity: "red" });
-              if (a.users?.pending_role > 0)            issues.push({ key: "stale_pending_users", label: `${a.stale_pending_users?.count || 0} incomplete signups (>7 days old)`, severity: a.stale_pending_users?.count > 0 ? "amber" : "green" });
+              // Only stale (>7d) incomplete signups are an issue — recent pending
+              // signups are normal (user may still finish) and aren't cleanable.
+              if ((a.stale_pending_users?.count || 0) > 0) issues.push({ key: "stale_pending_users", label: `${a.stale_pending_users.count} incomplete signup${a.stale_pending_users.count !== 1 ? "s" : ""} (>7 days old)`, severity: "amber" });
               if (a.orphans?.professional_profiles > 0) issues.push({ key: "orphan_profiles",     label: `${a.orphans.professional_profiles} orphaned professional profiles`, severity: "red" });
               if (a.orphans?.customer_profiles > 0)    issues.push({ key: "orphan_profiles",     label: `${a.orphans.customer_profiles} orphaned customer profiles`, severity: "red" });
               if (a.orphans?.pets > 0)                  issues.push({ key: "orphan_profiles",     label: `${a.orphans.pets} orphaned pet records`, severity: "red" });
@@ -1880,7 +1882,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                       { label:"Total Users",      value: a.users?.total,       icon:"👥" },
                       { label:"Active",            value: a.users?.active,      icon:"✅" },
                       { label:"Suspended",         value: a.users?.suspended,   icon:"⏸", warn: a.users?.suspended > 0 },
-                      { label:"Pending Signup",    value: a.users?.pending_role,icon:"⏳", warn: a.users?.pending_role > 0 },
+                      { label:"Pending Signup",    value: a.users?.pending_role,icon:"⏳", warn: (a.stale_pending_users?.count || 0) > 0 },
                       { label:"Professionals",     value: a.professionals?.total,       icon:"🧑‍💼" },
                       { label:"Pending Verify",    value: a.professionals?.pending_verification, icon:"🔍", warn: a.professionals?.pending_verification > 0 },
                       { label:"Total Bookings",    value: a.bookings?.total,    icon:"📅" },
