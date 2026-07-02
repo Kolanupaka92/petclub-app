@@ -1,3 +1,10 @@
+## [1.46.5](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.4...v1.46.5) (2026-07-02)
+
+
+### Bug Fixes
+
+* **booking:** city field placeholder hardcoded to Hyderabad for all customers ([3f2f6d6](https://github.com/Kolanupaka92/petclub-app/commit/3f2f6d65f07c2d00f4ca627b1108b79bc25cdc33))
+
 ## [1.46.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.3...v1.46.4) (2026-07-02)
 
 
