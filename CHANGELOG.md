@@ -1,3 +1,10 @@
+## [1.46.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.1...v1.46.2) (2026-07-02)
+
+
+### Bug Fixes
+
+* **admin:** DB audit no longer shows zero-count 'incomplete signups' issue ([7c1a9bf](https://github.com/Kolanupaka92/petclub-app/commit/7c1a9bf9a51580ff6b09ad4be830cf9d8a2beb3b))
+
 ## [1.46.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.0...v1.46.1) (2026-07-02)
 
 
