@@ -2037,7 +2037,7 @@ export default function PetclubApp({ session, onLogout }) {
                 )}
               </Fld>
               <Fld label="City *">
-                <Inp placeholder="e.g. Hyderabad" value={bookingForm.city || userInfo.city || ""} onChange={bsf("city")}/>
+                <Inp placeholder={isUSD ? "e.g. Dallas" : "e.g. Hyderabad"} value={bookingForm.city || userInfo.city || ""} onChange={bsf("city")}/>
               </Fld>
               {/* Notes */}
               <Fld label="Special Notes">
