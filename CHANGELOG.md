@@ -1,3 +1,10 @@
+## [1.46.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.2...v1.46.3) (2026-07-02)
+
+
+### Bug Fixes
+
+* **admin:** revenue report showed ₹0 gross / 0 bookings ([fe240be](https://github.com/Kolanupaka92/petclub-app/commit/fe240be609ca2774c16daeec45c2b89d95f9d69c))
+
 ## [1.46.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.1...v1.46.2) (2026-07-02)
 
 
