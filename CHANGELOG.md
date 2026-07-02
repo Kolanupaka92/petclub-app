@@ -1,3 +1,10 @@
+## [1.46.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.3...v1.46.4) (2026-07-02)
+
+
+### Bug Fixes
+
+* **admin:** show 'Pending Signup' instead of raw 'Pending_role' enum ([ef288f4](https://github.com/Kolanupaka92/petclub-app/commit/ef288f4f527a3fb1374a64b07a57047abc4fe76c))
+
 ## [1.46.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.2...v1.46.3) (2026-07-02)
 
 
