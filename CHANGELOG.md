@@ -1,3 +1,10 @@
+## [1.46.6](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.5...v1.46.6) (2026-07-02)
+
+
+### Bug Fixes
+
+* **address:** geocode/reverse-geocode silently failed on expired session cookie ([93349c5](https://github.com/Kolanupaka92/petclub-app/commit/93349c503dbda36f919e4d94ca755cb171bb3abb))
+
 ## [1.46.5](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.4...v1.46.5) (2026-07-02)
 
 
