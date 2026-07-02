@@ -438,7 +438,7 @@ export default function PetclubApp({ session, onLogout }) {
         service_name: bookingForm.service_name,
         pet_id: bookingForm.pet_id || null,
         pet_size: bookingForm.pet_size || null,
-        addons: bookingForm.addons?.length ? bookingForm.addons : null,
+        addons: bookingForm.addons?.length ? bookingForm.addons : [],
         scheduled_at,
         city: bookingForm.city || userInfo.city || "",
         address: bookingForm.address || "",
