@@ -1,7 +1,11 @@
 import { StrictMode, useState, useCallback, useEffect, useRef, Component } from "react";
 import { createRoot } from "react-dom/client";
+import { inject } from "@vercel/analytics";
 import "./index.css";
 import * as Sentry from "@sentry/react";
+
+// Vercel Web Analytics — cookieless, GDPR-friendly. No-op outside production.
+if (import.meta.env.PROD) inject();
 
 // Sentry — active only when VITE_SENTRY_DSN is set (prod). No-op in local dev.
 if (import.meta.env.VITE_SENTRY_DSN) {
