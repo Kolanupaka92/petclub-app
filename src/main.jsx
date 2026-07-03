@@ -387,7 +387,7 @@ function Root() {
   if (!session) {
     content = showLanding
       ? <LandingPage onGetStarted={hint => { setLoginHint(hint); setShowLanding(false); }} />
-      : <Login onLogin={handleLogin} initialHint={loginHint} />;
+      : <Login onLogin={handleLogin} initialHint={loginHint} onHome={() => setShowLanding(true)} />;
   } else {
     const { role, verificationStatus } = session;
     if (role === "pending_role") {

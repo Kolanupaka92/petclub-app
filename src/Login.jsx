@@ -260,7 +260,23 @@ const DocUploadBox = ({ preview, onFile, onClear, accept = "image/*", label, hin
 /* ══════════════════════════════════════════
    MAIN LOGIN COMPONENT
 ══════════════════════════════════════════ */
-export default function Login({ onLogin, initialHint }) {
+export default function Login({ onLogin, initialHint, onHome }) {
+  /* Brand logo — clickable (back to landing) when onHome is provided. */
+  const Brand = ({ dark = false, className = "" }) => {
+    const inner = (
+      <>
+        <img src="/icon.svg" alt="PETclub" className={`${dark ? "w-10 h-10" : "w-9 h-9"} rounded-xl`} loading="lazy" />
+        <span className={dark ? "text-white font-extrabold text-2xl tracking-tight" : "font-extrabold text-gray-900 text-xl tracking-tight"}>
+          PET<span className={dark ? "text-orange-400" : "text-orange-500"}>club</span>
+        </span>
+      </>
+    );
+    return onHome
+      ? <button type="button" onClick={onHome} aria-label="Back to home"
+          className={`flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer ${className}`}>{inner}</button>
+      : <div className={`flex items-center gap-2 ${className}`}>{inner}</div>;
+  };
+
   const [step, setStep]     = useState("start");
   const [mode, setMode]     = useState(null);
   const [cc, setCC]         = useState("91");   // default India
@@ -645,10 +661,7 @@ export default function Login({ onLogin, initialHint }) {
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50" />
 
         <div className="relative z-10 flex flex-col justify-between p-10 w-full">
-          <div className="flex items-center gap-2">
-            <img src="/icon.svg" alt="PETclub" className="w-10 h-10 rounded-xl" loading="lazy" />
-            <span className="text-white font-extrabold text-2xl tracking-tight">PET<span className="text-orange-400">club</span></span>
-          </div>
+          <Brand dark />
           <div>
             {/* Trust stats strip */}
             <div className="flex flex-wrap gap-x-6 gap-y-2 mb-6">
@@ -681,10 +694,7 @@ export default function Login({ onLogin, initialHint }) {
         <div className={`w-full max-w-sm ${shake ? "animate-shake" : ""}`}>
 
           {/* Mobile logo */}
-          <div className="flex items-center gap-2 mb-6 lg:hidden">
-            <img src="/icon.svg" alt="PETclub" className="w-9 h-9 rounded-xl" />
-            <span className="font-extrabold text-gray-900 text-xl tracking-tight">PET<span className="text-orange-500">club</span></span>
-          </div>
+          <Brand className="mb-6 lg:hidden" />
 
           {/* Step progress dots */}
           {step !== "start" && stepIdx >= 0 && (
