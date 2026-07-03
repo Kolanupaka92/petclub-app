@@ -309,7 +309,7 @@ export default function LandingPage({ onGetStarted }) {
               style={{ padding: "7px 16px", borderRadius: 10, background: `linear-gradient(135deg, ${ORANGE}, ${ORANGE2})`, color: "white", fontWeight: 800, fontSize: 13, border: "none", cursor: "pointer" }}>
               Sign In
             </button>
-            <button onClick={() => setMobileOpen(o => !o)}
+            <button onClick={() => setMobileOpen(o => !o)} aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen}
               style={{ background: "none", border: `1px solid ${ORANGE}44`, borderRadius: 10, width: 38, height: 38, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "8px" }}>
               {[0,1,2].map(i => (
                 <span key={i} style={{ display: "block", width: 18, height: 2, background: "white", borderRadius: 2,
@@ -349,6 +349,7 @@ export default function LandingPage({ onGetStarted }) {
             .nav-desktop-links { display: none !important; }
             .nav-desktop-ctas  { display: none !important; }
             .nav-mobile-controls { display: flex !important; }
+            .hero-stats { display: grid !important; grid-template-columns: 1fr 1fr; gap: 20px 24px !important; }
           }
         `}</style>
       </nav>
@@ -397,7 +398,7 @@ export default function LandingPage({ onGetStarted }) {
               >See how it works ↓</button>
             </div>
 
-            <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
+            <div className="hero-stats" style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
               {[
                 { v: "100%",  l: "Verified Pros" },
                 { v: "70km",  l: "Smart Matching" },
