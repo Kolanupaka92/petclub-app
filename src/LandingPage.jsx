@@ -430,7 +430,7 @@ export default function LandingPage({ onGetStarted }) {
             <p style={{ fontSize: 14, color: "#92400e", margin: 0 }}>All at-home or doorstep. No travel, no stress — for you or your pet.</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
-            <ServiceCard icon="✂️" title="Grooming" badge="Most Popular"
+            <ServiceCard icon="✂️" title="Grooming" badge="At Your Doorstep"
               desc="Full bath, haircut, nail trim & ear cleaning for dogs and cats. Certified groomers come to your door — no travel stress for you or your pet." />
             <ServiceCard icon="🐕‍🦺" title="Dog Training"
               desc="Obedience, behaviour correction, agility & puppy socialisation — certified trainers come to you for at-home sessions." />

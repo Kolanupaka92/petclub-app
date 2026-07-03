@@ -670,7 +670,7 @@ export default function Login({ onLogin, initialHint }) {
               ))}
             </div>
             <h2 className="text-white text-4xl font-extrabold leading-tight">Premium pet care,<br />at your doorstep 🐾</h2>
-            <p className="text-white/60 text-sm mt-3">Trusted by pet parents across India & USA</p>
+            <p className="text-white/60 text-sm mt-3">Built for pet parents across India & USA</p>
           </div>
         </div>
       </div>
