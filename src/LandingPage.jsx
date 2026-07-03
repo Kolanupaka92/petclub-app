@@ -12,16 +12,25 @@ const ORANGE  = "#f97316";
 const ORANGE2 = "#ea580c";
 const AMBER   = "#f59e0b";
 
-/* Region-aware matching radius — 70 km in India, 30 miles in the USA.
- * Pre-auth pages have no phone country code, so detect via timezone
- * (same heuristic as the marketing site). */
-export const MATCH_RADIUS = (() => {
+/* Region-aware matching radius — 70 km in India, 30 miles in the USA. */
+export const RADIUS = {
+  IN: { stat: "70km", within: "70 km" },
+  US: { stat: "30mi", within: "30 miles" },
+};
+
+/* Pre-auth pages have no phone country code, so guess the region via
+ * timezone (same heuristic as the marketing site). This is only the
+ * default — the landing page shows a manual IN/US toggle to override it. */
+export function detectRegion() {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-    if (/America\/|US\/|Canada\//.test(tz)) return { stat: "30mi", within: "30 miles" };
+    if (/America\/|US\/|Canada\//.test(tz)) return "US";
   } catch { /* default to India */ }
-  return { stat: "70km", within: "70 km" };
-})();
+  return "IN";
+}
+
+/* Auto-detected default, for surfaces without a toggle (e.g. Login side panel). */
+export const MATCH_RADIUS = RADIUS[detectRegion()];
 
 // Warm dark palette (replaces cold blue-black)
 const DARK    = "#0c0500";
@@ -266,10 +275,37 @@ function FaqAccordion({ dark = false }) {
 /* ═══════════════════════════════════════════
    LANDING PAGE ROOT
 ═══════════════════════════════════════════ */
+/* ── Region toggle (IN / US) — controls the matching-radius copy ── */
+function RegionToggle({ region, setRegion, size = "sm" }) {
+  const pad = size === "sm" ? "5px 10px" : "6px 12px";
+  const opts = [
+    { id: "IN", label: "IN", flag: "/flags/in.svg" },
+    { id: "US", label: "US", flag: "/flags/us.svg" },
+  ];
+  return (
+    <div role="group" aria-label="Choose region"
+      style={{ display: "inline-flex", alignItems: "center", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 100, padding: 2 }}>
+      {opts.map(o => {
+        const active = region === o.id;
+        return (
+          <button key={o.id} type="button" onClick={() => setRegion(o.id)} aria-pressed={active}
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: pad, borderRadius: 100, border: "none", cursor: "pointer",
+              fontSize: 12, fontWeight: 700, transition: "all 0.15s",
+              background: active ? ORANGE : "transparent", color: active ? "#fff" : "rgba(255,255,255,0.7)" }}>
+            <img src={o.flag} alt="" width="16" height="12" style={{ borderRadius: 2, display: "block" }} /> {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function LandingPage({ onGetStarted }) {
   const howRef        = useRef(null);
   const servicesRef   = useRef(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [region, setRegion] = useState(detectRegion());
+  const radius = RADIUS[region];
 
   const scrollToHow      = () => { howRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); setMobileOpen(false); };
   const scrollToServices = () => { servicesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); setMobileOpen(false); };
@@ -305,6 +341,7 @@ export default function LandingPage({ onGetStarted }) {
           </div>
 
           <div className="nav-desktop-ctas" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <RegionToggle region={region} setRegion={setRegion} />
             <button onClick={() => onGetStarted("professional")}
               style={{ padding: "8px 18px", borderRadius: 12, background: "transparent", color: "white", fontWeight: 700, fontSize: 13, border: `1px solid ${ORANGE}44`, cursor: "pointer" }}>
               Join as Pro
@@ -333,7 +370,7 @@ export default function LandingPage({ onGetStarted }) {
         </div>
 
         <div style={{
-          overflow: "hidden", maxHeight: mobileOpen ? 280 : 0, transition: "max-height 0.3s ease",
+          overflow: "hidden", maxHeight: mobileOpen ? 360 : 0, transition: "max-height 0.3s ease",
           borderTop: mobileOpen ? `1px solid ${ORANGE}22` : "none",
           background: "rgba(12,5,0,0.98)",
         }}>
@@ -348,6 +385,10 @@ export default function LandingPage({ onGetStarted }) {
                 {label}
               </button>
             ))}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0 4px" }}>
+              <span style={{ color: "#c2956a", fontSize: 13, fontWeight: 600 }}>Region</span>
+              <RegionToggle region={region} setRegion={setRegion} size="md" />
+            </div>
             <button onClick={() => { onGetStarted("professional"); setMobileOpen(false); }}
               style={{ marginTop: 12, padding: "13px 20px", borderRadius: 12, background: `${ORANGE}18`, color: "white", fontWeight: 700, fontSize: 14, border: `1px solid ${ORANGE}44`, cursor: "pointer" }}>
               Join as a Pro →
@@ -412,7 +453,7 @@ export default function LandingPage({ onGetStarted }) {
             <div className="hero-stats" style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
               {[
                 { v: "100%",  l: "Verified Pros" },
-                { v: MATCH_RADIUS.stat, l: "Smart Matching" },
+                { v: radius.stat, l: "Smart Matching" },
                 { v: "GPS",   l: "Live Tracking" },
                 { v: "Free",  l: "To Join" },
               ].map(s => (
