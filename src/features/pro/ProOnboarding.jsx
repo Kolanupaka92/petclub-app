@@ -376,7 +376,7 @@ export const ProfessionalOnboarding = ({ session, onComplete }) => {
                 <span className="text-xl shrink-0">🟢</span>
                 <div>
                   <strong className="block mb-1">Your schedule, your terms.</strong>
-                  Take total control of your schedule. Toggle your status to <strong>Active</strong> or <strong>Offline</strong> with a single tap to instantly manage your local 70 km radius booking broadcasts — no calls, no back-and-forth.
+                  Take total control of your schedule. Toggle your status to <strong>Active</strong> or <strong>Offline</strong> with a single tap to instantly manage your local {isIndia ? "70 km" : "30 mile"} radius booking broadcasts — no calls, no back-and-forth.
                 </div>
               </div>
             </div>

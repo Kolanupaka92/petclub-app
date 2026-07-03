@@ -12,6 +12,17 @@ const ORANGE  = "#f97316";
 const ORANGE2 = "#ea580c";
 const AMBER   = "#f59e0b";
 
+/* Region-aware matching radius — 70 km in India, 30 miles in the USA.
+ * Pre-auth pages have no phone country code, so detect via timezone
+ * (same heuristic as the marketing site). */
+export const MATCH_RADIUS = (() => {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    if (/America\/|US\/|Canada\//.test(tz)) return { stat: "30mi", within: "30 miles" };
+  } catch { /* default to India */ }
+  return { stat: "70km", within: "70 km" };
+})();
+
 // Warm dark palette (replaces cold blue-black)
 const DARK    = "#0c0500";
 const DARK2   = "#120700";
@@ -401,7 +412,7 @@ export default function LandingPage({ onGetStarted }) {
             <div className="hero-stats" style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
               {[
                 { v: "100%",  l: "Verified Pros" },
-                { v: "70km",  l: "Smart Matching" },
+                { v: MATCH_RADIUS.stat, l: "Smart Matching" },
                 { v: "GPS",   l: "Live Tracking" },
                 { v: "Free",  l: "To Join" },
               ].map(s => (

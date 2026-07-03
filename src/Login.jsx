@@ -6,6 +6,7 @@ import { api, saveToken } from "./api.js";
 //   Fallback    → Backend Twilio/email OTP when Firebase is unavailable
 import { initPhoneAuth, sendPhoneOtp, verifyPhoneOtp, clearPhoneAuth } from "./firebase.js";
 import { AddressPicker } from "./components/AddressPicker.jsx";
+import { MATCH_RADIUS } from "./LandingPage.jsx";
 
 /* ── Constants ── */
 const COUNTRIES = [
@@ -653,7 +654,7 @@ export default function Login({ onLogin, initialHint }) {
             <div className="flex flex-wrap gap-x-6 gap-y-2 mb-6">
               {[
                 { icon: "✅", val: "100%",  label: "Verified Pros" },
-                { icon: "📍", val: "70km",  label: "Smart Matching" },
+                { icon: "📍", val: MATCH_RADIUS.stat, label: "Smart Matching" },
                 { icon: "🛰️", val: "GPS",   label: "Live Tracking" },
                 { icon: "🎉", val: "Free",  label: "To Join" },
               ].map(s => (
