@@ -196,6 +196,16 @@ export const api = {
   verifyPayment: (razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId) =>
     req('POST', '/payments/verify', { razorpay_order_id, razorpay_payment_id, razorpay_signature, booking_id: bookingId }, true),
 
+  // Payments (Stripe — USD bookings; env-gated, returns coming_soon until keys are set)
+  getStripeConfig: () => req('GET', '/payments/stripe/config', null, true),
+  createStripeIntent: (bookingId) => req('POST', '/payments/stripe/create-intent', { booking_id: bookingId }, true),
+
+  // Subscriptions — recurring care plans
+  getSubscriptionPlans: () => req('GET', '/subscriptions/plans'),
+  subscribe:            (planId) => req('POST', '/subscriptions', { plan_id: planId }, true),
+  getMySubscriptions:   () => req('GET', '/subscriptions/me', null, true),
+  cancelSubscription:   (id) => req('POST', `/subscriptions/${id}/cancel`, {}, true),
+
   // Admin
   // Professional reviews (public)
   getProReviews: (profId, page = 1) => req('GET', `/professionals/${profId}/reviews?page=${page}&limit=10`),

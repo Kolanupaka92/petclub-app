@@ -24,9 +24,13 @@ import {
   HEALTH_RECORD_TYPES, TAB_META, VACCINE_SCHEDULE, SERVICES,
 } from "./features/customer/customerData.js";
 import { Spinner, Skeleton, SkeletonCard, Bdg, Modal, Fld, Inp, Sel, Txta, Stars, Toast } from "./features/customer/ui.jsx";
+import PlansView from "./features/customer/PlansView.jsx";
+import { openRazorpayCheckout } from "./firebase.js";
 
 // Lazy-load heavy map component (Mapbox GL is ~500 KB)
 const TrackingMap = lazy(() => import("./components/TrackingMap.jsx"));
+// Lazy-load Stripe checkout (@stripe/stripe-js only loads when a USD user taps Pay)
+const StripePayModal = lazy(() => import("./features/customer/StripePayModal.jsx"));
 
 const INITIAL_PETS = [];
 
@@ -94,6 +98,8 @@ export default function PetclubApp({ session, onLogout }) {
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleTime, setRescheduleTime] = useState("10:00");
   const [rescheduleLoading, setRescheduleLoading] = useState(false);
+  const [payBooking, setPayBooking] = useState(null);   // booking open in Stripe checkout (USD)
+  const [payLoading, setPayLoading] = useState(null);   // booking id with Razorpay checkout in flight
 
   const sf = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const bsf = k => e => setBookingForm(f => ({ ...f, [k]: typeof e === "string" ? e : e.target.value }));
@@ -475,9 +481,40 @@ export default function PetclubApp({ session, onLogout }) {
   const NAV = [
     { id:"home",     icon:"🏠", label:"Home" },
     { id:"bookings", icon:"📅", label:"Bookings", badge: activeMatchingCount || null },
+    { id:"plans",    icon:"💎", label:"Plans" },
     { id:"pets",     icon:"🐾", label:"My Pets" },
     { id:"profile",  icon:"👤", label:"Profile" },
   ];
+
+  /* ── PAY NOW — Stripe (USD) or Razorpay (INR) based on booking currency ── */
+  const markBookingPaid = (bookingId) =>
+    setMyBookings(prev => prev.map(b => b.id === bookingId ? { ...b, payment_status: "paid" } : b));
+
+  const handlePayNow = async (b) => {
+    if ((b.currency || "INR") === "USD") {
+      setPayBooking(b);      // → StripePayModal
+      return;
+    }
+    setPayLoading(b.id);
+    await openRazorpayCheckout({
+      amount: parseFloat(b.total_amount || b.amount),
+      bookingId: b.id,
+      userName: userInfo.name,
+      userPhone: userInfo.phone,
+      userEmail: userInfo.email,
+      description: b.service_name || b.service_type,
+      onSuccess: (result) => {
+        setPayLoading(null);
+        if (result?.offline) { showToast("💳 In-app payments coming soon — pay at service.", "success"); return; }
+        markBookingPaid(b.id);
+        showToast("✅ Payment successful!");
+      },
+      onFailure: (e) => {
+        setPayLoading(null);
+        if (e?.message !== "Payment cancelled") showToast(e?.message || "Payment failed", "error");
+      },
+    });
+  };
 
   /* ── HEADER ── */
   const Header = () => (
@@ -679,6 +716,20 @@ export default function PetclubApp({ session, onLogout }) {
                           className="w-full flex items-center justify-center gap-2 text-xs font-bold text-orange-600 border border-orange-200 bg-orange-50 rounded-xl py-2 hover:bg-orange-100 transition">
                           🔁 Try Again — Pick a New Time
                         </button>
+                      </div>
+                    )}
+                    {/* Pay Now — unpaid bookings with an amount. Stripe for USD, Razorpay for INR */}
+                    {(b.total_amount || b.amount) > 0 && b.payment_status !== "paid" && !["completed","cancelled"].includes(b.status) && b.assignment_status !== "no_pros_available" && (
+                      <button
+                        onClick={() => handlePayNow(b)}
+                        disabled={payLoading === b.id}
+                        className="mt-3 w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.97] disabled:opacity-60 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-md">
+                        {payLoading === b.id ? <Spinner sm /> : <>💳 Pay {currencySymbol}{parseFloat(b.total_amount || b.amount).toFixed(2)} Now</>}
+                      </button>
+                    )}
+                    {b.payment_status === "paid" && (
+                      <div className="mt-3 flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-xl py-2">
+                        ✅ Paid
                       </div>
                     )}
                     {/* Chat with provider — available once a pro is assigned */}
@@ -1446,6 +1497,7 @@ export default function PetclubApp({ session, onLogout }) {
       <main className="safe-bottom min-h-[100dvh]">
         {view === "home"      && <Home />}
         {view === "bookings"  && <BookingsView />}
+        {view === "plans"     && <PlansView isUSD={isUSD} currencySymbol={currencySymbol} numLocale={numLocale} showToast={showToast} />}
         {view === "pets"      && <MyPets />}
         {view === "petDetail" && <PetDetail />}
         {view === "profile"   && <Profile />}
@@ -1465,6 +1517,18 @@ export default function PetclubApp({ session, onLogout }) {
           </div>
         }>
           <TrackingMap booking={trackingBooking} onClose={() => setTrackingBooking(null)} session={session} />
+        </Suspense>
+      )}
+
+      {/* 💳 STRIPE CHECKOUT — USD bookings; coming_soon handled inside the modal */}
+      {payBooking && (
+        <Suspense fallback={null}>
+          <StripePayModal
+            booking={payBooking}
+            onClose={() => setPayBooking(null)}
+            onPaid={() => { markBookingPaid(payBooking.id); setPayBooking(null); }}
+            showToast={showToast}
+          />
         </Suspense>
       )}
 
