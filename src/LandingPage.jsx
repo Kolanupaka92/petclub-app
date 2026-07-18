@@ -229,7 +229,7 @@ const FAQS = [
   { q: "How are professionals verified?", a: "Every pro submits a government-issued photo ID plus their professional certification. Our team manually reviews and approves each application — no shortcuts. The ✅ Verified badge only shows after that review is complete (typically 24–48 hours)." },
   { q: "What does it cost? Are there hidden fees?", a: "Prices are shown upfront at checkout — no surprises. There's no subscription or platform fee for customers. For professionals, PETclub takes 30% and pays out 70% every Saturday." },
   { q: "Is there a live GPS on every booking?", a: "Yes — not just for dog walking. Every groomer, trainer, and boarding drop-off shows a live map from the moment they start their journey. You also get a push notification when they're 10 minutes away." },
-  { q: "How do loyalty points work?", a: "You earn credits on every booking. Bonus credits: +50 for writing a review, +200 for referring a friend. 1,000 credits = 1 Free Essential Bath — applied automatically at checkout, no codes needed." },
+  { q: "How do loyalty credits work?", a: "You earn credits on every booking. Bonus credits: +50 for writing a review, +200 for referring a friend. 1,000 credits = 1 Free Essential Bath — applied automatically at checkout, no codes needed." },
 ];
 
 function FaqAccordion({ dark = false }) {
@@ -556,7 +556,7 @@ export default function LandingPage({ onGetStarted }) {
           <div style={{ flex: "1 1 320px", minWidth: 0 }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", letterSpacing: 2, textTransform: "uppercase", margin: "0 0 12px" }}>Loyalty Rewards</p>
             <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: "0 0 16px", lineHeight: 1.2 }}>
-              Every booking earns you{" "}<span style={{ color: "#4ade80" }}>points.</span>
+              Every booking earns you{" "}<span style={{ color: "#4ade80" }}>credits.</span>
             </h2>
             <p style={{ fontSize: 15, color: "#c2956a", margin: "0 0 24px", lineHeight: 1.7 }}>
               Earn credits on every booking. Bonus credits for reviews (+50) and referrals (+200). Hit 1,000 credits and get a Free Essential Bath — redeemed automatically, no codes needed.
@@ -619,7 +619,7 @@ export default function LandingPage({ onGetStarted }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
             {[
               { icon: "🎖️", title: "Founding member badge", body: "Join before public launch and keep a founding-member badge on your profile — a permanent thank-you for backing us early." },
-              { icon: "🏆", title: "Loyalty rewards from day one", body: "Earn credits on every booking from your very first visit. Hit 1,000 credits and your Essential Bath is on us." },
+              { icon: "🏆", title: "Loyalty rewards from day one", body: "Earn credits on every booking from your very first visit. Hit 1,000 credits and your Free Essential Bath is on us." },
               { icon: "📍", title: "First pick of local pros", body: "Early members are matched first with the nearest verified groomers, vets, trainers, walkers and boarders." },
             ].map(({ icon, title, body }) => (
               <div key={title} style={{ background: "white", border: `1px solid ${ORANGE}22`, borderRadius: 20, padding: "28px 24px", borderTop: `3px solid ${ORANGE}`, boxShadow: `0 4px 20px ${ORANGE}0f` }}>
@@ -767,7 +767,7 @@ export default function LandingPage({ onGetStarted }) {
           </span>
         </div>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
-          © {new Date().getFullYear()} PETclub · United States &amp; India · All rights reserved
+          © {new Date().getFullYear()} PETclub · India &amp; USA · All rights reserved
         </div>
         <div style={{ display: "flex", gap: 16 }}>
           {[
