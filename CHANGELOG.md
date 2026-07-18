@@ -1,3 +1,10 @@
+## [1.46.9](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.8...v1.46.9) (2026-07-18)
+
+
+### Bug Fixes
+
+* **copy:** terminology and phrasing fixes on landing page ([fe94404](https://github.com/Kolanupaka92/petclub-app/commit/fe94404f1a61d0a70478d642ac926b08c5bdbf02))
+
 ## [1.46.8](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.7...v1.46.8) (2026-07-18)
 
 
