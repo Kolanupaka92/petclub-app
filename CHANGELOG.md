@@ -1,3 +1,10 @@
+## [1.46.8](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.7...v1.46.8) (2026-07-18)
+
+
+### Bug Fixes
+
+* **landing:** make WhatsApp support hours region-aware ([c9a1b06](https://github.com/Kolanupaka92/petclub-app/commit/c9a1b0698092e315c76d5c1380c8ab454295c278))
+
 ## [1.46.7](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.6...v1.46.7) (2026-07-02)
 
 
