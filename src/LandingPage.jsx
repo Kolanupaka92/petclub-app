@@ -539,7 +539,7 @@ export default function LandingPage({ onGetStarted }) {
               body="Works in any browser on any device. While PawSpace and PetJio require an app install, PETclub runs instantly — iPhone, Android, or desktop."
               highlight="Book in 60 seconds" />
             <WinCard icon="💬" title="Real human support on WhatsApp"
-              body="Questions before or after a booking? Chat directly with our team on WhatsApp — not a bot, not a ticket queue. Mon–Sat, 9 AM–8 PM IST."
+              body={`Questions before or after a booking? Chat directly with our team on WhatsApp — not a bot, not a ticket queue. Mon–Sat, 9 AM–8 PM ${region === "US" ? "CT" : "IST"}.`}
               highlight="Mon–Sat support" />
           </div>
         </div>
@@ -721,7 +721,7 @@ export default function LandingPage({ onGetStarted }) {
               <div style={{ textAlign: "center", minWidth: 0, width: "100%" }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 6px" }}>WhatsApp</p>
                 <p style={{ fontSize: "clamp(14px,3.5vw,16px)", fontWeight: 800, color: "white", margin: "0 0 4px" }}>+1 609 721 5754</p>
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>Mon – Sat · 9 AM – 8 PM IST</p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>{`Mon – Sat · 9 AM – 8 PM ${region === "US" ? "CT" : "IST"}`}</p>
               </div>
             </a>
 
