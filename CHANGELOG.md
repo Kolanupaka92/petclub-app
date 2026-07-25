@@ -1,3 +1,10 @@
+# [1.47.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.10...v1.47.0) (2026-07-25)
+
+
+### Features
+
+* **data:** add React Query — caching, dedup, retry-with-backoff ([1f71348](https://github.com/Kolanupaka92/petclub-app/commit/1f7134899404b8fac96eb85ed5d37c32a9b92944))
+
 ## [1.46.10](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.9...v1.46.10) (2026-07-25)
 
 
