@@ -1,3 +1,11 @@
+## [1.46.10](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.9...v1.46.10) (2026-07-25)
+
+
+### Bug Fixes
+
+* **landing:** remove named-competitor claim from "no download" card ([0b50bef](https://github.com/Kolanupaka92/petclub-app/commit/0b50bef7a9058bb6a02a07dd44d855369e8de25d))
+* **landing:** terminology, a11y, and accordion-clipping fixes ([70b4f92](https://github.com/Kolanupaka92/petclub-app/commit/70b4f921958d922579e8416ded4f5c378913d794))
+
 ## [1.46.9](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.8...v1.46.9) (2026-07-18)
 
 
