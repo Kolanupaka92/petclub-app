@@ -245,6 +245,7 @@ function FaqAccordion({ dark = false }) {
         <div key={i} style={{ borderBottom: `1px solid ${borderColor}`, overflow: "hidden" }}>
           <button
             onClick={() => setOpen(open === i ? null : i)}
+            aria-expanded={open === i}
             style={{
               width: "100%", textAlign: "left", background: "none", border: "none",
               padding: "20px 4px", cursor: "pointer",
@@ -261,7 +262,7 @@ function FaqAccordion({ dark = false }) {
               flexShrink: 0, lineHeight: 1,
             }}>+</span>
           </button>
-          <div style={{ maxHeight: open === i ? 200 : 0, overflow: "hidden", transition: "max-height 0.3s ease" }}>
+          <div style={{ maxHeight: open === i ? 400 : 0, overflow: "hidden", transition: "max-height 0.3s ease" }}>
             <p style={{ fontSize: 14, color: bodyColor, lineHeight: 1.75, margin: "0 0 20px 0", paddingRight: 32 }}>
               {faq.a}
             </p>
@@ -485,7 +486,7 @@ export default function LandingPage({ onGetStarted }) {
             <ServiceCard icon="✂️" title="Grooming" badge="At Your Doorstep"
               desc="Full bath, haircut, nail trim & ear cleaning for dogs and cats. Certified groomers come to your door — no travel stress for you or your pet." />
             <ServiceCard icon="🐕‍🦺" title="Dog Training"
-              desc="Obedience, behaviour correction, agility & puppy socialisation — certified trainers come to you for at-home sessions." />
+              desc="Obedience, behavior correction, agility & puppy socialization — certified trainers come to you for at-home sessions." />
             <ServiceCard icon="🦮" title="Dog Walking" isNew
               desc="GPS-tracked daily or scheduled walks by verified handlers. Live map so you watch exactly where your dog is." />
             <ServiceCard icon="🏠" title="Pet Boarding" isNew
@@ -510,7 +511,7 @@ export default function LandingPage({ onGetStarted }) {
             <div style={{ position: "absolute", top: 28, left: "16%", right: "16%", height: 1, background: `linear-gradient(90deg, transparent, ${AMBER}44, transparent)`, pointerEvents: "none" }}/>
             <HowStep num={1} icon="🔍" title="Choose a service" body="Pick from 5 certified service types near you — filter by rating, availability, and specialty. Free to sign up in 60 seconds." />
             <HowStep num={2} icon="📅" title="Confirm your booking" body="Pick a time, add your pet's health notes, and pay securely. Instant confirmation with pro contact details." />
-            <HowStep num={3} icon="📍" title="Track live until arrival" body="Watch your provider move on a real-time map. Get notified when they're 10 minutes out — then earn loyalty points." />
+            <HowStep num={3} icon="📍" title="Track live until arrival" body="Watch your provider move on a real-time map. Get notified when they're 10 minutes out — then earn loyalty credits." />
           </div>
         </div>
       </section>
@@ -566,14 +567,14 @@ export default function LandingPage({ onGetStarted }) {
               style={{ padding: "14px 30px", background: "rgba(34,197,94,0.12)", color: "#4ade80", fontWeight: 700, fontSize: 14, border: "1px solid rgba(34,197,94,0.3)", borderRadius: 14, cursor: "pointer", transition: "all 0.2s" }}
               onMouseOver={e => { e.currentTarget.style.background = "rgba(34,197,94,0.2)"; e.currentTarget.style.borderColor = "rgba(34,197,94,0.5)"; }}
               onMouseOut={e => { e.currentTarget.style.background = "rgba(34,197,94,0.12)"; e.currentTarget.style.borderColor = "rgba(34,197,94,0.3)"; }}
-            >Start Earning Points →</button>
+            >Start Earning Credits →</button>
           </div>
           <div style={{ flex: "1 1 280px", minWidth: 0, display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
             {[
               { icon: "💰", label: "Every Booking",  pts: "Earn credits"  },
               { icon: "⭐", label: "Write a Review",  pts: "+50"       },
               { icon: "👥", label: "Refer a Friend",  pts: "+200"      },
-              { icon: "🎁", label: "Free Essential Bath", pts: "1,000 pts" },
+              { icon: "🎁", label: "Free Essential Bath", pts: "1,000 credits" },
             ].map(item => (
               <div key={item.label} style={{ flex: "1 1 120px", background: DARK3, border: "1px solid rgba(34,197,94,0.15)", borderRadius: 16, padding: "18px 14px", textAlign: "center" }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>{item.icon}</div>
@@ -596,7 +597,7 @@ export default function LandingPage({ onGetStarted }) {
           </div>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
             <TrustCard icon="🛡️" title="Rigorous Verification" accent={ORANGE}
-              body="Every professional submits a government ID plus their certification licence. Our admin team manually reviews and approves within 48 hours — no shortcuts, ever." />
+              body="Every professional submits a government ID plus their certification license. Our admin team manually reviews and approves within 48 hours — no shortcuts, ever." />
             <TrustCard icon="📍" title="Live GPS Tracking" accent="#3b82f6"
               body="From the moment your provider starts their journey, you watch them move on a real-time map. Distance, ETA, and a direct call button — all one tap away." />
             <TrustCard icon="📋" title="Pet Health Profiles" accent="#8b5cf6"
@@ -707,7 +708,7 @@ export default function LandingPage({ onGetStarted }) {
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 36 }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: 2, textTransform: "uppercase", margin: "0 0 10px" }}>Get in touch</p>
-            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: "0 0 12px" }}>Let's Connect</h2>
+            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "white", margin: "0 0 12px" }}>Let's connect.</h2>
             <p style={{ fontSize: 14, color: "#c2956a", margin: 0 }}>Questions? Partnerships? We're here — WhatsApp or email.</p>
           </div>
 
