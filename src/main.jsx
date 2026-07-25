@@ -1,6 +1,8 @@
 import { StrictMode, useState, useCallback, useEffect, useRef, Component } from "react";
 import { createRoot } from "react-dom/client";
 import { inject } from "@vercel/analytics";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./queryClient.js";
 import "./index.css";
 import * as Sentry from "@sentry/react";
 
@@ -447,7 +449,9 @@ console.info(
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ErrorBoundary>
-      <Root />
+      <QueryClientProvider client={queryClient}>
+        <Root />
+      </QueryClientProvider>
     </ErrorBoundary>
   </StrictMode>
 );
