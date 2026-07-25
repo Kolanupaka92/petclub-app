@@ -537,7 +537,7 @@ export default function LandingPage({ onGetStarted }) {
               body="We publish our rate openly: pros keep 70% of every booking. No hidden deductions, no surge penalties. Other platforms hide their cut. We don't."
               highlight="70 / 30 split — published" />
             <WinCard icon="🌐" title="No app download required"
-              body="Works in any browser on any device. While PawSpace and PetJio require an app install, PETclub runs instantly — iPhone, Android, or desktop."
+              body="Works in any browser on any device. Unlike apps that force a download before you can book, PETclub runs instantly — iPhone, Android, or desktop."
               highlight="Book in 60 seconds" />
             <WinCard icon="💬" title="Real human support on WhatsApp"
               body={`Questions before or after a booking? Chat directly with our team on WhatsApp — not a bot, not a ticket queue. Mon–Sat, 9 AM–8 PM ${region === "US" ? "CT" : "IST"}.`}
