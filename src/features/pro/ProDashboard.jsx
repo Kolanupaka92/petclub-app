@@ -771,7 +771,7 @@ export const ProfessionalDashboard = ({ session, onLogout }) => {
                             <button
                               disabled={noShowLoading === b.id}
                               onClick={async () => {
-                                if (!window.confirm(`Mark customer as no-show? ${currencySymbol}${isIndia ? "300" : "10"} cancellation fee will apply and remainder will be refunded.`)) return;
+                                if (!window.confirm(`Mark customer as no-show? ${currencySymbol}${isIndia ? "300" : "5"} cancellation fee will apply and remainder will be refunded.`)) return;
                                 setNoShowLoading(b.id);
                                 try {
                                   await api.markNoShow(b.id);
@@ -797,7 +797,7 @@ export const ProfessionalDashboard = ({ session, onLogout }) => {
                         <button
                           disabled={noShowLoading === b.id}
                           onClick={async () => {
-                            if (!window.confirm(`Mark customer as no-show? ${currencySymbol}${isIndia ? "300" : "10"} cancellation fee will apply.`)) return;
+                            if (!window.confirm(`Mark customer as no-show? ${currencySymbol}${isIndia ? "300" : "5"} cancellation fee will apply.`)) return;
                             setNoShowLoading(b.id);
                             try {
                               await api.markNoShow(b.id);

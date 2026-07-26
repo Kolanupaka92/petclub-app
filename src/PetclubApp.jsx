@@ -740,8 +740,9 @@ export default function PetclubApp({ session, onLogout }) {
                         <span>💬</span> Chat with Provider
                       </button>
                     )}
-                    {/* Reschedule — for upcoming/searching/offered/confirmed bookings */}
-                    {["searching","offered","confirmed","upcoming"].includes(b.assignment_status) && !["completed","cancelled"].includes(b.status) && (
+                    {/* Reschedule — only until 2 hours before the appointment (mirrors backend cutoff) */}
+                    {["searching","offered","confirmed","upcoming"].includes(b.assignment_status) && !["completed","cancelled"].includes(b.status)
+                      && (new Date(b.scheduled_at).getTime() - Date.now()) / 3_600_000 >= 2 && (
                       <button
                         onClick={() => { setRescheduleDate(""); setRescheduleTime("10:00"); setRescheduleModal({ booking: b }); }}
                         className="mt-2 w-full flex items-center justify-center gap-2 text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 rounded-xl py-2 hover:bg-blue-100 transition">
@@ -2245,10 +2246,10 @@ export default function PetclubApp({ session, onLogout }) {
               {/* ── Cancellation policy — must be visible before checkout ── */}
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-xs text-amber-800 space-y-1">
                 <div className="font-bold text-amber-900 flex items-center gap-1.5">📋 Cancellation Policy</div>
-                <div className="flex items-start gap-2"><span className="text-emerald-600 font-bold shrink-0">✓</span><span>Cancel <strong>2+ hours</strong> before booking — <strong>full refund</strong>, no charge</span></div>
-                <div className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0">✗</span><span>Cancel <strong>under 2 hours</strong> before — {currencySymbol}300 cancellation fee, rest refunded</span></div>
-                <div className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0">✗</span><span>Customer <strong>no-show</strong> at location — {currencySymbol}300 fee, rest refunded</span></div>
-                <div className="flex items-start gap-2"><span className="text-gray-500 font-bold shrink-0">⊘</span><span><strong>Rescheduling is not available</strong> under any circumstances</span></div>
+                <div className="flex items-start gap-2"><span className="text-emerald-600 font-bold shrink-0">✓</span><span>Cancel <strong>1+ hour</strong> before booking — <strong>full refund</strong>, no charge</span></div>
+                <div className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0">✗</span><span>Cancel <strong>under 1 hour</strong> before — {currencySymbol}{isUSD ? "5" : "300"} cancellation fee, rest refunded</span></div>
+                <div className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0">✗</span><span>Customer <strong>no-show</strong> at location — {currencySymbol}{isUSD ? "5" : "300"} fee, rest refunded</span></div>
+                <div className="flex items-start gap-2"><span className="text-blue-500 font-bold shrink-0">📅</span><span><strong>Reschedule</strong> available until <strong>2 hours</strong> before the appointment</span></div>
               </div>
 
               {/* ── Clickwrap consent checkbox ───────────────────────────────────── */}
@@ -2411,14 +2412,14 @@ export default function PetclubApp({ session, onLogout }) {
                 {cancelModal.preview.fee_free ? (
                   <>
                     <p className="text-sm font-extrabold text-emerald-700">✅ Full Refund — {currencySymbol}{cancelModal.preview.total_amount?.toFixed(2)}</p>
-                    <p className="text-xs text-emerald-600 mt-1">You're cancelling more than 2 hours in advance. No cancellation fee.</p>
+                    <p className="text-xs text-emerald-600 mt-1">You're cancelling more than 1 hour in advance. No cancellation fee.</p>
                   </>
                 ) : (
                   <>
                     <p className="text-sm font-extrabold text-amber-800">⚠️ Cancellation Fee Applies</p>
                     <div className="mt-2 space-y-1 text-xs text-amber-700">
                       <div className="flex justify-between"><span>Total paid</span><span>{currencySymbol}{cancelModal.preview.total_amount?.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-red-600"><span>Cancellation fee (under 2hr)</span><span>−{currencySymbol}{cancelModal.preview.cancellation_fee?.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-red-600"><span>Cancellation fee (under 1hr)</span><span>−{currencySymbol}{cancelModal.preview.cancellation_fee?.toFixed(2)}</span></div>
                       <div className="flex justify-between font-extrabold text-amber-900 border-t border-amber-300 pt-1 mt-1"><span>Refund</span><span>{currencySymbol}{cancelModal.preview.refund_amount?.toFixed(2)}</span></div>
                     </div>
                     <p className="text-[10px] text-amber-600 mt-2">Refund processed within 2–5 business days after cancellation.</p>
@@ -2427,7 +2428,7 @@ export default function PetclubApp({ session, onLogout }) {
               </div>
             )}
 
-            <p className="text-[10px] text-gray-400 text-center mb-4">Note: Rescheduling is not available. This booking will be permanently cancelled.</p>
+            <p className="text-[10px] text-gray-400 text-center mb-4">Note: this booking will be permanently cancelled — this can't be undone.</p>
 
             <div className="flex gap-3">
               <button onClick={() => setCancelModal(null)}

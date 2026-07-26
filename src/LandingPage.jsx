@@ -225,7 +225,7 @@ function WinCard({ icon, title, body, highlight }) {
 /* ── FAQ accordion ── */
 const FAQS = [
   { q: "How does booking work?", a: "Choose your service, pick a time, add your pet's details — done. You'll get instant confirmation with your pro's photo, rating, and contact number. The whole thing takes under 2 minutes." },
-  { q: "Can I cancel or reschedule?", a: "Yes — free cancellation up to 4 hours before the booking. Reschedule anytime with no fee. If a pro cancels on the day, you get a full refund automatically." },
+  { q: "Can I cancel or reschedule?", a: "Yes — free cancellation up to 1 hour before the booking. Reschedule anytime up to 2 hours before. If a pro cancels on the day, you get a full refund automatically." },
   { q: "How are professionals verified?", a: "Every pro submits a government-issued photo ID plus their professional certification. Our team manually reviews and approves each application — no shortcuts. The ✅ Verified badge only shows after that review is complete (typically 24–48 hours)." },
   { q: "What does it cost? Are there hidden fees?", a: "Prices are shown upfront at checkout — no surprises. There's no subscription or platform fee for customers. For professionals, PETclub takes 30% and pays out 70% every Saturday." },
   { q: "Is there a live GPS on every booking?", a: "Yes — not just for dog walking. Every groomer, trainer, and boarding drop-off shows a live map from the moment they start their journey. You also get a push notification when they're 10 minutes away." },
