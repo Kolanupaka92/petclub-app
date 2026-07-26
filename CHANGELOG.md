@@ -1,3 +1,10 @@
+# [1.48.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.47.0...v1.48.0) (2026-07-26)
+
+
+### Features
+
+* **policy:** 1h cancellation window, 2h reschedule cutoff, fix fee display bugs ([31ded13](https://github.com/Kolanupaka92/petclub-app/commit/31ded1326bbaba34cc1699274621654365a3c551)), closes [#d7334a8](https://github.com/Kolanupaka92/petclub-app/issues/d7334a8)
+
 # [1.47.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.46.10...v1.47.0) (2026-07-25)
 
 
