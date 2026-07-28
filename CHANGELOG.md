@@ -1,3 +1,10 @@
+# [1.49.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.48.0...v1.49.0) (2026-07-28)
+
+
+### Features
+
+* **bookings:** show pro's rating + review count once matched ([1a82f11](https://github.com/Kolanupaka92/petclub-app/commit/1a82f1125e04c762cb5bb24d8fe647be230ed148))
+
 # [1.48.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.47.0...v1.48.0) (2026-07-26)
 
 
