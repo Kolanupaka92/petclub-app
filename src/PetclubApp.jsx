@@ -44,6 +44,14 @@ const INITIAL_PETS = [];
 // Accept both shapes so this stays correct if the embed ever returns a list.
 const pickProfile = (cp) => (Array.isArray(cp) ? cp[0] : cp) || {};
 
+// Digital pet passport (scan-a-vaccination-card) is fully built end-to-end —
+// backend routes, Claude vision extraction, review UI — and was verified
+// live against production. Switched off here, not removed: it costs real
+// Anthropic API credits per scan, and the startup doesn't have budget for
+// that yet. Flip this back to true once ANTHROPIC_API_KEY has funded
+// credits again; no other code changes needed.
+const PET_PASSPORT_ENABLED = false;
+
 export default function PetclubApp({ session, onLogout }) {
   // Derive currency symbol and number locale from the user's phone country prefix
   const { currencySymbol, numLocale } = (() => {
@@ -1262,7 +1270,7 @@ export default function PetclubApp({ session, onLogout }) {
                   {/* Digital passport scan — US accounts only for now (see
                       isUSRegion on the backend, which independently enforces
                       this even if a client were ever tricked into showing it). */}
-                  {isUSD && (
+                  {isUSD && PET_PASSPORT_ENABLED && (
                     <button onClick={() => openHealthScan(pet.id)}
                       className="text-xs font-bold text-blue-500 hover:text-blue-600">📸 Scan Card</button>
                   )}
