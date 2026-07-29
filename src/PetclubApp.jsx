@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { subscribeToBookings } from "./utils/realtimeBookings.js";
 import { api } from "./api.js";
-import { useServiceCatalog, useLoyalty } from "./hooks/queries.js";
+import { useServiceCatalog, useLoyalty, useMe } from "./hooks/queries.js";
 import { useQueryClient } from "@tanstack/react-query";
 import { qk } from "./queryClient.js";
 import { loadPets, savePets } from "./utils/storage.js";
@@ -56,7 +56,25 @@ export default function PetclubApp({ session, onLogout }) {
 
   const [pets, setPets] = useState(() => loadPets(INITIAL_PETS));
   const [apiMode, setApiMode] = useState(false);
-  const [userInfo, setUserInfo] = useState({ name: session?.name, phone: session?.phone });
+  // React Query: profile is derived from the /users/me cache rather than held
+  // in local state. Until the fetch lands (or if it fails / returns no name)
+  // we fall back to the session values, exactly as the old useState seed did.
+  const { data: meResp } = useMe();
+  const meUser = meResp?.user?.name ? meResp.user : null;
+  const userInfo = useMemo(() => {
+    if (!meUser) return { name: session?.name, phone: session?.phone };
+    const cp = meUser.customer_profiles?.[0] || {};
+    return {
+      name: meUser.name,
+      phone: meUser.phone,
+      email: meUser.email,
+      address: cp.address || "",
+      area: cp.area || "",
+      city: cp.city || "",
+      pincode: cp.pincode || "",
+      country: cp.country || "India",
+    };
+  }, [meUser, session?.name, session?.phone]);
   const [view, setView] = useState("home");
   const [activePetId, setActivePetId] = useState(null);
   const [activeTab, setActiveTab] = useState("grooming");
@@ -119,21 +137,7 @@ export default function PetclubApp({ session, onLogout }) {
 
   // Load from API
   useEffect(() => {
-    api.getMe().then(r => {
-      if (r.user?.name) {
-        const cp = r.user.customer_profiles?.[0] || {};
-        setUserInfo({
-          name: r.user.name,
-          phone: r.user.phone,
-          email: r.user.email,
-          address: cp.address || "",
-          area: cp.area || "",
-          city: cp.city || "",
-          pincode: cp.pincode || "",
-          country: cp.country || "India",
-        });
-      }
-    }).catch(() => {});
+    // Profile fetch now handled by useMe() (React Query) above.
     api.getPets().then(r => {
       if (r.pets?.length) {
         setPets(r.pets.map(p => ({ id: p.id, name: p.name, species: p.species || "dog", breed: p.breed || "Mixed", age: p.age || "", dob: p.dob || "", weight: p.weight || "", gender: p.gender || "", color: p.color || "", chip: p.chip || "", records: { grooming:[], training:[], food:[], vet:[] } })));
@@ -326,16 +330,25 @@ export default function PetclubApp({ session, onLogout }) {
         addressCity: editAddrMeta.city || null,
         addressState: editAddrMeta.state || null,
       });
-      setUserInfo(prev => ({
-        ...prev,
-        name: form.name.trim(),
-        email: form.email?.trim() || prev.email,
-        address: form.address || "",
-        area: form.area || "",
-        city,
-        pincode,
-        country: form.country || "India",
-      }));
+      // Write straight into the /users/me cache, preserving the server's
+      // nested shape (user.customer_profiles[0]) so a later background
+      // refetch merges cleanly instead of reverting the display.
+      queryClient.setQueryData(qk.me, (old) => {
+        if (!old?.user) return old;
+        const [cp = {}, ...restProfiles] = old.user.customer_profiles || [];
+        return {
+          ...old,
+          user: {
+            ...old.user,
+            name: form.name.trim(),
+            email: form.email?.trim() || old.user.email,
+            customer_profiles: [
+              { ...cp, address: form.address || "", area: form.area || "", city, pincode, country: form.country || "India" },
+              ...restProfiles,
+            ],
+          },
+        };
+      });
       setModal(null);
       setForm({});
       setEditAddrMeta({ lat: null, lng: null, postalCode: "", city: "", state: "" });
