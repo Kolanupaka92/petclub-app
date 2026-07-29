@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { subscribeToBookings } from "./utils/realtimeBookings.js";
 import { api } from "./api.js";
+import { useServiceCatalog } from "./hooks/queries.js";
 import { loadPets, savePets } from "./utils/storage.js";
 import { TC, fmtDate } from "./data/mockData.js";
 import { AddressInput, getEmailSuggestion } from "./Login.jsx";
@@ -88,7 +89,10 @@ export default function PetclubApp({ session, onLogout }) {
   const [cancelReason,  setCancelReason]  = useState("");
   // O-3 fix: live service catalog fetched from backend — overrides fallback constants above.
   // Shape: { platform_discount, grooming: { packages, addons, pet_sizes }, training: { packages } }
-  const [catalog, setCatalog] = useState(null);
+  // React Query: caches for 5 min (staleTime set in the hook), retries transient
+  // failures automatically — same fallback behavior as before (catalog stays
+  // undefined on failure, downstream `?? MODULE_CONSTANT` fallbacks unchanged).
+  const { data: catalog } = useServiceCatalog();
   const [trackingBooking, setTrackingBooking] = useState(null); // booking object → open TrackingMap
   const [loadedPetRecs, setLoadedPetRecs] = useState(new Set()); // tracks which pet IDs have had API records fetched
   const [notifications, setNotifications] = useState([]);
@@ -140,11 +144,7 @@ export default function PetclubApp({ session, onLogout }) {
         if (r.is_new_member) setShowLoyaltyExplainer(true);
       }
     }).catch(() => {});
-    // O-3 fix: fetch live service catalog to replace hardcoded pricing constants.
-    // Falls back to module-level defaults silently if the fetch fails (e.g. offline).
-    api.getServiceCatalog().then(r => {
-      if (r.success) setCatalog(r);
-    }).catch(() => {});
+    // Service catalog fetch now handled by useServiceCatalog() (React Query) above.
     // W-6 fix: sync rated booking IDs from server and merge with localStorage.
     // Prevents the rating dialog from reappearing after localStorage is cleared
     // (private mode, browser reset, new device). The DB unique constraint is the
