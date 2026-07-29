@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { subscribeToBookings } from "./utils/realtimeBookings.js";
 import { api } from "./api.js";
-import { useServiceCatalog } from "./hooks/queries.js";
+import { useServiceCatalog, useLoyalty } from "./hooks/queries.js";
+import { useQueryClient } from "@tanstack/react-query";
+import { qk } from "./queryClient.js";
 import { loadPets, savePets } from "./utils/storage.js";
 import { TC, fmtDate } from "./data/mockData.js";
 import { AddressInput, getEmailSuggestion } from "./Login.jsx";
@@ -64,7 +66,13 @@ export default function PetclubApp({ session, onLogout }) {
   const [search, setSearch] = useState("");
   const [loadingPets, setLoadingPets] = useState(true);
   const [myBookings, setMyBookings] = useState([]);
-  const [loyaltyData, setLoyaltyData] = useState(null);
+  // React Query: same shape as before — `loyaltyData` is the raw response when
+  // the call succeeded, else null (the API returns 403 for non-customers, and
+  // every read site already guards with `loyaltyData?.` / `loyaltyData &&`).
+  const queryClient = useQueryClient();
+  const { data: loyaltyResp } = useLoyalty();
+  const loyaltyData = loyaltyResp?.success ? loyaltyResp : null;
+  const refreshLoyalty = () => queryClient.invalidateQueries({ queryKey: qk.loyalty });
   const [loyaltyLoading, setLoyaltyLoading] = useState(false);
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [showLoyaltyExplainer, setShowLoyaltyExplainer] = useState(false); // "How it Works" modal
@@ -136,14 +144,8 @@ export default function PetclubApp({ session, onLogout }) {
       setApiMode(true);
     }).catch(() => {}).finally(() => setLoadingPets(false));
     api.getBookings().then(r => setMyBookings(r.bookings || [])).catch(() => {});
-    // Load loyalty data (only for customers — graceful on 403)
-    // is_new_member flag triggers the welcome/explainer modal on first visit
-    api.getLoyalty().then(r => {
-      if (r.success) {
-        setLoyaltyData(r);
-        if (r.is_new_member) setShowLoyaltyExplainer(true);
-      }
-    }).catch(() => {});
+    // Loyalty fetch now handled by useLoyalty() (React Query) above; the
+    // is_new_member welcome modal is triggered by its own effect below.
     // Service catalog fetch now handled by useServiceCatalog() (React Query) above.
     // W-6 fix: sync rated booking IDs from server and merge with localStorage.
     // Prevents the rating dialog from reappearing after localStorage is cleared
@@ -159,6 +161,19 @@ export default function PetclubApp({ session, onLogout }) {
       if (r.success) { setNotifications(r.notifications || []); setUnreadCount(r.unread || 0); }
     }).catch(() => {});
   }, []);
+
+  // Welcome/explainer modal for brand-new loyalty members. Fires at most once
+  // per session — useLoyalty() refetches in the background (window focus, after
+  // a rating or redemption), and without this guard a stale is_new_member flag
+  // would re-open the modal on top of whatever the user is doing.
+  const loyaltyWelcomeShown = useRef(false);
+  useEffect(() => {
+    if (loyaltyWelcomeShown.current) return;
+    if (loyaltyData?.is_new_member) {
+      loyaltyWelcomeShown.current = true;
+      setShowLoyaltyExplainer(true);
+    }
+  }, [loyaltyData]);
 
   // Smart polling: 5s when searching/offered, 15s otherwise. Paused when tab is hidden.
   useEffect(() => {
@@ -338,7 +353,7 @@ export default function PetclubApp({ session, onLogout }) {
       setRatingModal(null); setRatingVal(0); setRatingReview("");
       showToast("⭐ Thanks! +50 PETclub Credits earned!");
       // Refresh loyalty balance in background
-      api.getLoyalty().then(r => { if (r.success) setLoyaltyData(r); }).catch(() => {});
+      refreshLoyalty();
     } catch (e) { showToast(e.message || "Failed to submit rating", "error"); }
     setRatingLoading(false);
   };
@@ -1343,7 +1358,7 @@ export default function PetclubApp({ session, onLogout }) {
           try {
             const r = await api.redeemCredits();
             showToast(`🎉 Coupon ready: ${r.couponCode} — Free ${r.serviceName}!`, "success");
-            api.getLoyalty().then(res => { if (res.success) setLoyaltyData(res); }).catch(() => {});
+            refreshLoyalty();
           } catch (e) { showToast(e.message || "Redemption failed", "error"); }
           setRedeemLoading(false);
         };
