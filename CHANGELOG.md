@@ -1,3 +1,10 @@
+## [1.49.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.49.3...v1.49.4) (2026-07-29)
+
+
+### Bug Fixes
+
+* **profile:** render saved address — customer_profiles is an object, not an array ([762c458](https://github.com/Kolanupaka92/petclub-app/commit/762c458c28c2262ce42e89727fc41d19a37fa81e))
+
 ## [1.49.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.49.2...v1.49.3) (2026-07-29)
 
 ## [1.49.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.49.1...v1.49.2) (2026-07-29)
