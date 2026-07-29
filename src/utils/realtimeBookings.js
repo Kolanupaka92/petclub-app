@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 // Only created when both env vars are present — createClient throws on empty strings
 const _url = import.meta.env.VITE_SUPABASE_URL;
 const _key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabaseAnon = (_url && _key) ? createClient(_url, _key) : null;
+export const supabaseAnon = (_url && _key) ? createClient(_url, _key) : null;
 
 /**
  * Subscribe to booking changes for a customer.

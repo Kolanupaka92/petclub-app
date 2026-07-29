@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
-import { subscribeToBookings } from "./utils/realtimeBookings.js";
+import { subscribeToBookings, supabaseAnon } from "./utils/realtimeBookings.js";
 import { api } from "./api.js";
 import { useServiceCatalog, useLoyalty, useMe } from "./hooks/queries.js";
 import { useQueryClient } from "@tanstack/react-query";
@@ -127,6 +127,10 @@ export default function PetclubApp({ session, onLogout }) {
   const { data: catalog } = useServiceCatalog();
   const [trackingBooking, setTrackingBooking] = useState(null); // booking object → open TrackingMap
   const [loadedPetRecs, setLoadedPetRecs] = useState(new Set()); // tracks which pet IDs have had API records fetched
+
+  // Digital pet passport — scan-a-document flow (US accounts only).
+  // step: 'pick' → 'uploading' → 'extracting' → 'review' → 'saving'
+  const [healthScan, setHealthScan] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -408,6 +412,64 @@ export default function PetclubApp({ session, onLogout }) {
       setModal(null); setForm({});
       showToast("Record saved!");
     } catch (e) { showToast(e.message || "Failed to save record", "error"); }
+  };
+
+  // ── Digital pet passport: scan a paper vaccination card / vet report ──
+  // US accounts only — the button that opens this is itself gated by isUSD,
+  // and the backend independently re-checks the owner's phone region, so
+  // this never reaches a non-US account even if the UI gate is bypassed.
+  const openHealthScan = (petId) => setHealthScan({ step: "pick", petId });
+  const closeHealthScan = () => setHealthScan(null);
+
+  const handleHealthScanFile = async (file) => {
+    if (!file || !healthScan) return;
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    setHealthScan(s => ({ ...s, step: "uploading" }));
+    try {
+      const presign = await api.presignHealthDocument(healthScan.petId, "vaccination_card", ext);
+      if (!presign.success) throw new Error(presign.error || "Could not start upload");
+
+      if (!supabaseAnon) throw new Error("Upload is unavailable right now — please try again shortly.");
+      const { error: upErr } = await supabaseAnon.storage
+        .from("pet-health-docs")
+        .uploadToSignedUrl(presign.path, presign.token, file);
+      if (upErr) throw new Error(upErr.message || "Upload failed");
+
+      setHealthScan(s => ({ ...s, step: "extracting", documentId: presign.documentId }));
+      const extracted = await api.extractHealthDocument(healthScan.petId, presign.documentId);
+      if (!extracted.success) throw new Error(extracted.error || "Could not read the document");
+
+      const records = (extracted.document.extracted?.records || []).map(r => ({ ...r }));
+      setHealthScan(s => ({
+        ...s,
+        step: "review",
+        warning: extracted.document.extracted?.warning || null,
+        records,
+      }));
+    } catch (e) {
+      setHealthScan(s => ({ ...s, step: "error", error: e.message || "Something went wrong" }));
+    }
+  };
+
+  const updateHealthScanRecord = (idx, field, value) =>
+    setHealthScan(s => ({ ...s, records: s.records.map((r, i) => i === idx ? { ...r, [field]: value } : r) }));
+
+  const removeHealthScanRecord = (idx) =>
+    setHealthScan(s => ({ ...s, records: s.records.filter((_, i) => i !== idx) }));
+
+  const confirmHealthScan = async () => {
+    if (!healthScan) return;
+    setHealthScan(s => ({ ...s, step: "saving" }));
+    try {
+      const res = await api.confirmHealthDocument(healthScan.petId, healthScan.documentId, healthScan.records);
+      if (!res.success) throw new Error(res.error || "Could not save records");
+      // Force the pet-detail view to refetch vet records so the new entries appear.
+      setLoadedPetRecs(prev => { const next = new Set(prev); next.delete(healthScan.petId); return next; });
+      showToast(`✅ Saved ${res.records.length} health record${res.records.length === 1 ? "" : "s"}!`);
+      setHealthScan(null);
+    } catch (e) {
+      setHealthScan(s => ({ ...s, step: "review", error: e.message || "Could not save records" }));
+    }
   };
 
   // O-3 fix: resolved pricing uses live catalog when available; falls back to
@@ -1196,8 +1258,17 @@ export default function PetclubApp({ session, onLogout }) {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-extrabold text-gray-600 uppercase tracking-wide">💉 Health Passport</p>
-                <button onClick={() => { setActiveTab("vet"); setForm({ date: today(), service: "Vaccination" }); setModal("addRecord"); }}
-                  className="text-xs font-bold text-rose-500 hover:text-rose-600">+ Add</button>
+                <div className="flex items-center gap-3">
+                  {/* Digital passport scan — US accounts only for now (see
+                      isUSRegion on the backend, which independently enforces
+                      this even if a client were ever tricked into showing it). */}
+                  {isUSD && (
+                    <button onClick={() => openHealthScan(pet.id)}
+                      className="text-xs font-bold text-blue-500 hover:text-blue-600">📸 Scan Card</button>
+                  )}
+                  <button onClick={() => { setActiveTab("vet"); setForm({ date: today(), service: "Vaccination" }); setModal("addRecord"); }}
+                    className="text-xs font-bold text-rose-500 hover:text-rose-600">+ Add</button>
+                </div>
               </div>
               <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                 {passport.map(v => {
@@ -1813,6 +1884,96 @@ export default function PetclubApp({ session, onLogout }) {
           )}
           <Fld label="Notes"><Txta placeholder="Additional notes…" value={form.notes||""} onChange={sf("notes")} /></Fld>
           <button onClick={addRecord} disabled={!form.date} className="btn-primary mt-1">Save Record</button>
+        </Modal>
+      )}
+
+      {/* Digital pet passport — scan-a-document flow */}
+      {healthScan && (
+        <Modal title="📸 Scan Vaccination Card" onClose={healthScan.step === "uploading" || healthScan.step === "extracting" || healthScan.step === "saving" ? undefined : closeHealthScan}>
+          {healthScan.step === "pick" && (
+            <div className="text-center py-2">
+              <div className="text-5xl mb-3">📋</div>
+              <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+                Photograph a paper vaccination card or vet report — we'll read it
+                and pull out the vaccine, dates, and vet details for you to review.
+              </p>
+              <label className="btn-primary block cursor-pointer mb-2">
+                📷 Take Photo / Choose File
+                <input type="file" accept="image/*" capture="environment" className="hidden"
+                  onChange={e => handleHealthScanFile(e.target.files?.[0])} />
+              </label>
+              <p className="text-xs text-gray-400">JPG, PNG, or WebP. You'll review everything before it's saved.</p>
+            </div>
+          )}
+
+          {(healthScan.step === "uploading" || healthScan.step === "extracting" || healthScan.step === "saving") && (
+            <div className="flex flex-col items-center justify-center py-10">
+              <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mb-4" />
+              <p className="text-sm font-semibold text-gray-600">
+                {healthScan.step === "uploading"  && "Uploading photo…"}
+                {healthScan.step === "extracting" && "Reading the document with AI…"}
+                {healthScan.step === "saving"      && "Saving records…"}
+              </p>
+            </div>
+          )}
+
+          {healthScan.step === "error" && (
+            <div className="text-center py-6">
+              <div className="text-4xl mb-3">😕</div>
+              <p className="text-sm text-rose-600 font-semibold mb-4">{healthScan.error}</p>
+              <button onClick={() => setHealthScan(s => ({ petId: s.petId, step: "pick" }))} className="btn-primary">Try Again</button>
+            </div>
+          )}
+
+          {healthScan.step === "review" && (
+            <div>
+              <p className="text-xs text-gray-500 mb-3">
+                Review what we found — edit anything that's wrong, remove rows that
+                don't apply, then save. Nothing is added to {pet?.name}'s records until you confirm.
+              </p>
+              {healthScan.warning && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-3">
+                  <p className="text-xs text-amber-700">⚠️ {healthScan.warning}</p>
+                </div>
+              )}
+              {healthScan.error && (
+                <div className="bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mb-3">
+                  <p className="text-xs text-rose-700">{healthScan.error}</p>
+                </div>
+              )}
+              {healthScan.records.length === 0 && (
+                <div className="text-center py-6 text-gray-400 text-sm">No records were found on this image.</div>
+              )}
+              <div className="space-y-4">
+                {healthScan.records.map((r, i) => (
+                  <div key={i} className="border border-gray-200 rounded-2xl p-3 relative">
+                    <button onClick={() => removeHealthScanRecord(i)}
+                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full text-gray-300 hover:text-rose-500 hover:bg-rose-50 text-sm">✕</button>
+                    <Fld label="Vaccine / Procedure *">
+                      <Inp value={r.vtype || ""} onChange={e => updateHealthScanRecord(i, "vtype", e.target.value)} placeholder="e.g. Rabies" />
+                    </Fld>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Fld label="Date Given"><Inp type="date" value={r.date || ""} onChange={e => updateHealthScanRecord(i, "date", e.target.value)} /></Fld>
+                      <Fld label="Next Due"><Inp type="date" value={r.next_due || ""} onChange={e => updateHealthScanRecord(i, "next_due", e.target.value)} /></Fld>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Fld label="Vet"><Inp value={r.vet || ""} onChange={e => updateHealthScanRecord(i, "vet", e.target.value)} /></Fld>
+                      <Fld label="Clinic"><Inp value={r.clinic || ""} onChange={e => updateHealthScanRecord(i, "clinic", e.target.value)} /></Fld>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Fld label="Batch / Lot #"><Inp value={r.batch_no || ""} onChange={e => updateHealthScanRecord(i, "batch_no", e.target.value)} /></Fld>
+                      <Fld label="Vet Licence #"><Inp value={r.vet_licence || ""} onChange={e => updateHealthScanRecord(i, "vet_licence", e.target.value)} /></Fld>
+                    </div>
+                    <Fld label="Notes"><Txta value={r.notes || ""} onChange={e => updateHealthScanRecord(i, "notes", e.target.value)} rows={2} /></Fld>
+                  </div>
+                ))}
+              </div>
+              <button onClick={confirmHealthScan} disabled={healthScan.records.length === 0}
+                className="btn-primary mt-4 w-full">
+                Save {healthScan.records.length || ""} Record{healthScan.records.length === 1 ? "" : "s"}
+              </button>
+            </div>
+          )}
         </Modal>
       )}
 

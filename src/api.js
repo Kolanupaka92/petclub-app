@@ -117,6 +117,16 @@ export const api = {
   getRecords: (petId, type) => req('GET', `/pets/${petId}/records/${type}`, null, true),
   addRecord: (petId, type, data) => req('POST', `/pets/${petId}/records/${type}`, data, true),
 
+  // Digital pet passport — scan a paper vaccination card / vet report.
+  // US accounts only (enforced server-side); presign returns 403 otherwise.
+  presignHealthDocument: (petId, docKind, ext) =>
+    req('POST', `/pets/${petId}/health-documents/presign`, { docKind, ext }, true),
+  extractHealthDocument: (petId, docId) =>
+    req('POST', `/pets/${petId}/health-documents/${docId}/extract`, {}, true),
+  confirmHealthDocument: (petId, docId, records) =>
+    req('POST', `/pets/${petId}/health-documents/${docId}/confirm`, { records }, true),
+  getHealthDocuments: (petId) => req('GET', `/pets/${petId}/health-documents`, null, true),
+
   // Bookings
   getBookings: () => req('GET', '/bookings', null, true),
   createBooking: (data) => req('POST', '/bookings', data, true),
