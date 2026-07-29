@@ -1,3 +1,10 @@
+# [1.50.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.49.4...v1.50.0) (2026-07-29)
+
+
+### Features
+
+* **pet-passport:** scan-a-document UI for the digital pet passport ([d7709d3](https://github.com/Kolanupaka92/petclub-app/commit/d7709d3707ed59fcc2151a60904445e0086bf03b))
+
 ## [1.49.4](https://github.com/Kolanupaka92/petclub-app/compare/v1.49.3...v1.49.4) (2026-07-29)
 
 
