@@ -38,6 +38,12 @@ const StripePayModal = lazy(() => import("./features/customer/StripePayModal.jsx
 const INITIAL_PETS = [];
 
 /* ══════════ MAIN APP ══════════ */
+// /users/me embeds customer_profiles as a single OBJECT (one-to-one relation),
+// not an array — code that indexed it as `customer_profiles[0]` silently read
+// undefined, which is why the saved address never rendered on the profile.
+// Accept both shapes so this stays correct if the embed ever returns a list.
+const pickProfile = (cp) => (Array.isArray(cp) ? cp[0] : cp) || {};
+
 export default function PetclubApp({ session, onLogout }) {
   // Derive currency symbol and number locale from the user's phone country prefix
   const { currencySymbol, numLocale } = (() => {
@@ -63,7 +69,7 @@ export default function PetclubApp({ session, onLogout }) {
   const meUser = meResp?.user?.name ? meResp.user : null;
   const userInfo = useMemo(() => {
     if (!meUser) return { name: session?.name, phone: session?.phone };
-    const cp = meUser.customer_profiles?.[0] || {};
+    const cp = pickProfile(meUser.customer_profiles);
     return {
       name: meUser.name,
       phone: meUser.phone,
@@ -335,17 +341,24 @@ export default function PetclubApp({ session, onLogout }) {
       // refetch merges cleanly instead of reverting the display.
       queryClient.setQueryData(qk.me, (old) => {
         if (!old?.user) return old;
-        const [cp = {}, ...restProfiles] = old.user.customer_profiles || [];
+        const prev = old.user.customer_profiles;
+        const merged = {
+          ...pickProfile(prev),
+          address: form.address || "",
+          area: form.area || "",
+          city,
+          pincode,
+          country: form.country || "India",
+        };
         return {
           ...old,
           user: {
             ...old.user,
             name: form.name.trim(),
             email: form.email?.trim() || old.user.email,
-            customer_profiles: [
-              { ...cp, address: form.address || "", area: form.area || "", city, pincode, country: form.country || "India" },
-              ...restProfiles,
-            ],
+            // Write back in the same shape the server sent, so a later
+            // background refetch doesn't change how this is read.
+            customer_profiles: Array.isArray(prev) ? [merged, ...prev.slice(1)] : merged,
           },
         };
       });
