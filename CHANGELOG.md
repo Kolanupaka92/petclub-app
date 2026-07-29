@@ -1,3 +1,10 @@
+# [1.51.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.50.0...v1.51.0) (2026-07-29)
+
+
+### Features
+
+* **pet-passport:** hold the scan-card action behind a kill switch ([f9d8cc3](https://github.com/Kolanupaka92/petclub-app/commit/f9d8cc3431c95b89c2485240261a451146579c30))
+
 # [1.50.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.49.4...v1.50.0) (2026-07-29)
 
 
