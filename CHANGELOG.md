@@ -1,3 +1,5 @@
+## [1.49.3](https://github.com/Kolanupaka92/petclub-app/compare/v1.49.2...v1.49.3) (2026-07-29)
+
 ## [1.49.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.49.1...v1.49.2) (2026-07-29)
 
 ## [1.49.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.49.0...v1.49.1) (2026-07-29)
