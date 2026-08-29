@@ -1,3 +1,10 @@
+## [1.51.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.51.0...v1.51.1) (2026-08-29)
+
+
+### Bug Fixes
+
+* **fonts:** self-host Inter — CSP was blocking it for every user ([a468043](https://github.com/Kolanupaka92/petclub-app/commit/a468043dcc4766501c170754344d7535e85479a7))
+
 # [1.51.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.50.0...v1.51.0) (2026-07-29)
 
 
