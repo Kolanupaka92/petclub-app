@@ -83,14 +83,19 @@ class ErrorBoundary extends Component {
 }
 
 /* ── Inactivity config ── */
-// Admin users often monitor passively (dashboard, live trips) so give them
-// a longer window before auto-logout. Regular users keep the tighter 8-min limit.
+// Admin has the most sensitive access in the app (user data, payouts,
+// verification), so it gets the tightest auto-logout window — 2 min idle,
+// deliberately shorter than the 8-min limit for customers/pros.
 // PWA note: localStorage persists across home-screen launches, so the session
 // survives app close/reopen. The timer resets on the first touch/click after
 // relaunch, giving the full window from that point — no aggressive logout on refresh.
-const LOGOUT_AFTER_ADMIN = 60 * 60 * 1000; // 60 min for admin
+const LOGOUT_AFTER_ADMIN =  2 * 60 * 1000; //  2 min for admin
 const LOGOUT_AFTER_USER  =  8 * 60 * 1000; //  8 min for customers / pros
-const WARN_BEFORE        = 60 * 1000;       // show warning 60s before logout
+// Warning lead time is role-aware too: 60s would eat half of admin's 2-min
+// window, so admin gets a proportionally shorter 30s "still there?" warning.
+// Customers/pros keep the original 60s.
+const WARN_BEFORE_ADMIN  = 30 * 1000;
+const WARN_BEFORE_USER   = 60 * 1000;
 
 // Pending approval screen for professionals
 function PendingApproval({ session, onLogout, onApproved }) {
@@ -271,16 +276,20 @@ function Root() {
     clearInterval(countdownRef.current);
     setWarnVisible(false);
 
-    // Role-aware timeout: admin gets 60 min, everyone else 8 min
-    const LOGOUT_AFTER = sessionRef.current?.role === 'admin'
-      ? LOGOUT_AFTER_ADMIN
-      : LOGOUT_AFTER_USER;
+    // Role-aware timeout: admin gets 2 min, everyone else 8 min
+    const isAdmin = sessionRef.current?.role === 'admin';
+    const LOGOUT_AFTER = isAdmin ? LOGOUT_AFTER_ADMIN : LOGOUT_AFTER_USER;
+    const WARN_BEFORE  = isAdmin ? WARN_BEFORE_ADMIN  : WARN_BEFORE_USER;
 
-    // Show "Still there?" warning 60 s before logout
+    // Show "Still there?" warning WARN_BEFORE ms before logout. Countdown
+    // display must start at the same value as WARN_BEFORE (in seconds) —
+    // logoutTimerRef fires at the fixed LOGOUT_AFTER mark regardless of what
+    // this countdown shows, so a mismatch here would make the on-screen
+    // timer lie about how much time is actually left.
     warnTimerRef.current = setTimeout(() => {
       if (!sessionRef.current) return;
       setWarnVisible(true);
-      let c = 60;
+      let c = WARN_BEFORE / 1000;
       setCountdown(c);
       countdownRef.current = setInterval(() => {
         c -= 1;
