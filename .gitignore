@@ -47,3 +47,11 @@ commit_msg.txt
 # Test artifacts
 test-results/
 test_id_photo.png
+
+# Pitch/demo media parked in the repo root — large binaries that should
+# never be committed into the app bundle (a stray `git add .` would).
+/*.mp4
+/*.mov
+/*.pptx
+/*.key
+/*.odp
