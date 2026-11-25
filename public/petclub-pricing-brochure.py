@@ -1,3 +1,4 @@
+# Author: Sai Kolanupaka
 """
 PETclub Pricing Brochure Generator
 Generates a professional A4 PDF brochure for at-home pet grooming services.

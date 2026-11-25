@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 import { createClient } from '@supabase/supabase-js';
 
 // Anon-key client — used ONLY for Realtime subscriptions (read-only, RLS-enforced)

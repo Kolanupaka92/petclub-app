@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 /**
  * TrackingMapMapbox — Mapbox GL live tracking for USA-based users (+1).
  *

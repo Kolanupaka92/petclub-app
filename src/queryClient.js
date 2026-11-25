@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 // ══════════════════════════════════════════════════════════════════
 //  React Query client — shared config
 //

@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 /**
  * TrackingMapMappls — Mappls Web Maps SDK live tracking for India-based users (+91).
  *

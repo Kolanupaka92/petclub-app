@@ -1,4 +1,5 @@
 // @ts-check
+// Author: Sai Kolanupaka
 import { defineConfig, devices } from '@playwright/test';
 
 /**

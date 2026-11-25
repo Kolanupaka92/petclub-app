@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 /**
  * PETclub — Firebase Cloud Messaging Service Worker
  * Handles background push notifications when the app is not in focus.

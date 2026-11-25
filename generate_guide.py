@@ -1,3 +1,4 @@
+# Author: Sai Kolanupaka
 """
 PETclub Engineering Reference Guide — PDF Generator
 Run: python generate_guide.py

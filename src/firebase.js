@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 /**
  * PETclub — Firebase module
  * - Phone Auth (OTP via Firebase SMS — 10k/month free)

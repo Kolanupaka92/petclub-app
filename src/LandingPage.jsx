@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 import { useRef, useState, useEffect } from "react";
 
 /* ─────────────────────────────────────────────

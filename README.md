@@ -179,3 +179,7 @@ Two numbers are configured in Firebase Console → Auth → Phone → Test numbe
 - `+91 9999900002` → OTP: `123456` (professional flow)
 
 These consume Firebase's SMS quota (~300 free real SMS/month). Prefer email OTP tests (via Mailinator) to save quota — no rate limits, no Firebase dependency.
+
+## Author
+
+Sai Kolanupaka

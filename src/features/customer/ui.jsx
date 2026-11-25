@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 import { useEffect } from "react";
 
 export const Spinner = ({ sm }) => <div className={`border-2 border-orange-400 border-t-transparent rounded-full animate-spin ${sm ? "w-4 h-4" : "w-8 h-8"}`} />;

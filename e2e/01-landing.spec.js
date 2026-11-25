@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 /**
  * 01 — Landing page smoke tests
  * Verifies the public www.mypetclub.app page renders correctly.

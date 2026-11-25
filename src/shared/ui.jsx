@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 import { useState, useRef } from "react";
 
 /* ── Shared UI ── */

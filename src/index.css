@@ -1,3 +1,4 @@
+/* Author: Sai Kolanupaka */
 /* Inter, self-hosted.
    Previously loaded from fonts.googleapis.com, but the CSP in vercel.json
    only allows style-src from 'self' + mapbox — so the stylesheet was blocked

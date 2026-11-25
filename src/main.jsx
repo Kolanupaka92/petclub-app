@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 import { StrictMode, useState, useCallback, useEffect, useRef, Component } from "react";
 import { createRoot } from "react-dom/client";
 import { inject } from "@vercel/analytics";

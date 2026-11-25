@@ -1,3 +1,4 @@
+# Author: Sai Kolanupaka
 """
 PETclub Pricing Brochure — Tri-fold A4 landscape with REAL pet photos.
 All images are from Pexels (free for commercial use, no attribution required).

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Author: Sai Kolanupaka
 # ══════════════════════════════════════════════════════════════════
 #  PETclub Deployment Smoke Test
 #  Verifies both the Vercel frontend and Cloud Run backend are

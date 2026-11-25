@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { subscribeToBookings, supabaseAnon } from "./utils/realtimeBookings.js";
 import { api } from "./api.js";

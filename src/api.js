@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 // Strip UTF-8 BOM (﻿ / ﻿) that Vercel sometimes injects into env var values
 const _stripBom = (v) => (v || '').replace(/^﻿/, '').trim();
 

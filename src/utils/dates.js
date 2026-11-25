@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 export const daysUntil = (s) => {
   try {
     return Math.ceil((new Date(s) - Date.now()) / 864e5);

@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 /**
  * 07 — Security & RBAC tests
  * Verifies that critical security constraints are upheld in the UI.

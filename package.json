@@ -2,6 +2,7 @@
   "name": "petclub-app",
   "private": true,
   "version": "1.52.0",
+  "author": "Sai Kolanupaka",
   "type": "module",
   "scripts": {
     "dev": "vite --host",

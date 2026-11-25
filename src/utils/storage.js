@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 const PETS_KEY    = "petclub_pets";
 const SESSION_KEY = "petclub_session";
 

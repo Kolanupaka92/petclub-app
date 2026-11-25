@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 export const ago = (d) => {
   const x = new Date();
   x.setDate(x.getDate() - d);

@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 /**
  * auth.setup.js — Run ONCE before all tests.
  * Logs in with each test user, saves the auth state (localStorage token)

@@ -1,3 +1,4 @@
+# Author: Sai Kolanupaka
 """
 PETclub Business Cards Generator
 Standard 3.5" × 2" business cards, 2-up on A4 portrait.

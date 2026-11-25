@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 import { useState, useRef, useEffect } from "react";
 import { api, saveToken } from "./api.js";
 // Phone auth — all countries via Firebase Phone Auth (Blaze plan)

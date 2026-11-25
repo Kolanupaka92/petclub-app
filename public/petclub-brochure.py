@@ -1,3 +1,4 @@
+# Author: Sai Kolanupaka
 """
 PETclub Tri-Fold Marketing Brochure Generator
 A4 landscape, 2 pages, 3 panels each (designed for tri-fold print + WhatsApp share).

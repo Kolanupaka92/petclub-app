@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 /**
  * WhatsAppFAB — floating support button
  * Appears above the bottom nav in both the customer and pro apps.

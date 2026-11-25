@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 import { useEffect } from "react";
 
 export const Stars = ({ n }) => (

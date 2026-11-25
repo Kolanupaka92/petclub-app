@@ -1,3 +1,4 @@
+// Author: Sai Kolanupaka
 /**
  * gpsBuffer.js — IndexedDB queue for offline GPS position buffering
  *
