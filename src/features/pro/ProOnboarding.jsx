@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../../api.js";
 import { AddressPicker } from "../../components/AddressPicker.jsx";
+import EmailVerify from "../../components/EmailVerify.jsx";
 import { getIdTypes, ROLE_CONFIG, SVC_OPTS } from "../../shared/proData.js";
 import { Inp, Sel, Txta, PhotoUpload, PawLogo } from "../../shared/ui.jsx";
 
@@ -99,13 +100,15 @@ export const ProfessionalOnboarding = ({ session, onComplete }) => {
     true,
   ];
 
+  const [verifyEmail, setVerifyEmail] = useState(null); // new address awaiting its code
+
   const handleSubmit = async () => {
     setSaving(true);
     setSaveErr("");
     try {
-      await api.updateMyProProfile({
+      const saved = await api.updateMyProProfile({
         sub_role: pickedRole || subRole,    // always save sub_role so DB stays correct
-        name: form.name, email: form.email, city: addrMeta.city || form.city, area: form.area,
+        name: form.name, email: form.email?.trim().toLowerCase() || undefined, city: addrMeta.city || form.city, area: form.area,
         address: form.address, pincode: addrMeta.postalCode || form.pincode,
         address_lat: addrMeta.lat, address_lng: addrMeta.lng,
         address_postal_code: addrMeta.postalCode, address_state: addrMeta.state,
@@ -122,6 +125,7 @@ export const ProfessionalOnboarding = ({ session, onComplete }) => {
         }).catch(() => {});
       }
       setSaving(false);
+      if (saved?.email_verification_required) { setVerifyEmail(form.email.trim().toLowerCase()); return; }
       onComplete(); // only called after a successful save
     } catch (e) {
       setSaving(false);
@@ -130,6 +134,15 @@ export const ProfessionalOnboarding = ({ session, onComplete }) => {
   };
 
   const selectedIdType = idTypes.find(t => t.value === form.idType) || idTypes[0];
+
+  if (verifyEmail) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-sm space-y-4">
+        <h1 className="text-xl font-extrabold text-gray-900">Confirm your email</h1>
+        <EmailVerify email={verifyEmail} onVerified={() => onComplete()} onSkip={() => onComplete()} />
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">

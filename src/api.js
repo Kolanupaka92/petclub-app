@@ -105,6 +105,8 @@ export const api = {
   // User
   getMe: () => req('GET', '/users/me', null, true),
   updateMe: (data) => req('PUT', '/users/me', data, true),
+  requestEmailChange: (email) => req('POST', '/users/me/email', { email }, true),
+  verifyEmailChange: (email, otp) => req('POST', '/users/me/email/verify', { email, otp }, true),
   setRole: (role, subRole, name, email, city, address, pet, addressLat, addressLng, addressPostalCode, addressCity, addressState, referralInput) =>
     req('POST', '/users/set-role', { role, subRole, name, email, city, address, pet, addressLat, addressLng, addressPostalCode, addressCity, addressState, referral_input: referralInput || undefined }, true),
 

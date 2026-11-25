@@ -8,6 +8,7 @@ import { loadPets, savePets } from "./utils/storage.js";
 import { TC, fmtDate } from "./data/mockData.js";
 import { AddressInput, getEmailSuggestion } from "./Login.jsx";
 import { AddressPicker } from "./components/AddressPicker.jsx";
+import EmailVerify from "./components/EmailVerify.jsx";
 import WhatsAppFAB from "./components/WhatsAppFAB.jsx";
 import ChatModal from "./components/ChatModal.jsx";
 import {
@@ -334,9 +335,9 @@ export default function PetclubApp({ session, onLogout }) {
     try {
       const city = editAddrMeta.city || form.city || "";
       const pincode = editAddrMeta.postalCode || form.pincode || "";
-      await api.updateMe({
+      const saved = await api.updateMe({
         name: form.name.trim(),
-        email: form.email?.trim() || "",
+        email: form.email?.trim() || undefined,
         address: form.address || "",
         area: form.area || "",
         city,
@@ -367,19 +368,20 @@ export default function PetclubApp({ session, onLogout }) {
           user: {
             ...old.user,
             name: form.name.trim(),
-            email: form.email?.trim() || old.user.email,
+            // email stays as is until the new address is confirmed with a code
             // Write back in the same shape the server sent, so a later
             // background refetch doesn't change how this is read.
             customer_profiles: Array.isArray(prev) ? [merged, ...prev.slice(1)] : merged,
           },
         };
       });
-      setModal(null);
-      setForm({});
+      const newEmail = form.email?.trim().toLowerCase();
+      setModal(saved?.email_verification_required ? "verifyEmail" : null);
+      setForm(saved?.email_verification_required ? { verifyEmail: newEmail } : {});
       setEditAddrMeta({ lat: null, lng: null, postalCode: "", city: "", state: "" });
       setEditEmailErr("");
-      showToast("Profile updated! ✅");
-    } catch { showToast("Failed to update", "error"); }
+      showToast(saved?.email_verification_required ? "Saved. Confirm your new email to finish." : "Profile updated! ✅");
+    } catch (e) { showToast(e.message || "Failed to update", "error"); }
   };
 
   const submitRating = async () => {
@@ -2521,6 +2523,22 @@ export default function PetclubApp({ session, onLogout }) {
             </div>
             );
           })()}
+        </Modal>
+      )}
+
+      {/* CONFIRM NEW EMAIL */}
+      {modal === "verifyEmail" && form.verifyEmail && (
+        <Modal title="Confirm your email" onClose={() => { setModal(null); setForm({}); }}>
+          <EmailVerify
+            email={form.verifyEmail}
+            skipLabel="Keep my current email"
+            onSkip={() => { setModal(null); setForm({}); }}
+            onVerified={verified => {
+              queryClient.setQueryData(qk.me, old => old?.user ? { ...old, user: { ...old.user, email: verified } } : old);
+              setModal(null); setForm({});
+              showToast("Email confirmed! ✅");
+            }}
+          />
         </Modal>
       )}
 

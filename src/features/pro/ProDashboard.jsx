@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { api } from "../../api.js";
 import { AddressPicker } from "../../components/AddressPicker.jsx";
+import EmailVerify from "../../components/EmailVerify.jsx";
 import { bufferPosition, saveTokenToGpsDb } from "../../utils/gpsBuffer.js";
 import WhatsAppFAB from "../../components/WhatsAppFAB.jsx";
 import ChatModal from "../../components/ChatModal.jsx";
@@ -307,13 +308,18 @@ export const ProfessionalDashboard = ({ session, onLogout }) => {
   const isVerified  = profile?.verification_status === "approved";
   const grad        = rColor(subRole);
 
+  const [verifyEmail, setVerifyEmail] = useState(null); // new address awaiting its code
+
   const saveProfile = async () => {
     setSaving(true);
     try {
-      await api.updateMyProProfile(editForm);
-      setProfile(p => ({ ...p, ...editForm }));
+      const newEmail = editForm.email?.trim().toLowerCase();
+      const saved = await api.updateMyProProfile({ ...editForm, email: newEmail || undefined });
+      // email stays as is until the new address is confirmed with a code
+      setProfile(p => ({ ...p, ...editForm, email: p?.email }));
       setEditModal(false);
-      showToast("✅ Profile updated!");
+      if (saved?.email_verification_required) setVerifyEmail(newEmail);
+      showToast(saved?.email_verification_required ? "✅ Saved. Confirm your new email to finish." : "✅ Profile updated!");
     } catch (e) { showToast("❌ " + e.message); }
     setSaving(false);
   };
@@ -1212,6 +1218,18 @@ export const ProfessionalDashboard = ({ session, onLogout }) => {
           ))}
         </div>
       </nav>
+
+      {/* Confirm new email */}
+      {verifyEmail && (
+        <Modal title="Confirm your email" onClose={() => setVerifyEmail(null)}>
+          <EmailVerify
+            email={verifyEmail}
+            skipLabel="Keep my current email"
+            onSkip={() => setVerifyEmail(null)}
+            onVerified={verified => { setProfile(p => ({ ...p, email: verified })); setVerifyEmail(null); showToast("✅ Email confirmed!"); }}
+          />
+        </Modal>
+      )}
 
       {/* Edit Profile Modal */}
       {editModal && (

@@ -6,6 +6,7 @@ import { api, saveToken } from "./api.js";
 //   Fallback    → Backend Twilio/email OTP when Firebase is unavailable
 import { initPhoneAuth, sendPhoneOtp, verifyPhoneOtp, clearPhoneAuth } from "./firebase.js";
 import { AddressPicker } from "./components/AddressPicker.jsx";
+import EmailVerify from "./components/EmailVerify.jsx";
 import { MATCH_RADIUS } from "./LandingPage.jsx";
 
 /* ── Constants ── */
@@ -290,6 +291,7 @@ export default function Login({ onLogin, initialHint, onHome }) {
   const [shake, setShake]   = useState(false);
   const [timer, setTimer]   = useState(0);
   const [emailSuggestion, setEmailSuggestion] = useState("");
+  const [pendingUser, setPendingUser] = useState(null); // { user, email } — signed up, email still to confirm
   const [pendingPhone, setPendingPhone] = useState(""); // E.164 used for Twilio (US) route
   const [phoneRoute, setPhoneRoute] = useState("twilio"); // "twilio" (US) | "firebase" (India)
   const [otpNote, setOtpNote] = useState(""); // info banner shown on OTP step (e.g. email fallback)
@@ -612,7 +614,12 @@ export default function Login({ onLogin, initialHint, onHome }) {
           .catch(e => console.warn("Pro ID upload:", e.message));
       }
 
-      onLogin({ ...res.user });
+      if (res.email_verification_required) {
+        setPendingUser({ user: res.user, email: (isCust ? cust.email : pro.email).trim().toLowerCase() });
+        setErr(""); setStep("verifyEmail");
+      } else {
+        onLogin({ ...res.user });
+      }
     } catch (e) { showErr(e.message || "Something went wrong. Try again."); }
     finally { setLoading(false); }
   };
@@ -937,6 +944,18 @@ export default function Login({ onLogin, initialHint, onHome }) {
                   : <button onClick={sendOtp} className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-colors">Resend OTP</button>
                 }
               </div>
+            </div>
+          )}
+
+          {step === "verifyEmail" && pendingUser && (
+            <div className="space-y-4">
+              <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Confirm your email</h1>
+              <EmailVerify
+                email={pendingUser.email}
+                onVerified={verified => onLogin({ ...pendingUser.user, email: verified })}
+                onSkip={() => onLogin({ ...pendingUser.user })}
+              />
+              <p className="text-xs text-gray-400">Without a confirmed email you won&apos;t get booking emails. You can add it later in your profile.</p>
             </div>
           )}
 
