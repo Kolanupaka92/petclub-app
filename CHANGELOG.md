@@ -1,3 +1,10 @@
+# [1.52.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.51.2...v1.52.0) (2026-11-25)
+
+
+### Features
+
+* **profile:** confirm a new email with a code ([5ea24f8](https://github.com/Kolanupaka92/petclub-app/commit/5ea24f8161e40bb937578199dbe84d170abf1ec4))
+
 ## [1.51.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.51.1...v1.51.2) (2026-11-25)
 
 
