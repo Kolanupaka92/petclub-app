@@ -119,11 +119,17 @@ export const ProfessionalOnboarding = ({ session, onComplete }) => {
         clinic_name: form.clinic_name,
         price_basic: form.priceA, price_full: form.priceB, price_custom: form.priceC,
       });
-      // ID upload is non-critical — errors are swallowed so profile always saves
+      // Verification can't start without the ID, so never hide a failed upload.
       if (form.idNumber.trim()) {
-        await api.uploadIdPhoto({
-          docType: form.idType, docNumber: form.idNumber.trim(), docPhoto: idPhoto || undefined,
-        }).catch(() => {});
+        try {
+          await api.uploadIdPhoto({
+            docType: form.idType, docNumber: form.idNumber.trim(), docPhoto: idPhoto || undefined,
+          });
+        } catch {
+          setSaving(false);
+          setSaveErr("Your profile was saved, but your ID didn't upload. Please press Submit again.");
+          return;
+        }
       }
       setSaving(false);
       if (saved?.email_verification_required) { setVerifyEmail(form.email.trim().toLowerCase()); return; }
