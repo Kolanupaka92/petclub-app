@@ -1,7 +1,7 @@
 {
   "name": "petclub-app",
   "private": true,
-  "version": "1.52.0",
+  "version": "1.52.1",
   "author": "Sai Kolanupaka",
   "type": "module",
   "scripts": {

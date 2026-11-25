@@ -1,3 +1,10 @@
+## [1.52.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.52.0...v1.52.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **pro:** show when the ID upload fails during onboarding ([9317f79](https://github.com/Kolanupaka92/petclub-app/commit/9317f797b65096c3d74a50274dbf1f15606c3896))
+
 # [1.52.0](https://github.com/Kolanupaka92/petclub-app/compare/v1.51.2...v1.52.0) (2026-11-25)
 
 
