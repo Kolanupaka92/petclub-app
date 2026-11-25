@@ -1,3 +1,10 @@
+## [1.51.2](https://github.com/Kolanupaka92/petclub-app/compare/v1.51.1...v1.51.2) (2026-11-25)
+
+
+### Bug Fixes
+
+* **deps:** patch vulnerable dependencies ([6e33975](https://github.com/Kolanupaka92/petclub-app/commit/6e33975459ef30a816c31dd6f7e59c30c054e1c1))
+
 ## [1.51.1](https://github.com/Kolanupaka92/petclub-app/compare/v1.51.0...v1.51.1) (2026-08-29)
 
 
